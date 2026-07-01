@@ -1,4 +1,4 @@
-import weights from '../weights/domain-weights.json';
+import weights from '../weights/domain-weights.json' with { type: 'json' };
 import { weightsTableSchema, type WeightsTable, type Indicator } from './schema.js';
 
 /** The validated weights table. Placeholder values — see needs_clinical_signoff. */

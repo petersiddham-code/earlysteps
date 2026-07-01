@@ -1,11 +1,14 @@
 import { defineConfig } from 'vitest/config';
 
-// Root Vitest config. Pure packages (scoring-engine, content) are framework-agnostic
-// and tested here; the NestJS backend will use its own Jest config when scaffolded.
+// Root Vitest config, covering the pure packages AND apps/backend. One consistent runner
+// avoids Jest/ts-jest ESM interop hazards with our ESM+TS workspace packages (see
+// apps/backend/README.md); NestJS's TestingModule works fine under Vitest since it's plain
+// async JS, not Jest-specific.
 export default defineConfig({
   test: {
-    include: ['packages/**/*.{test,spec}.ts'],
+    include: ['packages/**/*.{test,spec}.ts', 'apps/backend/**/*.{test,spec}.ts'],
     environment: 'node',
+    setupFiles: ['./apps/backend/test/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
