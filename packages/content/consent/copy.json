@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "locale": "en",
+  "scopes": {
+    "data_storage": {
+      "label": "Save my answers",
+      "explanation": "We securely save your answers and [child]'s profile so you can pick up where you left off and see progress over time."
+    },
+    "ai_analysis": {
+      "label": "Use AI to help explain results",
+      "explanation": "AI helps write easy-to-read summaries and suggestions from your answers — it never decides anything on its own."
+    },
+    "media_capture": {
+      "label": "Record audio, photos, or video",
+      "explanation": "Only if you choose to, for this one activity — you can say no and describe things instead, any time."
+    },
+    "professional_sharing": {
+      "label": "Share with a professional",
+      "explanation": "We only share your results with a doctor or specialist when you specifically choose to send them."
+    }
+  }
+}

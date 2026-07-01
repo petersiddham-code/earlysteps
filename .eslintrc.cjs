@@ -10,4 +10,14 @@ module.exports = {
   rules: {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
   },
+  overrides: [
+    {
+      // RN/Metro tooling config files are conventionally CommonJS (require/module.exports) —
+      // matches Expo's own generated defaults and every real-world Metro/Jest/Babel config.
+      files: ['apps/mobile/metro.config.js', 'apps/mobile/jest.config.js'],
+      rules: {
+        '@typescript-eslint/no-require-imports': 'off',
+      },
+    },
+  ],
 };
