@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "locale": "en",
+  "needs_clinical_signoff": true,
+  "note": "Result copy is clinical content (CLAUDE.md §9). Labels/tiers/support terms below are the ONLY approved strings (CLAUDE.md §2 rules 2–3). The disclaimer is verbatim from product plan §3.2 — do not paraphrase.",
+  "disclaimer": "This is a screening tool, not a diagnosis. Only a qualified professional (paediatrician, psychologist, or developmental specialist) can diagnose autism.",
+  "sign_level_labels": {
+    "low": "Low signs observed",
+    "some": "Some signs observed",
+    "many": "Many signs observed"
+  },
+  "recommendation_tiers": {
+    "begin": "Support activities can begin now",
+    "recommended": "Formal assessment is recommended",
+    "strongly_recommended": "Formal assessment strongly recommended soon"
+  },
+  "support_level_terms": {
+    "mild": "mild support needs",
+    "moderate": "moderate support needs",
+    "high": "high support needs"
+  }
+}

@@ -1,0 +1,235 @@
+{
+  "version": "0.1.0-placeholder",
+  "needs_clinical_signoff": true,
+  "note": "PLACEHOLDER WEIGHTS — NOT CLINICALLY VALIDATED. Product plan §8 says weights are 'derived from CDC/AAP milestone importance and NICE red-flag weighting' but provides no numbers. These values exist only to exercise the deterministic scoring engine and MUST be replaced under the docs/clinical-review/ gate (CLAUDE.md §9) before any real family uses the app. `combine` = 'max' for single-select questions (score = weight of the chosen option), 'sum' for multi-select (score = sum of chosen chip weights). Per-question max is derived from these same weights, so the engine needs no other input to normalize 0–100.",
+  "indicators": [
+    {
+      "question_id": "T1",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "not_yet": 10, "after_2y": 6, "18_24mo": 3 }
+    },
+    {
+      "question_id": "T2",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "none_yet": 10, "few_1_5": 6, "some_6_20": 3 }
+    },
+    {
+      "question_id": "T3",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "rarely": 10, "sometimes": 5 }
+    },
+    {
+      "question_id": "T4",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "doesnt_notice": 10, "after_few_tries": 6, "depends": 3 }
+    },
+    {
+      "question_id": "T5",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely": 10, "sometimes": 5 }
+    },
+    {
+      "question_id": "T6",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "not_noticed": 10, "sometimes": 5 }
+    },
+    {
+      "question_id": "T7",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely": 8, "sometimes": 4 }
+    },
+    {
+      "question_id": "T8",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely": 8, "sometimes": 4 }
+    },
+    {
+      "question_id": "T9",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "not_yet": 5, "starting_to": 2 }
+    },
+    {
+      "question_id": "T10",
+      "domain": "repetitive_behaviour",
+      "combine": "sum",
+      "option_weights": {
+        "hand_flapping": 5,
+        "rocking": 5,
+        "spinning": 5,
+        "lining_up_toys": 5,
+        "something_else": 5
+      }
+    },
+    {
+      "question_id": "T11",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": { "yes_a_lot": 10, "a_little": 5 }
+    },
+    {
+      "question_id": "T12",
+      "domain": "sensory",
+      "combine": "max",
+      "option_weights": { "yes_a_lot": 10, "a_little": 5 }
+    },
+    {
+      "question_id": "T13",
+      "domain": "sensory",
+      "combine": "max",
+      "option_weights": { "yes_a_lot": 10, "a_little": 5 }
+    },
+    {
+      "question_id": "T14",
+      "domain": "sensory",
+      "combine": "max",
+      "option_weights": { "very_picky": 8, "somewhat_picky": 4 }
+    },
+    {
+      "question_id": "T15",
+      "domain": "emotional_regulation",
+      "combine": "max",
+      "option_weights": { "significant_struggles": 10, "some_difficulty": 5 }
+    },
+    {
+      "question_id": "T16",
+      "domain": "attention",
+      "combine": "max",
+      "option_weights": { "very_hard": 10, "briefly": 5 }
+    },
+    {
+      "question_id": "P1",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": {
+        "not_yet_talking": 10,
+        "sounds_gestures": 8,
+        "single_words": 5,
+        "short_phrases": 3
+      }
+    },
+    {
+      "question_id": "P2",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "rarely": 10, "with_effort": 5 }
+    },
+    {
+      "question_id": "P3",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "rarely": 8, "sometimes": 4 }
+    },
+    {
+      "question_id": "P4",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "yes_often": 6, "sometimes": 3 }
+    },
+    {
+      "question_id": "P5",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely_responds": 10, "after_few_tries": 6, "depends": 3 }
+    },
+    {
+      "question_id": "P6",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely": 10, "sometimes": 5 }
+    },
+    {
+      "question_id": "P7",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "prefers_alone": 8, "alongside": 5 }
+    },
+    {
+      "question_id": "P8",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely": 8, "sometimes": 4 }
+    },
+    {
+      "question_id": "P9",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely_not_yet": 8, "sometimes": 4 }
+    },
+    {
+      "question_id": "P10",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "struggles": 8, "with_reminders": 4 }
+    },
+    {
+      "question_id": "P11",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely": 8, "sometimes": 4 }
+    },
+    {
+      "question_id": "P12",
+      "domain": "repetitive_behaviour",
+      "combine": "sum",
+      "option_weights": {
+        "hand_flapping": 5,
+        "rocking": 5,
+        "spinning": 5,
+        "toe_walking": 5,
+        "lining_up": 5,
+        "something_else": 5
+      }
+    },
+    {
+      "question_id": "P13",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": { "yes_very_intense": 8, "strong_but_flexible": 3 }
+    },
+    {
+      "question_id": "P14",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": { "yes_a_lot": 10, "a_little": 5 }
+    },
+    {
+      "question_id": "P15",
+      "domain": "sensory",
+      "combine": "sum",
+      "option_weights": {
+        "loud_sounds": 5,
+        "bright_lights": 5,
+        "clothing_textures": 5,
+        "food_textures": 5,
+        "touch_hugs": 5
+      }
+    },
+    {
+      "question_id": "P16",
+      "domain": "sensory",
+      "combine": "max",
+      "option_weights": { "very_picky": 8, "somewhat_picky": 4 }
+    },
+    {
+      "question_id": "P17",
+      "domain": "attention",
+      "combine": "max",
+      "option_weights": { "very_hard": 10, "briefly": 5 }
+    },
+    {
+      "question_id": "P18",
+      "domain": "learning",
+      "combine": "max",
+      "option_weights": { "yes": 8 }
+    }
+  ]
+}
