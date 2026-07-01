@@ -56,10 +56,23 @@ what a red-flag-free `SupportLevelEstimate` of `high` should map to. The current
 support estimate alone also recommends formal assessment — is a reasonable interpretation, not
 a validated clinical threshold. Needs advisor sign-off before this drives real backend results.
 
-## 6. Family/child onboarding is out of scope for the backend screening pipeline
+## 6. Family/child onboarding + consent — partially closed
 
-`apps/backend`'s intake→scoring→results API operates on an existing `childId`; it does not
-include Family/Child creation, consent-flag enforcement (product plan §4.7/Module 7), or any
-onboarding flow. Those are Screen 1–3 (Splash, Consent Center, Child Profile Setup) concerns
-that belong to the mobile app plus a thin backend CRUD layer, not yet built. Do not treat the
-current API as consent-safe or ready to accept real family data.
+`apps/backend` now has a `FamiliesModule`: `POST /families`, `GET /families/:familyId`,
+`PATCH /families/:familyId/consent`, `POST /families/:familyId/children`,
+`GET /families/:familyId/children/:childId`. Consent is layered (product plan §4.7) — each
+scope stored/toggled independently, fail-safe default (`{}` = nothing granted).
+`ScreeningService.submitIntakeResponses` now requires `data_storage` consent before persisting
+anything, per CLAUDE.md §2 rule 9; an unconsented or unknown child gets a 403, never a silent
+write.
+
+Still open:
+- **No auth.** Every endpoint is unauthenticated — this mirrors the screening endpoints'
+  existing (already-flagged) gap, not a new one, but it means none of this is real
+  account-security yet. Anyone with a `familyId`/`childId` can read or write it.
+- **Only `data_storage` consent is enforced.** `ai_analysis`, `media_capture`, and
+  `professional_sharing` are stored and independently toggleable (Consent Center has something
+  real to persist), but nothing currently gates on them — no LLM calls, media capture, or
+  report-sharing feature exists yet to enforce them against.
+- **Mobile isn't wired to these endpoints.** `<ConsentToggle/>` and the demo screen use local
+  component state / sample data; nothing calls the real API yet.

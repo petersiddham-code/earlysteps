@@ -23,8 +23,8 @@ model Family {
   locale           String
   lowBandwidthMode Boolean  @default(false)
   /// Layered consent flags (data_storage / ai_analysis / media_capture / professional_sharing)
-  /// — product plan §4.7. Storage only; enforcement is not yet implemented (see
-  /// docs/clinical-review/content-gaps.md).
+  /// — product plan §4.7. data_storage gates intake persistence (ScreeningService); the other
+  /// three scopes are stored but not yet enforced anywhere — see docs/clinical-review/.
   consentFlags     Json     @default("{}")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

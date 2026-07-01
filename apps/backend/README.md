@@ -6,10 +6,26 @@ plan §6–§8). Scoring is always deterministic — this app calls `@earlysteps
 
 ## What's implemented
 
+**Families (`src/families/`, product plan §4.7):**
+
+- `POST /families` — create a family (`locale`, optional `low_bandwidth_mode`). Consent is
+  deliberately not settable here — grant it via the consent endpoint after, so it's "freshly
+  given" (CLAUDE.md §2 rule 9), not bundled into account creation.
+- `GET /families/:familyId`
+- `PATCH /families/:familyId/consent` — body `{ scope, granted }`, one scope per call, matching
+  `<ConsentToggle/>`'s one-scope-per-`onChange` UX. Fail-safe default: a new family has nothing
+  granted (`consent_flags: {}`).
+- `POST /families/:familyId/children` — `{ nickname, age_band, languages }`.
+- `GET /families/:familyId/children/:childId`
+
+**Screening (`src/screening/`):**
+
 - `POST /children/:childId/intake-responses` — persist new `IntakeResponse[]`, recompute
   against the child's **full** answer history (not just the new batch), persist the resulting
   `DomainProfile` / `SupportLevelEstimate` / `RedFlag[]` as a new append-only snapshot, and
-  return the caregiver-safe results view.
+  return the caregiver-safe results view. **Requires `data_storage` consent** for the child's
+  family — an unconsented or unknown child gets a 403, never a silent write (CLAUDE.md §2
+  rule 9).
 - `GET /children/:childId/results` — return the latest results view, or 404 if nothing has
   been computed yet.
 - The results view (`src/screening/results-view.ts`) strips the raw numeric domain score
@@ -22,9 +38,13 @@ plan §6–§8). Scoring is always deterministic — this app calls `@earlysteps
 
 See `docs/clinical-review/content-gaps.md` items 5–6:
 
-- **No Family/Child onboarding, consent enforcement, or auth.** Endpoints operate on an
-  already-existing `childId`. Building the Consent Center / Child Profile Setup flow (product
-  plan Screens 2–3) and the backend CRUD + consent gating behind it is a separate piece of work.
+- **No auth.** Every endpoint is unauthenticated. Anyone with a `familyId`/`childId` can read
+  or write it — this is not real account security.
+- **Only `data_storage` consent is enforced.** `ai_analysis`, `media_capture`, and
+  `professional_sharing` are stored and independently toggleable, but nothing gates on them
+  yet — no LLM calls, media capture, or report sharing exists to enforce them against.
+- **Mobile isn't wired to these endpoints.** `<ConsentToggle/>` and the demo screen still use
+  local component state / sample data.
 - **No LLM wiring yet.** `src/ai/prompts/` templates exist but nothing calls the model — the
   results view returns only what the deterministic engine computed.
 - **`deriveRecommendationTier`** (in `@earlysteps/scoring-engine`) is a placeholder heuristic
@@ -78,8 +98,21 @@ real infra to deploy to.
 
 ## Testing without a live database
 
-Integration tests (`test/screening.integration.spec.ts`) run the full pipeline — intake submit
-→ `recompute()` → persistence → results view — against an in-memory `ScreeningRepository`
-implementation (`src/screening/testing/in-memory-screening.repository.ts`), not a real Postgres
-instance. That repository is a test double only; it is never wired into `AppModule`. Cover at
-least one red-flag-triggering case and one low-signal case per CLAUDE.md §10.
+Integration tests (`test/screening.integration.spec.ts`, `test/families.integration.spec.ts`)
+run the full pipeline — intake submit → `recompute()` → persistence → results view, and
+family/child/consent CRUD — against in-memory `ScreeningRepository`/`FamiliesRepository`
+implementations (`src/*/testing/`), not a real Postgres instance. Those repositories are test
+doubles only; never wired into `AppModule`. Cover at least one red-flag-triggering case and one
+low-signal case per CLAUDE.md §10, plus the consent-denial and consent-grant paths.
+
+**A note on live HTTP smoke-testing this app**: a throwaway script that makes a single outbound
+`fetch()` to a `moduleRef.createNestApplication()` instance under `node --loader ts-node/esm`
+works fine, but a script making **two or more sequential outbound `fetch()` calls** in the same
+process reproducibly crashed the loader on Node v25.9.0 with an unprintable
+`[Object: null prototype]` error, before any of the script's own code even ran — confirmed via
+`tsc --noEmit` (zero errors on the exact same file) and via testing each call in isolation
+(each succeeded individually). This looks like a `ts-node/esm`-loader-specific bug under this
+Node version, not an application defect — the deployed server itself only ever handles one
+*inbound* request at a time from an external client, a different code path that's already
+proven to work. If you hit this while smoke-testing, keep throwaway scripts to a single
+request, or use the automated `Test.createTestingModule` integration tests instead.

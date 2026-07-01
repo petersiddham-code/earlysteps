@@ -1,16 +1,19 @@
 /**
  * Integration test for the full intake -> scoring -> results pipeline (CLAUDE.md §10: "at
  * least one red-flag-triggering case and one low-signal case"). Runs against
- * InMemoryScreeningRepository (see src/screening/testing/) — no live Postgres required.
+ * InMemoryScreeningRepository and InMemoryFamiliesRepository (see the testing/ subfolder in
+ * each module) — no live Postgres required.
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { IntakeResponse } from '@earlysteps/shared-types';
 import { SCREENING_DISCLAIMER } from '@earlysteps/shared-types';
 import { ScreeningService } from '../src/screening/screening.service.js';
 import { SCREENING_REPOSITORY } from '../src/screening/screening.repository.js';
 import { InMemoryScreeningRepository } from '../src/screening/testing/in-memory-screening.repository.js';
+import { FAMILIES_REPOSITORY } from '../src/families/families.repository.js';
+import { InMemoryFamiliesRepository } from '../src/families/testing/in-memory-families.repository.js';
 
 const AT = '2026-07-01T00:00:00.000Z';
 
@@ -23,25 +26,34 @@ function r(
 
 async function buildService() {
   const repository = new InMemoryScreeningRepository();
+  const familiesRepository = new InMemoryFamiliesRepository();
   const moduleRef = await Test.createTestingModule({
     providers: [
       ScreeningService,
       { provide: SCREENING_REPOSITORY, useValue: repository },
+      { provide: FAMILIES_REPOSITORY, useValue: familiesRepository },
     ],
   }).compile();
-  return { service: moduleRef.get(ScreeningService), repository };
+  return { service: moduleRef.get(ScreeningService), repository, familiesRepository };
 }
 
 describe('screening pipeline — intake -> scoring -> results', () => {
   let service: ScreeningService;
   let repository: InMemoryScreeningRepository;
+  let familiesRepository: InMemoryFamiliesRepository;
+  let childId: string;
 
   beforeEach(async () => {
-    ({ service, repository } = await buildService());
+    ({ service, repository, familiesRepository } = await buildService());
+    // Every existing scenario here tests the scoring pipeline, not consent — grant
+    // data_storage up front so these tests exercise what they always exercised. The denial
+    // path gets its own dedicated tests below.
+    ({
+      child: { id: childId },
+    } = await familiesRepository.seedChildWithConsent(['data_storage']));
   });
 
   it('low-signal case: reassuring answers produce all-low domains and begin-now tier', async () => {
-    const childId = 'child-reassuring';
     const responses = [
       r('T1', 'before_12mo'),
       r('T4', 'looks_right_away'),
@@ -59,7 +71,6 @@ describe('screening pipeline — intake -> scoring -> results', () => {
   });
 
   it('red-flag case: a concerning answer set surfaces a non-urgent red flag and recommends assessment', async () => {
-    const childId = 'child-concerning';
     const responses = [
       r('T4', 'doesnt_notice'),
       r('T5', 'rarely'),
@@ -75,7 +86,6 @@ describe('screening pipeline — intake -> scoring -> results', () => {
   });
 
   it('urgent red-flag case: self-injury risk escalates to strongly-recommended-soon', async () => {
-    const childId = 'child-urgent';
     const responses = [{ ...r('RF_self_injury', 'yes'), child_id: childId }];
 
     const view = await service.submitIntakeResponses(childId, responses);
@@ -85,7 +95,6 @@ describe('screening pipeline — intake -> scoring -> results', () => {
   });
 
   it('never leaks a raw numeric score on any domain entry (product plan §4.4)', async () => {
-    const childId = 'child-no-score-leak';
     const responses = [{ ...r('T4', 'doesnt_notice'), child_id: childId }];
 
     const view = await service.submitIntakeResponses(childId, responses);
@@ -96,7 +105,6 @@ describe('screening pipeline — intake -> scoring -> results', () => {
   });
 
   it('recomputes over the FULL answer history, not just the latest batch', async () => {
-    const childId = 'child-cumulative';
     await service.submitIntakeResponses(childId, [
       { ...r('T1', 'before_12mo'), child_id: childId },
     ]);
@@ -111,7 +119,6 @@ describe('screening pipeline — intake -> scoring -> results', () => {
   });
 
   it('retains history as an append-only sequence of snapshots (never overwritten)', async () => {
-    const childId = 'child-history';
     await service.submitIntakeResponses(childId, [
       { ...r('T1', 'before_12mo'), child_id: childId },
     ]);
@@ -123,7 +130,6 @@ describe('screening pipeline — intake -> scoring -> results', () => {
   });
 
   it('getResults returns the latest computed view without recomputing', async () => {
-    const childId = 'child-get-results';
     await service.submitIntakeResponses(childId, [
       { ...r('T4', 'doesnt_notice'), child_id: childId },
     ]);
@@ -137,5 +143,66 @@ describe('screening pipeline — intake -> scoring -> results', () => {
     await expect(service.getResults('never-submitted')).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+});
+
+describe('screening pipeline — data_storage consent gate (CLAUDE.md §2 rule 9)', () => {
+  it('refuses to persist intake responses without data_storage consent (fail-safe default)', async () => {
+    const { service, familiesRepository } = await buildService();
+    const { child } = await familiesRepository.seedChildWithConsent([]); // nothing granted
+
+    await expect(
+      service.submitIntakeResponses(child.id, [
+        { ...r('T1', 'before_12mo'), child_id: child.id },
+      ]),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('refuses for a completely unknown child, not just an unconsented one', async () => {
+    const { service } = await buildService();
+
+    await expect(
+      service.submitIntakeResponses('unknown-child', [
+        { ...r('T1', 'before_12mo'), child_id: 'unknown-child' },
+      ]),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('does not persist anything when consent is refused', async () => {
+    const { service, repository, familiesRepository } = await buildService();
+    const { child } = await familiesRepository.seedChildWithConsent([]);
+
+    await expect(
+      service.submitIntakeResponses(child.id, [
+        { ...r('T1', 'before_12mo'), child_id: child.id },
+      ]),
+    ).rejects.toThrow();
+
+    expect(await repository.getIntakeResponses(child.id)).toEqual([]);
+  });
+
+  it('succeeds once data_storage consent is granted for that family', async () => {
+    const { service, familiesRepository } = await buildService();
+    const { child } = await familiesRepository.seedChildWithConsent(['data_storage']);
+
+    const view = await service.submitIntakeResponses(child.id, [
+      { ...r('T1', 'before_12mo'), child_id: child.id },
+    ]);
+    expect(view.disclaimer).toBe(SCREENING_DISCLAIMER);
+  });
+
+  it('other consent scopes being granted does not substitute for data_storage', async () => {
+    const { service, familiesRepository } = await buildService();
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'ai_analysis',
+      'media_capture',
+      'professional_sharing',
+    ]);
+
+    await expect(
+      service.submitIntakeResponses(child.id, [
+        { ...r('T1', 'before_12mo'), child_id: child.id },
+      ]),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
