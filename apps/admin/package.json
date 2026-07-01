@@ -1,0 +1,9 @@
+{
+  "name": "@earlysteps/admin",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Web admin dashboard for the content team — placeholder. Not implemented in the foundation phase.",
+  "scripts": {
+    "dev": "echo 'apps/admin is a placeholder — not scaffolded yet (see docs/product-plan.md §6).' && exit 0"
+  }
+}

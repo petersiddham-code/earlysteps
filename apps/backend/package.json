@@ -1,0 +1,9 @@
+{
+  "name": "@earlysteps/backend",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NestJS + Prisma API — placeholder. Not implemented in the foundation phase.",
+  "scripts": {
+    "start:dev": "echo 'apps/backend is a placeholder — not scaffolded yet (see docs/product-plan.md §6).' && exit 0"
+  }
+}

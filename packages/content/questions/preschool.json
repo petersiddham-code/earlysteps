@@ -1,0 +1,266 @@
+{
+  "version": "1.0.0",
+  "locale": "en",
+  "age_band": "preschool",
+  "questions": [
+    {
+      "id": "P1",
+      "domain": "communication",
+      "age_band": "preschool",
+      "text": "How does [child] usually talk?",
+      "type": "dropdown",
+      "options": [
+        { "id": "full_sentences", "label": "Full sentences" },
+        { "id": "short_phrases", "label": "Short phrases (2–3 words)" },
+        { "id": "single_words", "label": "Single words" },
+        { "id": "sounds_gestures", "label": "Mostly sounds/gestures" },
+        { "id": "not_yet_talking", "label": "Not yet talking" }
+      ],
+      "hint": "Pick what's most typical for [child] day to day."
+    },
+    {
+      "id": "P2",
+      "domain": "communication",
+      "age_band": "preschool",
+      "text": "Can most people outside the family understand [child] when they talk?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_easily", "label": "Yes, easily" },
+        { "id": "with_effort", "label": "Sometimes, with effort" },
+        { "id": "rarely", "label": "Rarely" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Pick what feels closest."
+    },
+    {
+      "id": "P3",
+      "domain": "communication",
+      "age_band": "preschool",
+      "text": "Does [child] ask questions, like \"why\" or \"what's that\"?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_often", "label": "Yes, often" },
+        { "id": "sometimes", "label": "Sometimes" },
+        { "id": "rarely", "label": "Rarely" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Pick what feels closest."
+    },
+    {
+      "id": "P4",
+      "domain": "communication",
+      "age_band": "preschool",
+      "text": "Does [child] repeat words or phrases they've heard (from a show, or from you) instead of using their own words?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_often", "label": "Yes, often" },
+        { "id": "sometimes", "label": "Sometimes" },
+        { "id": "rarely", "label": "Rarely" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "This is called 'echoing' — it's common and not something to worry about by itself."
+    },
+    {
+      "id": "P5",
+      "domain": "social",
+      "age_band": "preschool",
+      "text": "When you call [child]'s name, what usually happens?",
+      "type": "dropdown",
+      "options": [
+        { "id": "right_away", "label": "Looks/comes right away" },
+        { "id": "after_few_tries", "label": "After a few tries" },
+        { "id": "rarely_responds", "label": "Rarely responds" },
+        { "id": "depends", "label": "Depends on activity" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Pick what happens most days."
+    },
+    {
+      "id": "P6",
+      "domain": "social",
+      "age_band": "preschool",
+      "text": "Does [child] look at your face during conversation?",
+      "type": "buttons",
+      "options": [
+        { "id": "almost_always", "label": "Almost always" },
+        { "id": "sometimes", "label": "Sometimes" },
+        { "id": "rarely", "label": "Rarely" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "It's fine if this varies — pick what happens most days."
+    },
+    {
+      "id": "P7",
+      "domain": "social",
+      "age_band": "preschool",
+      "text": "Does [child] enjoy playing with other children?",
+      "type": "buttons",
+      "options": [
+        { "id": "seeks_it_out", "label": "Yes, seeks it out" },
+        { "id": "alongside", "label": "Plays alongside but not really \"with\" others" },
+        { "id": "prefers_alone", "label": "Prefers playing alone" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "All of these are common — we're just building a picture."
+    },
+    {
+      "id": "P8",
+      "domain": "social",
+      "age_band": "preschool",
+      "text": "Does [child] show you things they're excited about (a drawing, a bug they found)?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_often", "label": "Yes, often" },
+        { "id": "sometimes", "label": "Sometimes" },
+        { "id": "rarely", "label": "Rarely" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Pick what feels closest."
+    },
+    {
+      "id": "P9",
+      "domain": "social",
+      "age_band": "preschool",
+      "text": "Does [child] play pretend — like running a \"shop,\" being an animal, or acting out a story?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_often", "label": "Yes, often" },
+        { "id": "sometimes", "label": "Sometimes" },
+        { "id": "rarely_not_yet", "label": "Rarely/not yet" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Pick what feels closest."
+    },
+    {
+      "id": "P10",
+      "domain": "social",
+      "age_band": "preschool",
+      "text": "Can [child] take turns in a simple game?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_usually", "label": "Yes, usually" },
+        { "id": "with_reminders", "label": "With reminders" },
+        { "id": "struggles", "label": "Struggles a lot" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Turn-taking takes practice — 'with reminders' is very common."
+    },
+    {
+      "id": "P11",
+      "domain": "social",
+      "age_band": "preschool",
+      "text": "Can [child] tell when you're happy, sad, or upset, just from your face or voice?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_usually", "label": "Yes, usually" },
+        { "id": "sometimes", "label": "Sometimes" },
+        { "id": "rarely", "label": "Rarely" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Pick what feels closest."
+    },
+    {
+      "id": "P12",
+      "domain": "repetitive_behaviour",
+      "age_band": "preschool",
+      "text": "Does [child] have a movement they repeat a lot — flapping, rocking, spinning, toe-walking?",
+      "type": "chip_multi_select",
+      "options": [
+        { "id": "hand_flapping", "label": "Hand-flapping" },
+        { "id": "rocking", "label": "Rocking" },
+        { "id": "spinning", "label": "Spinning" },
+        { "id": "toe_walking", "label": "Toe-walking" },
+        { "id": "lining_up", "label": "Lining things up" },
+        { "id": "something_else", "label": "Something else" },
+        { "id": "none", "label": "None of these" }
+      ],
+      "hint": "Lots of children do some of this sometimes — we're just building a picture."
+    },
+    {
+      "id": "P13",
+      "domain": "repetitive_behaviour",
+      "age_band": "preschool",
+      "text": "Does [child] have a very intense interest in one topic (dinosaurs, trains, numbers) that's hard to shift away from?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_very_intense", "label": "Yes, very intense" },
+        { "id": "strong_but_flexible", "label": "A strong interest, but flexible" },
+        { "id": "not_particularly", "label": "Not particularly" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Strong interests are a strength too — we're just mapping the picture."
+    },
+    {
+      "id": "P14",
+      "domain": "repetitive_behaviour",
+      "age_band": "preschool",
+      "text": "Does [child] get very distressed by small changes in routine?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_a_lot", "label": "Yes, a lot" },
+        { "id": "a_little", "label": "A little" },
+        { "id": "not_really", "label": "Not really" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Pick what feels closest."
+    },
+    {
+      "id": "P15",
+      "domain": "sensory",
+      "age_band": "preschool",
+      "text": "Any strong reactions to loud sounds, bright lights, or certain textures?",
+      "type": "chip_multi_select",
+      "options": [
+        { "id": "loud_sounds", "label": "Loud sounds" },
+        { "id": "bright_lights", "label": "Bright lights" },
+        { "id": "clothing_textures", "label": "Clothing textures" },
+        { "id": "food_textures", "label": "Food textures" },
+        { "id": "touch_hugs", "label": "Touch/hugs" },
+        { "id": "none", "label": "None noticed" }
+      ],
+      "hint": "Pick all that apply — or 'None noticed'."
+    },
+    {
+      "id": "P16",
+      "domain": "sensory",
+      "age_band": "preschool",
+      "text": "How would you describe [child]'s eating?",
+      "type": "buttons",
+      "options": [
+        { "id": "wide_variety", "label": "Eats a wide variety" },
+        { "id": "somewhat_picky", "label": "Somewhat picky" },
+        { "id": "very_picky", "label": "Very picky / few accepted foods" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "There's no right answer — picky eating is very common at this age."
+    },
+    {
+      "id": "P17",
+      "domain": "attention",
+      "age_band": "preschool",
+      "text": "Can [child] sit and focus on an activity they enjoy for a little while?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes_several_minutes", "label": "Yes, several minutes+" },
+        { "id": "briefly", "label": "Briefly" },
+        { "id": "very_hard", "label": "Very hard to hold attention" },
+        { "id": "not_sure", "label": "Not sure" }
+      ],
+      "hint": "Pick what feels closest."
+    },
+    {
+      "id": "P18",
+      "domain": "learning",
+      "age_band": "preschool",
+      "text": "Has a teacher or carer mentioned any concerns about [child]?",
+      "type": "buttons",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_in_care_yet", "label": "Not in preschool/daycare yet" }
+      ],
+      "hint": "If yes, feel free to note what they said — totally optional.",
+      "allow_free_text": true
+    }
+  ]
+}

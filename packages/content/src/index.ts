@@ -1,0 +1,9 @@
+/**
+ * @earlysteps/content — question banks, scoring weights, and result copy as versioned,
+ * validated data (CLAUDE.md §5). Non-engineers edit the JSON; this package validates it.
+ */
+export * from './schema.js';
+export * from './questions.js';
+export * from './weights.js';
+export * from './resultCopy.js';
+export * from './validateContent.js';
