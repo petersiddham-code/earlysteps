@@ -1,0 +1,166 @@
+// Prisma schema mapping the data model in docs/product-plan.md §7.
+//
+// DomainProfileRecord.findings, RedFlagRecord.evidenceRefs, and similar fields are stored as
+// JSONB rather than fully normalized child tables. That's a deliberate foundation-phase
+// choice (CLAUDE.md: don't design for hypothetical future requirements) — normalize once
+// real trend-graph/report query patterns are known, not before.
+//
+// No migration has been generated against a live database yet (none was available in this
+// environment). Run `pnpm --filter @earlysteps/backend exec prisma migrate dev` against a real
+// Postgres instance to create the initial migration before deploying.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Family {
+  id               String   @id @default(cuid())
+  locale           String
+  lowBandwidthMode Boolean  @default(false)
+  /// Layered consent flags (data_storage / ai_analysis / media_capture / professional_sharing)
+  /// — product plan §4.7. Storage only; enforcement is not yet implemented (see
+  /// docs/clinical-review/content-gaps.md).
+  consentFlags     Json     @default("{}")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  children         Child[]
+}
+
+model Child {
+  id        String   @id @default(cuid())
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id])
+  nickname  String
+  ageBand   String
+  languages String[]
+  createdAt DateTime @default(now())
+
+  intakeResponses  IntakeResponseRecord[]
+  activityResults  ActivityResultRecord[]
+  domainProfiles   DomainProfileRecord[]
+  supportEstimates SupportLevelEstimateRecord[]
+  redFlags         RedFlagRecord[]
+  supportPlans     SupportPlanRecord[]
+  progressLogs     ProgressLogRecord[]
+  mediaAssets      MediaAssetRecord[]
+  reports          ReportRecord[]
+
+  @@index([familyId])
+}
+
+model IntakeResponseRecord {
+  id         String   @id @default(cuid())
+  childId    String
+  child      Child    @relation(fields: [childId], references: [id])
+  questionId String
+  domain     String
+  /// string | string[] | number — see @earlysteps/shared-types IntakeResponse['answer'].
+  answer     Json
+  timestamp  DateTime
+
+  @@index([childId])
+}
+
+model ActivityResultRecord {
+  id           String   @id @default(cuid())
+  childId      String
+  child        Child    @relation(fields: [childId], references: [id])
+  activityId   String
+  ageBand      String
+  modality     String
+  responseData Json
+  timestamp    DateTime
+
+  @@index([childId])
+}
+
+/// One recompute() snapshot. Never updated in place — a new row is inserted on every
+/// recompute so history is retained for trend graphs and clinician reports (CLAUDE.md §7).
+model DomainProfileRecord {
+  id         String   @id @default(cuid())
+  childId    String
+  child      Child    @relation(fields: [childId], references: [id])
+  computedAt DateTime
+  /// DomainFinding[] — { domain, level, score, confidence, evidence_refs[] }.
+  findings   Json
+
+  @@index([childId, computedAt])
+}
+
+model SupportLevelEstimateRecord {
+  id         String   @id @default(cuid())
+  childId    String
+  child      Child    @relation(fields: [childId], references: [id])
+  level      String
+  confidence String
+  computedAt DateTime
+
+  @@index([childId, computedAt])
+}
+
+model RedFlagRecord {
+  id           String   @id @default(cuid())
+  childId      String
+  child        Child    @relation(fields: [childId], references: [id])
+  type         String
+  triggeredAt  DateTime
+  evidenceRefs Json
+  resolved     Boolean  @default(false)
+
+  @@index([childId])
+}
+
+model SupportPlanRecord {
+  id             String   @id @default(cuid())
+  childId        String
+  child          Child    @relation(fields: [childId], references: [id])
+  weekNumber     Int
+  tasks          Json
+  scripts        Json
+  rewards        Json
+  checklistState Json
+
+  @@index([childId])
+}
+
+model ProgressLogRecord {
+  id        String   @id @default(cuid())
+  childId   String
+  child     Child    @relation(fields: [childId], references: [id])
+  metric    String
+  value     Json
+  timestamp DateTime
+  note      String?
+
+  @@index([childId])
+}
+
+/// Opt-in only (CLAUDE.md §2 rule 9) — a row must only be created alongside a fresh,
+/// per-instance consent flag from the app layer. Not enforced at the DB layer here.
+model MediaAssetRecord {
+  id              String   @id @default(cuid())
+  childId         String
+  child           Child    @relation(fields: [childId], references: [id])
+  type            String
+  consentId       String
+  retentionExpiry DateTime
+  encryptedUri    String
+
+  @@index([childId])
+}
+
+model ReportRecord {
+  id          String   @id @default(cuid())
+  childId     String
+  child       Child    @relation(fields: [childId], references: [id])
+  generatedAt DateTime
+  pdfUri      String
+  sharedWith  String[]
+
+  @@index([childId])
+}
