@@ -16,6 +16,13 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # @prisma/client's own postinstall can't find a non-default schema location, so the
+      # generated client types for apps/backend/prisma/schema.prisma must be generated
+      # explicitly before typecheck/tests run. No real DB is needed for `generate` — only a
+      # DATABASE_URL string for the schema's env() reference to resolve.
+      - run: pnpm --filter @earlysteps/backend prisma:generate
+        env:
+          DATABASE_URL: 'postgresql://user:password@localhost:5432/earlysteps?schema=public'
       - run: pnpm typecheck
       - run: pnpm lint
       # Safety gate: banned words + off-list result labels in content/prompts (CLAUDE.md §10).

@@ -44,8 +44,19 @@ pnpm --filter @earlysteps/backend exec prisma migrate dev --name init
 
 ## Commands
 
+**Required after every fresh clone / `pnpm install`** — `@prisma/client`'s own postinstall
+can't find a non-default schema location (`apps/backend/prisma/schema.prisma`), so the
+generated client types don't exist until you run this explicitly. `pnpm typecheck` and
+`pnpm test` will fail with confusing "property does not exist on type PrismaService" errors
+without it — this only needs a `DATABASE_URL` string to resolve the schema's `env()`
+reference, not a real running database:
+
 ```bash
-pnpm --filter @earlysteps/backend prisma:generate   # generate the Prisma client
+cp .env.example .env   # or export DATABASE_URL yourself
+pnpm --filter @earlysteps/backend prisma:generate
+```
+
+```bash
 pnpm --filter @earlysteps/backend start:dev          # run with ts-node --watch (needs a live DB)
 pnpm --filter @earlysteps/backend typecheck
 pnpm test                                            # includes this app's integration tests (Vitest)
