@@ -39,7 +39,13 @@ const bannedPattern = new RegExp(`\\b(${BANNED_WORDS.join('|')})\\b`, 'i');
  * pathologise the child. Each entry is an auditable decision — new occurrences still fail.
  * (The banned-word rule targets words applied TO the child, not "no wrong answer" reassurance.)
  */
-const ALLOWLISTED_PHRASES = ["there's no wrong answer", 'no wrong answer'];
+const ALLOWLISTED_PHRASES = [
+  "there's no wrong answer",
+  'no wrong answer',
+  // Product plan §4.8's mandated red-flag escalation text, verbatim — a reassuring negation
+  // ("nothing is wrong"), not a defect-label applied to the child.
+  'seriously wrong',
+];
 
 // The only approved caregiver-facing result strings (CLAUDE.md §2 rules 2–3).
 const APPROVED_LABELS = new Set([

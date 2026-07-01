@@ -6,4 +6,6 @@ export * from './schema.js';
 export * from './questions.js';
 export * from './weights.js';
 export * from './resultCopy.js';
+export * from './redFlagCopy.js';
+export * from './consentCopy.js';
 export * from './validateContent.js';

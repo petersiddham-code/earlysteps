@@ -7,6 +7,7 @@
  * any problem is an error, not a warning.
  */
 import {
+  CONSENT_SCOPES,
   SIGN_LEVEL_TO_LABEL,
   SUPPORT_LEVEL_TO_TERM,
   SCREENING_DISCLAIMER,
@@ -17,6 +18,7 @@ import { questionBankSchema } from './schema.js';
 import { QUESTION_BANKS, allQuestions } from './questions.js';
 import { WEIGHTS } from './weights.js';
 import { RESULT_COPY } from './resultCopy.js';
+import { CONSENT_COPY } from './consentCopy.js';
 
 export interface ValidationResult {
   ok: boolean;
@@ -77,6 +79,13 @@ export function validateContent(): ValidationResult {
   for (const level of SUPPORT_LEVELS) {
     if (RESULT_COPY.support_level_terms[level] !== SUPPORT_LEVEL_TO_TERM[level]) {
       errors.push(`result-copy: support_level_terms.${level} is off-list`);
+    }
+  }
+
+  // 5. Every consent scope in the vocabulary has copy — no silent gaps in the consent screen.
+  for (const scope of CONSENT_SCOPES) {
+    if (!CONSENT_COPY.scopes[scope]) {
+      errors.push(`consent-copy: missing copy for scope '${scope}'`);
     }
   }
 

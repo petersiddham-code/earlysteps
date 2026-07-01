@@ -28,3 +28,4 @@ jobs:
       # Safety gate: banned words + off-list result labels in content/prompts (CLAUDE.md §10).
       - run: pnpm lint:content
       - run: pnpm test:coverage
+      - run: pnpm test:mobile

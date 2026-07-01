@@ -91,3 +91,15 @@ export const APPROVED_DIFFERENCE_TERMS = [
   'sensory needs',
   'learning style',
 ] as const;
+
+/**
+ * Layered consent scopes (product plan §4.7, CLAUDE.md §6 `<ConsentToggle />`). Each is
+ * togglable independently — never bundled into a single "I agree" checkbox.
+ */
+export const CONSENT_SCOPES = [
+  'data_storage',
+  'ai_analysis',
+  'media_capture',
+  'professional_sharing',
+] as const;
+export type ConsentScope = (typeof CONSENT_SCOPES)[number];

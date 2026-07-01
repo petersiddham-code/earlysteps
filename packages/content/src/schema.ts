@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import {
   BANNED_WORDS,
+  CONSENT_SCOPES,
   DOMAINS,
   QUESTION_TYPES,
   SIGN_LEVELS,
@@ -19,7 +20,13 @@ const bannedWordPattern = new RegExp(`\\b(${BANNED_WORDS.join('|')})\\b`, 'i');
  * pathologise the child (the rule targets words applied TO the child). Keep in sync with
  * scripts/lint-content.mjs ALLOWLISTED_PHRASES. New/unlisted occurrences still fail.
  */
-const ALLOWLISTED_PHRASES = ["there's no wrong answer", 'no wrong answer'];
+const ALLOWLISTED_PHRASES = [
+  "there's no wrong answer",
+  'no wrong answer',
+  // Product plan §4.8's mandated red-flag escalation text, verbatim — a reassuring negation
+  // ("nothing is wrong"), not a defect-label applied to the child.
+  'seriously wrong',
+];
 
 const notBanned = (s: string) => {
   if (!bannedWordPattern.test(s)) return true;
@@ -89,6 +96,41 @@ export const resultCopySchema = z.object({
   support_level_terms: z.record(z.enum(SUPPORT_LEVELS), z.string()),
 });
 
+/** Red-flag escalation copy (product plan §4.8): calm, non-alarmist, never diagnostic. */
+export const redFlagCopySchema = z.object({
+  version: z.string(),
+  locale: z.string(),
+  needs_clinical_signoff: z.boolean(),
+  note: z.string(),
+  base_message: safeCopyNonEmpty,
+  next_steps_heading: safeCopyNonEmpty,
+  urgent_resource_heading: safeCopyNonEmpty,
+  urgent_resource_message: safeCopyNonEmpty,
+});
+
+const consentScopeCopySchema = z.object({
+  label: safeCopyNonEmpty,
+  explanation: safeCopyNonEmpty,
+});
+
+/**
+ * Layered consent copy (product plan §4.7): a 1-line plain explanation per scope. Built as an
+ * explicit object (one required key per scope), not z.record — a record's value type is
+ * optional-indexed under TS access, which would force every caller to null-check copy that's
+ * actually guaranteed complete (enforced by validateContent()).
+ */
+export const consentCopySchema = z.object({
+  version: z.string(),
+  locale: z.string(),
+  scopes: z.object(
+    Object.fromEntries(
+      CONSENT_SCOPES.map((scope) => [scope, consentScopeCopySchema]),
+    ) as Record<(typeof CONSENT_SCOPES)[number], typeof consentScopeCopySchema>,
+  ),
+});
+
 export type WeightsTable = z.infer<typeof weightsTableSchema>;
 export type Indicator = z.infer<typeof indicatorSchema>;
 export type ResultCopy = z.infer<typeof resultCopySchema>;
+export type RedFlagCopy = z.infer<typeof redFlagCopySchema>;
+export type ConsentCopy = z.infer<typeof consentCopySchema>;
