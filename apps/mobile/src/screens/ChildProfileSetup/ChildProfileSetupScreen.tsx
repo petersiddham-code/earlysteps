@@ -57,7 +57,7 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
         languages,
       });
       await setChildId(child.id);
-      navigation.replace('ComingSoon');
+      navigation.replace('Questionnaire');
     } catch {
       setError("We couldn't save that. Please try again.");
     } finally {

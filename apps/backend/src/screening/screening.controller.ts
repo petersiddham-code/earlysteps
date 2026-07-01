@@ -25,4 +25,14 @@ export class ScreeningController {
   getResults(@Param('childId') childId: string): Promise<ResultsView> {
     return this.screeningService.getResults(childId);
   }
+
+  /**
+   * Raw answer history — lets a client reconstruct caregiver-authored content (e.g. the
+   * strengths/interests answers) without re-deriving it server-side. Read-only; scoring
+   * itself only ever happens via submitIntakeResponses.
+   */
+  @Get('intake-responses')
+  getIntakeResponses(@Param('childId') childId: string): Promise<IntakeResponse[]> {
+    return this.screeningService.getIntakeResponses(childId);
+  }
 }

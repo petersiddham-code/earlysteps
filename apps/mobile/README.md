@@ -1,26 +1,31 @@
 # @earlysteps/mobile
 
-React Native (Expo) app implementing the real onboarding flow against the live backend API
-(product plan Screens 1–3): Splash → Consent Center → Child Profile Setup. The Parent
-Questionnaire and Results screens (Screens 4, 7) are next — `ComingSoonScreen` is the
-temporary landing spot after onboarding until those exist.
+React Native (Expo) app implementing the **complete onboarding-to-results flow** against the
+live backend API (product plan Screens 1–4, 7): Splash → Consent Center → Child Profile Setup
+→ Parent Questionnaire → Results. This is the first fully closable loop — a real family can be
+onboarded, a real child registered, real questions answered, and real (deterministically
+scored) results seen, all through the actual backend, no sample data anywhere.
 
 ## What's implemented
 
-**`src/api/`** — typed client for every backend route (see the API-client PR); every screen
-below is wired to the real endpoints, not sample data.
+**`src/api/`** — typed client for every backend route; every screen below is wired to the real
+endpoints, not sample data.
 
 **`src/session/`** — `SessionProvider`/`useSession`: the current `familyId`/`childId`
 persisted via `AsyncStorage` so the app resumes where it left off across restarts, instead of
 re-onboarding every launch.
 
 **`src/navigation/`** — a `@react-navigation/native-stack` navigator: `Splash` (routes based
-on resumed session state) → `ConsentCenter` → `ChildProfileSetup` → `ComingSoon`.
+on resumed session state) → `ConsentCenter` → `ChildProfileSetup` → `Questionnaire` →
+`Results`.
 
 **`src/screens/`**:
 
-- **`SplashScreen`** — waits for the session to load, then routes: no family yet →
-  ConsentCenter; a family but no child → ChildProfileSetup; both → onward.
+- **`SplashScreen`** — no family yet → ConsentCenter; a family but no child → ChildProfileSetup;
+  both → straight to Results, **never back through the Questionnaire** on a resumed session —
+  the scoring engine doesn't dedupe repeated answers to the same question yet
+  (`docs/clinical-review/content-gaps.md` item 7), so this screen is deliberately designed to
+  never trigger that.
 - **`ConsentCenterScreen`** — creates a `Family` on first visit (consent itself is granted via
   separate, per-scope `PATCH` calls after — never bundled into account creation, CLAUDE.md §2
   rule 9), renders all four `<ConsentToggle/>`s wired to `updateConsent()`. "Continue" proceeds
@@ -31,8 +36,21 @@ on resumed session state) → `ConsentCenter` → `ChildProfileSetup` → `Comin
   `MVP_AGE_BANDS` (Toddler/Preschool) — the other two bands have no question content yet
   (`docs/clinical-review/content-gaps.md` item 4), so offering them would dead-end at an empty
   questionnaire. Calls `createChild()`, persists the id, moves on.
-- **`ComingSoonScreen`** — confirms the saved family/child ids and offers "Start over" (clears
-  the session, back to Splash) until the questionnaire ships.
+- **`QuestionnaireScreen`** + **`QuestionRenderer`** — renders the universal questions plus the
+  child's age-band bank straight from `@earlysteps/content` (CLAUDE.md §5 — never hardcoded).
+  `[child]` is interpolated with the real nickname. Every question type renders as either a
+  single-select pill list (`buttons`/`dropdown`/`emoji_slider` — the content's option labels
+  already carry the visual meaning, e.g. emoji baked into the label text) or multi-select chips
+  (`chip_multi_select`). Nothing is required — only answered questions are submitted, matching
+  "I'm not sure is always an option, never a trap" (product plan §4.1b); the scoring engine
+  already treats sparse answers safely (confidence caps at low).
+- **`ResultsScreen`** — fetches the computed results *and* the raw answer history, deriving:
+  **strengths** from the caregiver's own U9/U10 answers reflected back verbatim (never
+  invented), and **needs** as a plain list of non-low domains named with the approved
+  respectful vocabulary. Neither is the LLM-summary narrative product plan §9.3 eventually
+  specifies (no LLM wiring exists) — see `docs/clinical-review/content-gaps.md` item 8 for why
+  this is an honest interim, not a shortcut. Renders `<ScreeningDisclaimer/>`,
+  `<StrengthsFirstList/>`, `<TrafficLightBar/>` per domain, and `<RedFlagBanner/>`.
 
 **`src/components/`** — the five safety-carrying shared components (CLAUDE.md §6), now
 consumed by the real screens above instead of a standalone demo:

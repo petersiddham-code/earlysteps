@@ -8,8 +8,11 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
 /**
  * Routes based on resumed session state (product plan Screen 1): no family yet -> Consent
- * Center; a family but no child -> Child Profile Setup; both -> onward (ComingSoon until the
- * questionnaire/results screens exist).
+ * Center; a family but no child -> Child Profile Setup; both -> straight to Results, never
+ * back through the Questionnaire. The scoring engine doesn't dedupe by question_id
+ * (see docs/clinical-review/content-gaps.md) — re-submitting the same answers on every resumed
+ * session would double-count them, so this screen deliberately never routes back to
+ * Questionnaire once a child exists.
  */
 export function SplashScreen({ navigation }: Props) {
   const { isLoading, familyId, childId } = useSession();
@@ -21,7 +24,7 @@ export function SplashScreen({ navigation }: Props) {
     } else if (!childId) {
       navigation.replace('ChildProfileSetup');
     } else {
-      navigation.replace('ComingSoon');
+      navigation.replace('Results');
     }
   }, [isLoading, familyId, childId, navigation]);
 

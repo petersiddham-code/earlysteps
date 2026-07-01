@@ -16,3 +16,8 @@ export function submitIntakeResponses(
 export function getResults(childId: string): Promise<ResultsView> {
   return apiClient.get<ResultsView>(`/children/${childId}/results`);
 }
+
+/** Raw answer history — used to reconstruct caregiver-authored content like strengths. */
+export function getIntakeResponses(childId: string): Promise<IntakeResponse[]> {
+  return apiClient.get<IntakeResponse[]>(`/children/${childId}/intake-responses`);
+}

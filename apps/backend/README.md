@@ -28,6 +28,10 @@ plan §6–§8). Scoring is always deterministic — this app calls `@earlysteps
   rule 9).
 - `GET /children/:childId/results` — return the latest results view, or 404 if nothing has
   been computed yet.
+- `GET /children/:childId/intake-responses` — the full raw answer history. Read-only; lets a
+  client reconstruct caregiver-authored content (e.g. `apps/mobile`'s Results screen deriving
+  strengths from the caregiver's own answers) without a server-side derivation endpoint per
+  use case. Scoring itself only ever happens via `submitIntakeResponses`.
 - The results view (`src/screening/results-view.ts`) strips the raw numeric domain score
   before it ever leaves the API — only the on-list `SignLevelLabel` + confidence per domain,
   the support-level term + confidence, the recommendation tier, and the verbatim

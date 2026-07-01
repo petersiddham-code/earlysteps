@@ -66,6 +66,9 @@ scope stored/toggled independently, fail-safe default (`{}` = nothing granted).
 anything, per CLAUDE.md §2 rule 9; an unconsented or unknown child gets a 403, never a silent
 write.
 
+Mobile is now wired end to end (Splash → Consent Center → Child Setup → Questionnaire →
+Results), all against the real API — no more sample-data demo screen.
+
 Still open:
 - **No auth.** Every endpoint is unauthenticated — this mirrors the screening endpoints'
   existing (already-flagged) gap, not a new one, but it means none of this is real
@@ -74,5 +77,34 @@ Still open:
   `professional_sharing` are stored and independently toggleable (Consent Center has something
   real to persist), but nothing currently gates on them — no LLM calls, media capture, or
   report-sharing feature exists yet to enforce them against.
-- **Mobile isn't wired to these endpoints.** `<ConsentToggle/>` and the demo screen use local
-  component state / sample data; nothing calls the real API yet.
+
+## 7. Scoring engine does not dedupe repeated answers to the same question (BLOCKER for re-answering)
+
+`scoreDomains()` (`packages/scoring-engine/src/scoreDomain.ts`) iterates every `IntakeResponse`
+with no dedup by `question_id` — if the same question is answered twice across separate
+submissions (e.g. a caregiver revisits the questionnaire and changes an answer), **both**
+answers contribute to the domain's raw/max score, inflating the denominator and distorting the
+result rather than correctly using only the latest answer. Confirmed by reading the
+implementation while building `apps/mobile`'s Questionnaire screen; not yet fixed.
+
+Mitigated in the UI for now, not fixed at the source: `SplashScreen` deliberately never routes
+back to the Questionnaire once a child exists (routes straight to Results instead), so the
+mobile app can't trigger this by design. But any other client (a future edit-answers feature,
+a second device, direct API use) can still hit it. Needs a real fix — most likely: recompute
+should dedupe `IntakeResponse[]` by `question_id`, keeping only the most recent timestamp per
+question, before scoring.
+
+## 8. Results-screen "strengths" and "needs" are not the LLM-summary narrative
+
+Product plan §9.3 has an LLM turn raw evidence into a "top 5 strengths / top 5 support needs"
+narrative — not built yet (no LLM wiring exists at all). `apps/mobile`'s `ResultsScreen`
+displays something honest in the meantime, not a placeholder claim:
+- **Strengths**: the caregiver's own answers to the universal strengths questions (U9/U10),
+  reflected back verbatim as their selected option labels — never invented, never summarized.
+- **Needs**: a plain, deterministic list of domains that scored above "Low signs observed,"
+  named with the approved respectful domain vocabulary (`DOMAIN_DISPLAY_NAMES`) — not narrative
+  prose, just a direct data-grounded list.
+
+This satisfies CLAUDE.md §2 rule 6 (strengths render before/alongside needs) structurally, but
+is not what §9.3 ultimately specifies. Replace once the results-summary LLM prompt (already
+drafted in `src/ai/prompts/results-summary.md`) is actually wired up.
