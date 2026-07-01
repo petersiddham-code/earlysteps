@@ -6,3 +6,4 @@ export * from './vocabulary.js';
 export * from './domains.js';
 export * from './questions.js';
 export * from './profile.js';
+export * from './family.js';

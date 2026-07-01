@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type { IntakeResponse } from '@earlysteps/shared-types';
 import { recompute } from '@earlysteps/scoring-engine';
 import {
@@ -6,22 +11,39 @@ import {
   type ScreeningRepository,
 } from './screening.repository.js';
 import { toResultsView, type ResultsView } from './results-view.js';
+import {
+  FAMILIES_REPOSITORY,
+  type FamiliesRepository,
+} from '../families/families.repository.js';
 
 @Injectable()
 export class ScreeningService {
   constructor(
     @Inject(SCREENING_REPOSITORY) private readonly repository: ScreeningRepository,
+    @Inject(FAMILIES_REPOSITORY) private readonly familiesRepository: FamiliesRepository,
   ) {}
 
   /**
    * Persists the new answers, then recomputes against the child's FULL answer history (not
    * just this batch) — recompute() is stateless and has no memory of prior calls, so scoring
    * must always see everything answered so far. Recompute is never partial.
+   *
+   * Requires data_storage consent (CLAUDE.md §2 rule 9, product plan §4.7) before persisting
+   * anything — fail-safe: no recorded grant means no write. The other three consent scopes
+   * (ai_analysis, media_capture, professional_sharing) aren't enforced here since no feature
+   * that needs them exists yet (no LLM calls, no media capture, no report sharing).
    */
   async submitIntakeResponses(
     childId: string,
     newResponses: IntakeResponse[],
   ): Promise<ResultsView> {
+    const hasConsent = await this.familiesRepository.hasConsent(childId, 'data_storage');
+    if (!hasConsent) {
+      throw new ForbiddenException(
+        'Saving answers requires data-storage consent for this child. Please grant it first.',
+      );
+    }
+
     await this.repository.saveIntakeResponses(childId, newResponses);
     const allResponses = await this.repository.getIntakeResponses(childId);
 
