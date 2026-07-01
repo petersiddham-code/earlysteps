@@ -5,8 +5,8 @@
   "type": "module",
   "description": "NestJS + Prisma API — intake -> scoring -> results pipeline (CLAUDE.md §3, §7).",
   "scripts": {
-    "start:dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts",
+    "start:dev": "node --watch --loader ts-node/esm src/main.ts",
+    "start": "node --loader ts-node/esm src/main.ts",
     "typecheck": "tsc -p tsconfig.json",
     "prisma:generate": "prisma generate"
   },
@@ -26,6 +26,6 @@
   "devDependencies": {
     "@nestjs/testing": "^10.4.15",
     "prisma": "^5.22.0",
-    "tsx": "^4.19.2"
+    "ts-node": "^10.9.2"
   }
 }

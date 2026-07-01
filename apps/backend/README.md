@@ -46,15 +46,24 @@ pnpm --filter @earlysteps/backend exec prisma migrate dev --name init
 
 ```bash
 pnpm --filter @earlysteps/backend prisma:generate   # generate the Prisma client
-pnpm --filter @earlysteps/backend start:dev          # run with tsx watch (needs a live DB)
+pnpm --filter @earlysteps/backend start:dev          # run with ts-node --watch (needs a live DB)
 pnpm --filter @earlysteps/backend typecheck
 pnpm test                                            # includes this app's integration tests (Vitest)
 ```
 
+Dev/start run via `ts-node`'s ESM loader, not `tsx`/esbuild. NestJS's implicit constructor
+injection (`constructor(private readonly x: SomeService)`, no `@Inject()` needed) depends on
+TypeScript's `emitDecoratorMetadata`, which requires the real type checker — esbuild-based
+tools don't do that, so `tsx` silently leaves every implicitly-typed constructor param
+`undefined` at runtime (confirmed by hand: it does NOT throw at startup, only when a route
+handler runs). `ts-node` runs the actual TypeScript compiler and emits correct
+`design:paramtypes` metadata. Verified with a throwaway HTTP smoke test hitting both routes.
+
 Like the pure packages, there is no compiled production build yet — `start`/`start:dev` run
-TypeScript source directly via `tsx`. A real deploy needs either a bundler (esbuild/tsup) or
-TypeScript project references to emit a `dist/` that doesn't try to compile the whole workspace
-under one `rootDir`; that's a follow-up once there's real infra to deploy to.
+TypeScript source directly. A real deploy needs either a bundler (esbuild/tsup, if paired with
+an explicit decorator-metadata plugin) or TypeScript project references to emit a `dist/` that
+doesn't try to compile the whole workspace under one `rootDir`; that's a follow-up once there's
+real infra to deploy to.
 
 ## Testing without a live database
 
