@@ -5,7 +5,7 @@
   "description": "EarlySteps — home support & developmental screening companion (screening, not diagnosis).",
   "packageManager": "pnpm@11.9.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "scripts": {
     "build": "echo 'Foundation phase: packages are consumed from TS source (no emit step yet). Run: pnpm typecheck'",
