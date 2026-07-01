@@ -35,7 +35,7 @@ describe('SplashScreen', () => {
     );
   });
 
-  it('routes onward once both a family and a child exist', async () => {
+  it('routes straight to Results once both a family and a child exist', async () => {
     (useSession as jest.Mock).mockReturnValue({
       isLoading: false,
       familyId: 'f1',
@@ -43,7 +43,7 @@ describe('SplashScreen', () => {
     });
     const navigation = navProp();
     render(<SplashScreen navigation={navigation} route={{} as never} />);
-    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('ComingSoon'));
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Results'));
   });
 
   it('does not navigate while the session is still loading', () => {

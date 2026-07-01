@@ -58,7 +58,7 @@ describe('ChildProfileSetupScreen', () => {
       }),
     );
     expect(setChildId).toHaveBeenCalledWith('c1');
-    expect(navigation.replace).toHaveBeenCalledWith('ComingSoon');
+    expect(navigation.replace).toHaveBeenCalledWith('Questionnaire');
   });
 
   it('toggling a language chip twice removes it again', () => {

@@ -3,7 +3,8 @@ import type { RootStackParamList } from './types.js';
 import { SplashScreen } from '../screens/Splash/SplashScreen.js';
 import { ConsentCenterScreen } from '../screens/ConsentCenter/ConsentCenterScreen.js';
 import { ChildProfileSetupScreen } from '../screens/ChildProfileSetup/ChildProfileSetupScreen.js';
-import { ComingSoonScreen } from '../screens/ComingSoon/ComingSoonScreen.js';
+import { QuestionnaireScreen } from '../screens/Questionnaire/QuestionnaireScreen.js';
+import { ResultsScreen } from '../screens/Results/ResultsScreen.js';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -13,7 +14,8 @@ export function RootNavigator() {
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="ConsentCenter" component={ConsentCenterScreen} />
       <Stack.Screen name="ChildProfileSetup" component={ChildProfileSetupScreen} />
-      <Stack.Screen name="ComingSoon" component={ComingSoonScreen} />
+      <Stack.Screen name="Questionnaire" component={QuestionnaireScreen} />
+      <Stack.Screen name="Results" component={ResultsScreen} />
     </Stack.Navigator>
   );
 }

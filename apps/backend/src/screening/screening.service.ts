@@ -68,4 +68,8 @@ export class ScreeningService {
     }
     return toResultsView(snapshot.profile, snapshot.supportEstimate, snapshot.redFlags);
   }
+
+  getIntakeResponses(childId: string): Promise<IntakeResponse[]> {
+    return this.repository.getIntakeResponses(childId);
+  }
 }

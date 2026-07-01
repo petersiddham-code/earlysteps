@@ -144,6 +144,22 @@ describe('screening pipeline — intake -> scoring -> results', () => {
       NotFoundException,
     );
   });
+
+  it('getIntakeResponses returns the full raw answer history, not just the latest batch', async () => {
+    await service.submitIntakeResponses(childId, [
+      { ...r('T1', 'before_12mo'), child_id: childId },
+    ]);
+    await service.submitIntakeResponses(childId, [
+      { ...r('T4', 'looks_right_away'), child_id: childId },
+    ]);
+
+    const responses = await service.getIntakeResponses(childId);
+    expect(responses.map((res) => res.question_id).sort()).toEqual(['T1', 'T4']);
+  });
+
+  it('getIntakeResponses returns an empty array for a child with no answers yet', async () => {
+    expect(await service.getIntakeResponses('never-submitted')).toEqual([]);
+  });
 });
 
 describe('screening pipeline — data_storage consent gate (CLAUDE.md §2 rule 9)', () => {
