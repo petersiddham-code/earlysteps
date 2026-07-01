@@ -46,3 +46,20 @@ introduce a dedicated handling path.
 Primary (6–12y) and Teen (13–18y) banks from product plan §4.1c §D–E, plus the teen self-report
 flow, are defined in the spec but **not yet shipped** (MVP is Toddler + Preschool, product plan
 §11). No scoring weights exist for them.
+
+## 5. Recommendation-tier crosswalk is a placeholder heuristic
+
+`scoring-engine/src/recommendationTier.ts` (`deriveRecommendationTier`) decides which of the
+three §3.2 recommendation tiers to show. The product plan is explicit that red flags must
+trigger a recommendation (urgent ones → "strongly recommended soon"), but it does not specify
+what a red-flag-free `SupportLevelEstimate` of `high` should map to. The current rule — `high`
+support estimate alone also recommends formal assessment — is a reasonable interpretation, not
+a validated clinical threshold. Needs advisor sign-off before this drives real backend results.
+
+## 6. Family/child onboarding is out of scope for the backend screening pipeline
+
+`apps/backend`'s intake→scoring→results API operates on an existing `childId`; it does not
+include Family/Child creation, consent-flag enforcement (product plan §4.7/Module 7), or any
+onboarding flow. Those are Screen 1–3 (Splash, Consent Center, Child Profile Setup) concerns
+that belong to the mobile app plus a thin backend CRUD layer, not yet built. Do not treat the
+current API as consent-safe or ready to accept real family data.

@@ -16,7 +16,7 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "lint:content": "node scripts/lint-content.mjs",
-    "typecheck": "pnpm -r --filter \"./packages/*\" --filter \"./apps/mobile\" typecheck"
+    "typecheck": "pnpm -r --filter \"./packages/*\" --filter \"./apps/backend\" --filter \"./apps/mobile\" typecheck"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
