@@ -52,6 +52,9 @@ const ALLOWLISTED_PHRASES = [
 ];
 
 // The only approved caregiver-facing result strings (CLAUDE.md §2 rules 2–3).
+// 'Not enough information yet' is the minimum-evidence gate state (issue #22) —
+// PLACEHOLDER copy pending advisor sign-off; keep in sync with
+// INSUFFICIENT_EVIDENCE_LABEL in packages/shared-types/src/vocabulary.ts.
 const APPROVED_LABELS = new Set([
   'Low signs observed',
   'Some signs observed',
@@ -62,6 +65,7 @@ const APPROVED_LABELS = new Set([
   'mild support needs',
   'moderate support needs',
   'high support needs',
+  'Not enough information yet',
 ]);
 
 const errors = [];
@@ -125,6 +129,14 @@ try {
         );
       }
     }
+  }
+  // The "not enough information yet" state label (issue #22) must be on-list too; its
+  // detail sentences are covered by the banned-word scan above.
+  const insufficientLabel = labels.insufficient_evidence?.label;
+  if (!APPROVED_LABELS.has(insufficientLabel)) {
+    errors.push(
+      `[off-list label] labels.json insufficient_evidence.label: ${JSON.stringify(insufficientLabel)}`,
+    );
   }
 } catch (e) {
   errors.push(`[labels.json] ${e.message}`);

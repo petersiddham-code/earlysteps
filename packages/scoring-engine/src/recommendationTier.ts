@@ -11,6 +11,12 @@
  * from SupportLevelEstimate alone (no red flag present) to a recommendation tier. The rule
  * below — a "high" support estimate also recommends assessment even with zero red flags —
  * is a reasonable interpretation, not a clinically validated threshold.
+ *
+ * Minimum-evidence gate (issue #22): with too little evidence overall, the answer is `null`
+ * — no tier at all. Even "Support activities can begin now" reads as "we checked and this
+ * is the next step", which one answer cannot support. Red flags are checked FIRST because
+ * they are EXEMPT from the gate (CLAUDE.md §2 rule 8): one serious sign always yields a
+ * recommendation, however sparse the rest of the intake.
  */
 import {
   URGENT_RED_FLAG_TYPES,
@@ -22,13 +28,18 @@ import type { RecommendationTier } from '@earlysteps/shared-types';
 export function deriveRecommendationTier(
   redFlags: RedFlag[],
   supportEstimate: SupportLevelEstimate | null,
-): RecommendationTier {
+  sufficientOverallEvidence: boolean,
+): RecommendationTier | null {
+  // Red flags first — EXEMPT from the minimum-evidence gate below.
   const hasUrgentFlag = redFlags.some((f) =>
     (URGENT_RED_FLAG_TYPES as readonly string[]).includes(f.type),
   );
   if (hasUrgentFlag) return 'Formal assessment strongly recommended soon';
 
   if (redFlags.length > 0) return 'Formal assessment is recommended';
+
+  // Not enough information yet — no recommendation of any kind (fail closed).
+  if (!sufficientOverallEvidence) return null;
 
   if (supportEstimate?.level === 'high') return 'Formal assessment is recommended';
 

@@ -99,6 +99,29 @@ export const resultCopySchema = z.object({
   sign_level_labels: z.record(z.enum(SIGN_LEVELS), z.string()),
   recommendation_tiers: z.record(z.string(), z.string()),
   support_level_terms: z.record(z.enum(SUPPORT_LEVELS), z.string()),
+  /**
+   * The "not enough information yet" state (issue #22 minimum-evidence gate). `label` must
+   * exactly match INSUFFICIENT_EVIDENCE_LABEL (enforced by validateContent()); the detail
+   * sentences are the caregiver-facing explanation on the Results screen.
+   */
+  insufficient_evidence: z.object({
+    label: safeCopyNonEmpty,
+    domain_detail: safeCopyNonEmpty,
+    overall_detail: safeCopyNonEmpty,
+  }),
+});
+
+/**
+ * Minimum-evidence floors (issue #22): below these counts of answered scored questions the
+ * engine emits "not enough information yet" instead of a level/estimate/tier. Clinical
+ * content — placeholder values until advisor sign-off (needs_clinical_signoff).
+ */
+export const evidenceFloorsSchema = z.object({
+  version: z.string(),
+  needs_clinical_signoff: z.boolean(),
+  note: z.string(),
+  min_scored_answers_per_domain: z.number().int().positive(),
+  min_scored_answers_overall: z.number().int().positive(),
 });
 
 /** Red-flag escalation copy (product plan §4.8): calm, non-alarmist, never diagnostic. */
@@ -137,5 +160,6 @@ export const consentCopySchema = z.object({
 export type WeightsTable = z.infer<typeof weightsTableSchema>;
 export type Indicator = z.infer<typeof indicatorSchema>;
 export type ResultCopy = z.infer<typeof resultCopySchema>;
+export type EvidenceFloors = z.infer<typeof evidenceFloorsSchema>;
 export type RedFlagCopy = z.infer<typeof redFlagCopySchema>;
 export type ConsentCopy = z.infer<typeof consentCopySchema>;

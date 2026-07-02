@@ -20,21 +20,43 @@ function navProp() {
 const RESULTS = {
   disclaimer: SCREENING_DISCLAIMER,
   computedAt: '2026-07-01T00:00:00.000Z',
+  basedOnAnswers: 12,
   domains: [
     {
       domain: 'social' as const,
+      status: 'scored' as const,
       label: 'Many signs observed' as const,
       confidence: 'low' as const,
     },
     {
       domain: 'communication' as const,
+      status: 'scored' as const,
       label: 'Low signs observed' as const,
       confidence: 'high' as const,
     },
   ],
   supportLevel: { term: 'high support needs' as const, confidence: 'low' as const },
+  insufficientEvidenceOverall: false,
   redFlagTypes: ['no_name_response' as const],
   recommendationTier: 'Formal assessment is recommended' as const,
+};
+
+/** The minimum-evidence gate output (issue #22): one answer, nothing to show but honesty. */
+const INSUFFICIENT_RESULTS = {
+  disclaimer: SCREENING_DISCLAIMER,
+  computedAt: '2026-07-01T00:00:00.000Z',
+  basedOnAnswers: 1,
+  domains: [
+    {
+      domain: 'social' as const,
+      status: 'insufficient_evidence' as const,
+      label: 'Not enough information yet' as const,
+    },
+  ],
+  supportLevel: null,
+  insufficientEvidenceOverall: true,
+  redFlagTypes: [] as never[],
+  recommendationTier: null,
 };
 
 const clearChildId = jest.fn().mockResolvedValue(undefined);
@@ -103,6 +125,55 @@ describe('ResultsScreen', () => {
     // "Low signs observed" domain (communication) should NOT show up as a need — only once,
     // in its own TrafficLightBar.
     expect(screen.getAllByText('communication differences')).toHaveLength(1);
+  });
+
+  it('shows the provenance line — what the results rest on and when (issue #22)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(screen.getByTestId('provenance-line')).toHaveTextContent(
+      /Based on 12 answers · last updated /,
+    );
+  });
+
+  it('renders "not enough information yet" for a gated view: no level, no support needs, no recommendation (issue #22)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(INSUFFICIENT_RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(screen.getByText('Not enough information yet')).toBeTruthy();
+    expect(screen.getByTestId('insufficient-domain-detail')).toBeTruthy();
+    expect(screen.getByTestId('insufficient-overall-detail')).toBeTruthy();
+    // Nothing stronger than the evidence: no sign level, no support term, no tier.
+    expect(screen.queryByText(/signs observed/i)).toBeNull();
+    expect(screen.queryByText(/(mild|moderate|high) support needs/i)).toBeNull();
+    expect(screen.queryByText(/Formal assessment|Support activities/i)).toBeNull();
+    // A gated domain is a gap, not a need — it renders once (its own row), never again
+    // in the derived support-needs list.
+    expect(screen.getAllByText('social interaction style')).toHaveLength(1);
+    // Singular provenance for a single answer.
+    expect(screen.getByTestId('provenance-line')).toHaveTextContent(/Based on 1 answer /);
+  });
+
+  it('red flags are EXEMPT from the gate: banner and recommendation still surface on a gated view (issue #22)', async () => {
+    (getResults as jest.Mock).mockResolvedValue({
+      ...INSUFFICIENT_RESULTS,
+      redFlagTypes: ['self_injury_risk' as const],
+      recommendationTier: 'Formal assessment strongly recommended soon' as const,
+    });
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(
+      screen.getByText(/may benefit from being seen soon by a doctor/i),
+    ).toBeTruthy();
+    expect(screen.getByText('Formal assessment strongly recommended soon')).toBeTruthy();
+    // The tier replaces the "not enough info" next-step copy — never both, they contradict.
+    expect(screen.queryByTestId('insufficient-overall-detail')).toBeNull();
   });
 
   it('shows the red flag banner for the returned red flag types', async () => {

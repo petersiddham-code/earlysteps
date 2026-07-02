@@ -53,21 +53,38 @@ describe('screening pipeline — intake -> scoring -> results', () => {
     } = await familiesRepository.seedChildWithConsent(['data_storage']));
   });
 
+  // Sized to clear the minimum-evidence floors (issue #22): >=3 scored answers per domain
+  // present and >=10 overall, so this stays the "results actually shown" happy path.
+  const reassuringBatch = [
+    r('T1', 'before_12mo'),
+    r('T2', 'short_sentences'),
+    r('T3', 'yes_often'),
+    r('T4', 'looks_right_away'),
+    r('T5', 'almost_always'),
+    r('T6', 'yes_often'),
+    r('T7', 'yes_usually'),
+    r('T12', 'no'),
+    r('T13', 'no'),
+    r('T14', 'wide_variety'),
+  ];
+
   it('low-signal case: reassuring answers produce all-low domains and begin-now tier', async () => {
-    const responses = [
-      r('T1', 'before_12mo'),
-      r('T4', 'looks_right_away'),
-      r('T5', 'almost_always'),
-      r('T6', 'yes_often'),
-    ].map((res) => ({ ...res, child_id: childId }));
+    const responses = reassuringBatch.map((res) => ({ ...res, child_id: childId }));
 
     const view = await service.submitIntakeResponses(childId, responses);
 
     expect(view.disclaimer).toBe(SCREENING_DISCLAIMER);
     expect(view.domains.length).toBeGreaterThan(0);
-    expect(view.domains.every((d) => d.label === 'Low signs observed')).toBe(true);
+    expect(
+      view.domains.every(
+        (d) => d.status === 'scored' && d.label === 'Low signs observed',
+      ),
+    ).toBe(true);
     expect(view.redFlagTypes).toEqual([]);
     expect(view.recommendationTier).toBe('Support activities can begin now');
+    expect(view.insufficientEvidenceOverall).toBe(false);
+    // Provenance (issue #22): the view says what it rests on.
+    expect(view.basedOnAnswers).toBe(reassuringBatch.length);
   });
 
   it('red-flag case: a concerning answer set surfaces a non-urgent red flag and recommends assessment', async () => {
@@ -82,14 +99,19 @@ describe('screening pipeline — intake -> scoring -> results', () => {
     expect(view.redFlagTypes).toContain('no_name_response');
     expect(view.recommendationTier).toBe('Formal assessment is recommended');
     const social = view.domains.find((d) => d.domain === 'social');
-    expect(social?.label).toBe('Many signs observed');
+    // 3 answers in the social domain — at the per-domain floor, so the level shows.
+    expect(social).toMatchObject({ status: 'scored', label: 'Many signs observed' });
   });
 
-  it('urgent red-flag case: self-injury risk escalates to strongly-recommended-soon', async () => {
+  it('urgent red-flag case: self-injury risk escalates to strongly-recommended-soon even as the ONLY answer (gate-exempt)', async () => {
     const responses = [{ ...r('RF_self_injury', 'yes'), child_id: childId }];
 
     const view = await service.submitIntakeResponses(childId, responses);
 
+    // One answer is far below every evidence floor (issue #22)…
+    expect(view.insufficientEvidenceOverall).toBe(true);
+    expect(view.supportLevel).toBeNull();
+    // …but red flags are EXEMPT (CLAUDE.md §2 rule 8): the flag surfaces and forces a tier.
     expect(view.redFlagTypes).toContain('self_injury_risk');
     expect(view.recommendationTier).toBe('Formal assessment strongly recommended soon');
   });
@@ -171,6 +193,88 @@ describe('screening pipeline — intake -> scoring -> results', () => {
 
   it('getIntakeResponses returns an empty array for a child with no answers yet', async () => {
     expect(await service.getIntakeResponses('never-submitted')).toEqual([]);
+  });
+
+  describe('minimum-evidence gate (issue #22) — fail closed at the API boundary', () => {
+    it('one answered question yields "not enough information yet", never a level or recommendation', async () => {
+      const view = await service.submitIntakeResponses(childId, [
+        { ...r('T4', 'after_few_tries'), child_id: childId },
+      ]);
+
+      expect(view.domains).toEqual([
+        {
+          domain: 'social',
+          status: 'insufficient_evidence',
+          label: 'Not enough information yet',
+        },
+      ]);
+      expect(view.supportLevel).toBeNull();
+      expect(view.recommendationTier).toBeNull();
+      expect(view.insufficientEvidenceOverall).toBe(true);
+      expect(view.basedOnAnswers).toBe(1);
+      // The disclaimer still ships with the gated view (CLAUDE.md §2 rule 5).
+      expect(view.disclaimer).toBe(SCREENING_DISCLAIMER);
+    });
+
+    it('a gated domain entry carries NO sign-level label or confidence key at all', async () => {
+      const view = await service.submitIntakeResponses(childId, [
+        { ...r('T4', 'doesnt_notice'), child_id: childId },
+      ]);
+      for (const domain of view.domains) {
+        expect(domain.status).toBe('insufficient_evidence');
+        expect(Object.keys(domain)).not.toContain('confidence');
+        expect(domain.label).toBe('Not enough information yet');
+      }
+    });
+
+    it('getResults inherits the gate and the provenance count (deduped, latest per question)', async () => {
+      await service.submitIntakeResponses(childId, [
+        { ...r('T4', 'doesnt_notice'), child_id: childId },
+      ]);
+      // Re-answering the same question must not inflate "Based on N answers".
+      await service.submitIntakeResponses(childId, [
+        { ...r('T4', 'looks_right_away'), child_id: childId },
+      ]);
+
+      const view = await service.getResults(childId);
+      expect(view.basedOnAnswers).toBe(1);
+      expect(view.insufficientEvidenceOverall).toBe(true);
+      expect(view.recommendationTier).toBeNull();
+    });
+
+    it('fails closed for snapshots computed before the gate existed (no sufficiency markers)', async () => {
+      // Simulates a pre-#22 stored snapshot: findings without answered_count /
+      // sufficient_evidence, plus a support estimate computed from a single answer.
+      await repository.saveComputedSnapshot(childId, {
+        profile: {
+          child_id: childId,
+          computed_at: AT,
+          findings: [
+            {
+              domain: 'social',
+              level: 'many',
+              score: 80,
+              confidence: 'low',
+              evidence_refs: [],
+            },
+          ],
+        },
+        supportEstimate: {
+          child_id: childId,
+          level: 'moderate',
+          confidence: 'low',
+          computed_at: AT,
+        },
+        redFlags: [],
+      });
+
+      const view = await service.getResults(childId);
+      expect(view.domains[0]).toMatchObject({ status: 'insufficient_evidence' });
+      // The pre-gate estimate must never reach a caregiver.
+      expect(view.supportLevel).toBeNull();
+      expect(view.recommendationTier).toBeNull();
+      expect(view.insufficientEvidenceOverall).toBe(true);
+    });
   });
 });
 

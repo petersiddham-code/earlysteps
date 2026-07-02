@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { EVIDENCE_FLOORS } from '@earlysteps/content';
 import { AUTO_ADVANCE_DELAY_MS, QuestionnaireScreen } from './QuestionnaireScreen';
 import { getChild, submitIntakeResponses } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
@@ -254,6 +255,44 @@ describe('QuestionnaireScreen', () => {
     expect(childId).toBe('c1');
     expect(responses).toHaveLength(1);
     expect(responses[0]).toMatchObject({ question_id: 'T4', answer: 'looks_right_away' });
+  });
+
+  it('sets expectations at the review step when very few questions were answered (issue #22)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    skipToReview();
+
+    expect(screen.getByText(/You answered 0 of \d+/)).toBeTruthy();
+    // Honest, guilt-free: the next screen will mostly say "not enough information yet".
+    expect(screen.getByTestId('low-evidence-notice')).toHaveTextContent(
+      /may not have much to share yet/,
+    );
+  });
+
+  it('drops the low-evidence notice once enough questions are answered (issue #22)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    // Walk the wizard answering "Not sure" wherever it exists (always an option, never a
+    // trap) until the evidence floor is met, skipping everything else.
+    let answered = 0;
+    for (let i = 0; i < 60 && !screen.queryByTestId('submit-button'); i++) {
+      const notSure = screen.queryByTestId('option-radio-not_sure');
+      if (notSure && answered < EVIDENCE_FLOORS.min_scored_answers_overall) {
+        fireEvent.press(notSure);
+        answered += 1;
+        fireEvent.press(screen.getByTestId('next-button'));
+      } else {
+        fireEvent.press(forwardButton()!);
+      }
+    }
+
+    expect(answered).toBeGreaterThanOrEqual(EVIDENCE_FLOORS.min_scored_answers_overall);
+    expect(screen.getByText(new RegExp(`You answered ${answered} of \\d+`))).toBeTruthy();
+    expect(screen.queryByTestId('low-evidence-notice')).toBeNull();
   });
 
   it('navigates to Results after a successful submit', async () => {

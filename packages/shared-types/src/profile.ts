@@ -48,6 +48,19 @@ export interface DomainFinding {
   score: number;
   confidence: Confidence;
   evidence_refs: EvidenceRef[];
+  /**
+   * How many scored (indicator-bearing, non-uncertain) answers this finding rests on.
+   * Optional only because snapshots computed before the minimum-evidence gate (issue #22)
+   * lack it — consumers MUST treat absence as 0 (fail closed).
+   */
+  answered_count?: number;
+  /**
+   * Minimum-evidence gate (issue #22): false when answered_count is below the per-domain
+   * floor (see @earlysteps/scoring-engine evidenceGate). Consumers MUST render the
+   * "not enough information yet" state instead of `level`/`score` unless this is
+   * strictly `true` — absence (pre-gate snapshots) means insufficient (fail closed).
+   */
+  sufficient_evidence?: boolean;
 }
 
 /** The full per-child domain profile. */

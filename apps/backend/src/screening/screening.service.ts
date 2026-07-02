@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { IntakeResponse } from '@earlysteps/shared-types';
-import { recompute } from '@earlysteps/scoring-engine';
+import { dedupeLatestByQuestion, recompute } from '@earlysteps/scoring-engine';
 import {
   SCREENING_REPOSITORY,
   type ScreeningRepository,
@@ -56,9 +56,10 @@ export class ScreeningService {
     const allResponses = await this.repository.getIntakeResponses(childId);
 
     const computedAt = new Date().toISOString();
-    const { profile, supportEstimate, redFlags } = recompute(allResponses, {
-      computedAt,
-    });
+    const { profile, supportEstimate, redFlags, answeredTotal } = recompute(
+      allResponses,
+      { computedAt },
+    );
 
     await this.repository.saveComputedSnapshot(childId, {
       ageBand: child.age_band,
@@ -67,7 +68,7 @@ export class ScreeningService {
       redFlags,
     });
 
-    return toResultsView(profile, supportEstimate, redFlags);
+    return toResultsView(profile, supportEstimate, redFlags, answeredTotal);
   }
 
   async getResults(childId: string): Promise<ResultsView> {
@@ -75,7 +76,17 @@ export class ScreeningService {
     if (!snapshot) {
       throw new NotFoundException(`No computed results yet for child ${childId}`);
     }
-    return toResultsView(snapshot.profile, snapshot.supportEstimate, snapshot.redFlags);
+    // Provenance (issue #22): "Based on N answers" counts the caregiver's current answers
+    // (latest per question) — recomputed from the raw history because snapshots don't
+    // store it. Responses only ever change via submitIntakeResponses, which always
+    // snapshots afterwards, so this count and the latest snapshot stay in step.
+    const responses = await this.repository.getIntakeResponses(childId);
+    return toResultsView(
+      snapshot.profile,
+      snapshot.supportEstimate,
+      snapshot.redFlags,
+      dedupeLatestByQuestion(responses).length,
+    );
   }
 
   getIntakeResponses(childId: string): Promise<IntakeResponse[]> {

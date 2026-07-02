@@ -15,7 +15,9 @@ function r(question_id: string, answer: IntakeResponse['answer']): IntakeRespons
   };
 }
 
-// A reassuring toddler intake — everything points to typical development.
+// A reassuring toddler intake — everything points to typical development. Sized to clear
+// the minimum-evidence floors (issue #22): >=3 scored answers in each domain present
+// (communication 3, social 4, sensory 3) and >=10 scored answers overall.
 const reassuring: IntakeResponse[] = [
   r('T1', 'before_12mo'),
   r('T2', 'short_sentences'),
@@ -24,11 +26,14 @@ const reassuring: IntakeResponse[] = [
   r('T5', 'almost_always'),
   r('T6', 'yes_often'),
   r('T7', 'yes_usually'),
+  r('T12', 'no'),
+  r('T13', 'no'),
+  r('T14', 'wide_variety'),
 ];
 
 describe('recompute — end-to-end pipeline (uses shipped content weights)', () => {
   it('produces an all-low profile for a reassuring intake', () => {
-    const { profile, supportEstimate, redFlags } = recompute(reassuring, {
+    const { profile, supportEstimate, redFlags, answeredTotal } = recompute(reassuring, {
       computedAt: AT,
     });
     expect(profile.findings.every((f) => f.level === 'low')).toBe(true);
@@ -36,6 +41,57 @@ describe('recompute — end-to-end pipeline (uses shipped content weights)', () 
     expect(redFlags).toEqual([]);
     expect(profile.computed_at).toBe(AT);
     expect(profile.child_id).toBe('child-1');
+    expect(answeredTotal).toBe(reassuring.length);
+  });
+
+  it('marks every finding evidence-sufficient for a complete-enough intake (issue #22)', () => {
+    const { profile, sufficientEvidenceOverall } = recompute(reassuring, {
+      computedAt: AT,
+    });
+    expect(profile.findings.length).toBeGreaterThan(0);
+    for (const f of profile.findings) {
+      expect(f.sufficient_evidence).toBe(true);
+      expect(f.answered_count).toBeGreaterThanOrEqual(3);
+    }
+    expect(sufficientEvidenceOverall).toBe(true);
+  });
+
+  it('gates a single-answer intake: finding kept for audit but marked insufficient, no estimate (issue #22)', () => {
+    const { profile, supportEstimate, sufficientEvidenceOverall, answeredTotal } =
+      recompute([r('T4', 'doesnt_notice')], { computedAt: AT });
+    const social = profile.findings.find((f) => f.domain === 'social');
+    // Level and score stay on the finding (audit/trend history)…
+    expect(social?.level).toBe('many');
+    // …but the finding is explicitly below the evidence floor: consumers must render
+    // "not enough information yet", never the level.
+    expect(social?.sufficient_evidence).toBe(false);
+    expect(social?.answered_count).toBe(1);
+    expect(supportEstimate).toBeNull();
+    expect(sufficientEvidenceOverall).toBe(false);
+    expect(answeredTotal).toBe(1);
+  });
+
+  it('per-domain gate: a thin domain stays insufficient even when the overall floor is met', () => {
+    const withThinDomain = [...reassuring, r('T11', 'not_really')];
+    const { profile, supportEstimate, sufficientEvidenceOverall } = recompute(
+      withThinDomain,
+      { computedAt: AT },
+    );
+    const repetitive = profile.findings.find((f) => f.domain === 'repetitive_behaviour');
+    expect(repetitive?.sufficient_evidence).toBe(false);
+    expect(sufficientEvidenceOverall).toBe(true);
+    expect(supportEstimate).not.toBeNull();
+  });
+
+  it('red flags are EXEMPT from the gate: one serious sign fires as the only answer given (CLAUDE.md §2 rule 8)', () => {
+    const { redFlags, supportEstimate, sufficientEvidenceOverall } = recompute(
+      [r(RF_LOSS_OF_SKILLS_Q, 'yes')],
+      { computedAt: AT },
+    );
+    expect(redFlags.map((f) => f.type)).toContain('loss_of_skills');
+    // The gate still withholds the estimate — it only must never hide the flag.
+    expect(supportEstimate).toBeNull();
+    expect(sufficientEvidenceOverall).toBe(false);
   });
 
   it('raises a red flag INDEPENDENTLY of a low domain score (§8.5 — never averaged away)', () => {
@@ -147,6 +203,8 @@ describe('recompute — end-to-end pipeline (uses shipped content weights)', () 
       social: 'some',
       sensory: 'some',
     });
-    expect(supportEstimate).not.toBeNull();
+    // Only 3 scored answers — below the overall minimum-evidence floor (issue #22), so no
+    // estimate. The per-domain levels above prove the YA weights are wired end-to-end.
+    expect(supportEstimate).toBeNull();
   });
 });

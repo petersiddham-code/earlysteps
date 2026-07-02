@@ -11,7 +11,11 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { getQuestionBank, isAskedInQuestionnaire } from '@earlysteps/content';
+import {
+  EVIDENCE_FLOORS,
+  getQuestionBank,
+  isAskedInQuestionnaire,
+} from '@earlysteps/content';
 import {
   makeFreeTextAnswer,
   type Child,
@@ -360,6 +364,17 @@ export function QuestionnaireScreen({ navigation }: Props) {
             You answered {answeredCount} of {total}. Skipped ones are completely fine — we
             only use what you chose to share, and you can always come back.
           </Text>
+          {/* Honesty at the review step (issue #22): below the minimum-evidence floor the
+              next screen will mostly say "not enough information yet" — set that
+              expectation here so it never reads as a surprise or a reproach. Skipping
+              stays guilt-free; answeredCount also counts unscored (profile/strengths)
+              answers, so if anything this under-warns, never over-warns. */}
+          {answeredCount < EVIDENCE_FLOORS.min_scored_answers_overall && (
+            <Text style={styles.lowEvidenceNotice} testID="low-evidence-notice">
+              That's only a little to go on so far, so the next screen may not have much
+              to share yet. You can answer more whenever you're ready.
+            </Text>
+          )}
 
           {error && <Text style={styles.errorText}>{error}</Text>}
           {consentDenied && (
@@ -480,6 +495,11 @@ const styles = StyleSheet.create({
   },
   reviewHeading: { ...type.title, color: colors.ink, marginBottom: spacing.sm },
   reviewBody: { ...type.body, color: colors.inkSoft },
+  lowEvidenceNotice: {
+    ...type.caption,
+    color: colors.inkSoft,
+    marginTop: spacing.md,
+  },
   errorText: {
     ...type.body,
     color: colors.error,

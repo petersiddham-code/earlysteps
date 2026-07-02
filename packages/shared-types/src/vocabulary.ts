@@ -34,6 +34,21 @@ export const RECOMMENDATION_TIERS = [
 ] as const;
 export type RecommendationTier = (typeof RECOMMENDATION_TIERS)[number];
 
+/**
+ * The minimum-evidence "not enough information yet" state (issue #22): rendered INSTEAD of a
+ * sign level, support-level term, or recommendation tier when fewer questions were answered
+ * than the evidence floors in `@earlysteps/content` allow (gate lives in
+ * `@earlysteps/scoring-engine`). Red flags are EXEMPT from the gate and always surface
+ * (CLAUDE.md §2 rule 8).
+ *
+ * PLACEHOLDER COPY pending clinical sign-off — this is a NEW result-state string beyond the
+ * fixed approved list in CLAUDE.md §2 rule 2, recorded in
+ * docs/clinical-review/2026-07-02-minimum-evidence-gate.md. Do not reword without that
+ * sign-off.
+ */
+export const INSUFFICIENT_EVIDENCE_LABEL = 'Not enough information yet';
+export type InsufficientEvidenceLabel = typeof INSUFFICIENT_EVIDENCE_LABEL;
+
 /** Support-level terms. Always paired with a Confidence (CLAUDE.md §2 rule 3). */
 export const SUPPORT_LEVEL_TERMS = [
   'mild support needs',

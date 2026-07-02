@@ -8,21 +8,36 @@
  * raw numeric score") and CLAUDE.md §2 rule 5 (disclaimer on every result surface) are
  * enforced structurally: DomainFinding.score never appears on ResultsViewDomain, and
  * `disclaimer` is not optional.
+ *
+ * Minimum-evidence gate (issue #22): a domain below the evidence floor is a DIFFERENT
+ * variant of the union with no sign-level label on it at all, so a consumer cannot
+ * accidentally render "Low/Some/Many signs observed" from too few answers — the compiler
+ * forces the "not enough information yet" state to be handled. Red flags are exempt from
+ * the gate (CLAUDE.md §2 rule 8): `redFlagTypes` always carries every triggered flag, and a
+ * red flag always forces a non-null recommendationTier.
  */
 import type { Domain } from './domains.js';
 import type {
   Confidence,
+  InsufficientEvidenceLabel,
   RecommendationTier,
   SignLevelLabel,
   SupportLevelTerm,
 } from './vocabulary.js';
 import type { RedFlagType } from './profile.js';
 
-export interface ResultsViewDomain {
-  domain: Domain;
-  label: SignLevelLabel;
-  confidence: Confidence;
-}
+export type ResultsViewDomain =
+  | {
+      domain: Domain;
+      status: 'scored';
+      label: SignLevelLabel;
+      confidence: Confidence;
+    }
+  | {
+      domain: Domain;
+      status: 'insufficient_evidence';
+      label: InsufficientEvidenceLabel;
+    };
 
 export interface ResultsViewSupportLevel {
   term: SupportLevelTerm;
@@ -32,8 +47,20 @@ export interface ResultsViewSupportLevel {
 export interface ResultsView {
   disclaimer: string;
   computedAt: string;
+  /** Provenance (issue #22): how many answers (latest per question) this view rests on. */
+  basedOnAnswers: number;
   domains: ResultsViewDomain[];
+  /** Null when no estimate exists OR the overall evidence floor is unmet (fail closed). */
   supportLevel: ResultsViewSupportLevel | null;
+  /**
+   * True when total answered evidence is below the overall floor: supportLevel is withheld
+   * and recommendationTier is null — unless a red flag forces a recommendation (exempt).
+   */
+  insufficientEvidenceOverall: boolean;
   redFlagTypes: RedFlagType[];
-  recommendationTier: RecommendationTier;
+  /**
+   * Null only in the "not enough information yet" state with no red flags — even
+   * "Support activities can begin now" is a claim too strong for near-zero evidence.
+   */
+  recommendationTier: RecommendationTier | null;
 }
