@@ -76,6 +76,38 @@ describe('QuestionRenderer', () => {
     expect(onChange).toHaveBeenCalledWith(['rocking', 'hand_flapping']);
   });
 
+  it('renders round radios for single-select and square checkboxes for multi-select', () => {
+    const single = render(
+      <QuestionRenderer
+        question={buttonsQuestion}
+        text={buttonsQuestion.text}
+        hint={buttonsQuestion.hint}
+        value={undefined}
+        onChange={() => {}}
+      />,
+    );
+    expect(single.getByTestId('option-radio-looks_right_away')).toBeTruthy();
+    expect(single.queryByTestId('option-checkbox-looks_right_away')).toBeNull();
+    single.unmount();
+
+    render(
+      <QuestionRenderer
+        question={multiSelectQuestion}
+        text={multiSelectQuestion.text}
+        hint={multiSelectQuestion.hint}
+        value={['rocking']}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('option-checkbox-rocking')).toBeTruthy();
+    expect(screen.queryByTestId('option-radio-rocking')).toBeNull();
+    // Announced as a real checkbox with checked state for screen readers.
+    expect(screen.getByRole('checkbox', { name: 'Rocking', checked: true })).toBeTruthy();
+    expect(
+      screen.getByRole('checkbox', { name: 'Hand-flapping', checked: false }),
+    ).toBeTruthy();
+  });
+
   it('multi-select: removes an option that was already selected', () => {
     const onChange = jest.fn();
     render(

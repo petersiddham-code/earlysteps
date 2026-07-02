@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { Question } from '@earlysteps/shared-types';
 import { DomainIcon } from '../../components/DomainIcon/DomainIcon.js';
 import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
@@ -70,10 +71,25 @@ export function QuestionRenderer({
                   }
                 }}
                 style={[styles.option, selected && styles.optionSelected]}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
+                accessibilityRole={isMultiSelect ? 'checkbox' : 'button'}
+                accessibilityState={isMultiSelect ? { checked: selected } : { selected }}
               >
-                <View style={[styles.radio, selected && styles.radioSelected]} />
+                {/* Square checkbox for "pick all that apply", round radio for pick-one —
+                    the shape signals the behaviour difference (multi-selects wait for
+                    Next; single-selects advance on tap). */}
+                {isMultiSelect ? (
+                  <View
+                    style={[styles.checkbox, selected && styles.checkboxSelected]}
+                    testID={`option-checkbox-${option.id}`}
+                  >
+                    {selected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  </View>
+                ) : (
+                  <View
+                    style={[styles.radio, selected && styles.radioSelected]}
+                    testID={`option-radio-${option.id}`}
+                  />
+                )}
                 <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
                   {option.label}
                 </Text>
@@ -132,6 +148,20 @@ const styles = StyleSheet.create({
   radioSelected: {
     borderColor: colors.primary,
     borderWidth: 6,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: colors.border,
+    marginRight: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
   optionText: {
     ...type.body,
