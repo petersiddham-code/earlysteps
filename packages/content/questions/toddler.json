@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "locale": "en",
   "age_band": "toddler",
   "questions": [
@@ -10,12 +10,30 @@
       "text": "Roughly when did [child] first say a real word (not babbling)?",
       "type": "dropdown",
       "options": [
-        { "id": "before_12mo", "label": "Before 12mo" },
-        { "id": "12_18mo", "label": "12–18mo" },
-        { "id": "18_24mo", "label": "18–24mo" },
-        { "id": "after_2y", "label": "After 2 years" },
-        { "id": "not_yet", "label": "Not yet" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "before_12mo",
+          "label": "Before 12mo"
+        },
+        {
+          "id": "12_18mo",
+          "label": "12–18mo"
+        },
+        {
+          "id": "18_24mo",
+          "label": "18–24mo"
+        },
+        {
+          "id": "after_2y",
+          "label": "After 2 years"
+        },
+        {
+          "id": "not_yet",
+          "label": "Not yet"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "A rough guess is perfectly fine."
     },
@@ -26,11 +44,26 @@
       "text": "About how many words does [child] use now, even if not always clear?",
       "type": "dropdown",
       "options": [
-        { "id": "none_yet", "label": "None yet" },
-        { "id": "few_1_5", "label": "A few (1–5)" },
-        { "id": "some_6_20", "label": "Some (6–20)" },
-        { "id": "many_20_50", "label": "Many (20–50)" },
-        { "id": "short_sentences", "label": "Short sentences (2+ words together)" }
+        {
+          "id": "none_yet",
+          "label": "None yet"
+        },
+        {
+          "id": "few_1_5",
+          "label": "A few (1–5)"
+        },
+        {
+          "id": "some_6_20",
+          "label": "Some (6–20)"
+        },
+        {
+          "id": "many_20_50",
+          "label": "Many (20–50)"
+        },
+        {
+          "id": "short_sentences",
+          "label": "Short sentences (2+ words together)"
+        }
       ],
       "hint": "Any way of counting is fine — you don't need to be exact."
     },
@@ -41,10 +74,22 @@
       "text": "Does [child] try to talk, point, or use gestures to tell you what they want?",
       "type": "buttons",
       "options": [
-        { "id": "yes_often", "label": "Yes, often" },
-        { "id": "sometimes", "label": "Sometimes" },
-        { "id": "rarely", "label": "Rarely" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Any way of communicating counts — words, sounds, pointing, or pulling you toward something."
     },
@@ -55,11 +100,26 @@
       "text": "When you call [child]'s name from across the room, what usually happens?",
       "type": "dropdown",
       "options": [
-        { "id": "looks_right_away", "label": "Looks or comes right away" },
-        { "id": "after_few_tries", "label": "Looks after a few tries" },
-        { "id": "doesnt_notice", "label": "Doesn't seem to notice" },
-        { "id": "depends", "label": "Depends what they're doing" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "looks_right_away",
+          "label": "Looks or comes right away"
+        },
+        {
+          "id": "after_few_tries",
+          "label": "Looks after a few tries"
+        },
+        {
+          "id": "doesnt_notice",
+          "label": "Doesn't seem to notice"
+        },
+        {
+          "id": "depends",
+          "label": "Depends what they're doing"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Pick what happens most days."
     },
@@ -70,10 +130,22 @@
       "text": "When you talk to [child] up close, do they usually look at your face?",
       "type": "buttons",
       "options": [
-        { "id": "almost_always", "label": "Almost always" },
-        { "id": "sometimes", "label": "Sometimes" },
-        { "id": "rarely", "label": "Rarely" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "almost_always",
+          "label": "Almost always"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "It's fine if this varies — pick what happens most days."
     },
@@ -84,10 +156,22 @@
       "text": "Does [child] ever point at something just to show you — like a dog outside — not because they want it?",
       "type": "buttons",
       "options": [
-        { "id": "yes_often", "label": "Yes, often" },
-        { "id": "sometimes", "label": "Sometimes" },
-        { "id": "not_noticed", "label": "Not that I've noticed" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "not_noticed",
+          "label": "Not that I've noticed"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "This is different from pointing because they want something handed to them."
     },
@@ -98,10 +182,22 @@
       "text": "Does [child] smile back when you smile at them?",
       "type": "buttons",
       "options": [
-        { "id": "yes_usually", "label": "Yes, usually" },
-        { "id": "sometimes", "label": "Sometimes" },
-        { "id": "rarely", "label": "Rarely" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Pick what happens most days."
     },
@@ -112,10 +208,22 @@
       "text": "Does [child] copy things you do, like clapping or waving bye-bye?",
       "type": "buttons",
       "options": [
-        { "id": "yes_often", "label": "Yes, often" },
-        { "id": "sometimes", "label": "Sometimes" },
-        { "id": "rarely", "label": "Rarely" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Copying is one of the ways little ones learn — we're just building a picture."
     },
@@ -126,10 +234,22 @@
       "text": "Does [child] play pretend yet, like feeding a teddy bear or \"talking\" on a toy phone?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
-        { "id": "starting_to", "label": "Starting to" },
-        { "id": "not_yet", "label": "Not yet" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "starting_to",
+          "label": "Starting to"
+        },
+        {
+          "id": "not_yet",
+          "label": "Not yet"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "This usually starts a little later, so 'not yet' is very common at this age."
     },
@@ -140,12 +260,30 @@
       "text": "Does [child] do the same movement over and over — like hand-flapping, rocking, or spinning — especially when excited or upset?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "hand_flapping", "label": "Hand-flapping" },
-        { "id": "rocking", "label": "Rocking" },
-        { "id": "spinning", "label": "Spinning" },
-        { "id": "lining_up_toys", "label": "Lining up toys" },
-        { "id": "something_else", "label": "Something else" },
-        { "id": "none", "label": "None of these" }
+        {
+          "id": "hand_flapping",
+          "label": "Hand-flapping"
+        },
+        {
+          "id": "rocking",
+          "label": "Rocking"
+        },
+        {
+          "id": "spinning",
+          "label": "Spinning"
+        },
+        {
+          "id": "lining_up_toys",
+          "label": "Lining up toys"
+        },
+        {
+          "id": "something_else",
+          "label": "Something else"
+        },
+        {
+          "id": "none",
+          "label": "None of these"
+        }
       ],
       "hint": "Lots of toddlers do some of this sometimes — we're just building a picture."
     },
@@ -156,10 +294,22 @@
       "text": "Does [child] get very upset with small changes, like a different route home or a moved piece of furniture?",
       "type": "buttons",
       "options": [
-        { "id": "yes_a_lot", "label": "Yes, a lot" },
-        { "id": "a_little", "label": "A little" },
-        { "id": "not_really", "label": "Not really" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_a_lot",
+          "label": "Yes, a lot"
+        },
+        {
+          "id": "a_little",
+          "label": "A little"
+        },
+        {
+          "id": "not_really",
+          "label": "Not really"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Pick what feels closest — it's okay if it varies."
     },
@@ -170,10 +320,22 @@
       "text": "Does [child] get upset or cover their ears at loud sounds (vacuum, hand dryer, blender)?",
       "type": "buttons",
       "options": [
-        { "id": "yes_a_lot", "label": "Yes, a lot" },
-        { "id": "a_little", "label": "A little" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_a_lot",
+          "label": "Yes, a lot"
+        },
+        {
+          "id": "a_little",
+          "label": "A little"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Pick what feels closest.",
       "allow_free_text": true
@@ -185,10 +347,22 @@
       "text": "Does [child] avoid certain textures — clothes tags, grass, messy play (sand, paint)?",
       "type": "buttons",
       "options": [
-        { "id": "yes_a_lot", "label": "Yes, a lot" },
-        { "id": "a_little", "label": "A little" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_a_lot",
+          "label": "Yes, a lot"
+        },
+        {
+          "id": "a_little",
+          "label": "A little"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Pick what feels closest.",
       "allow_free_text": true
@@ -200,10 +374,26 @@
       "text": "How would you describe [child]'s eating?",
       "type": "buttons",
       "options": [
-        { "id": "wide_variety", "label": "Eats a wide variety" },
-        { "id": "somewhat_picky", "label": "Somewhat picky" },
-        { "id": "very_picky", "label": "Very picky / few accepted foods" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "wide_variety",
+          "label": "Eats a wide variety"
+        },
+        {
+          "id": "somewhat_picky",
+          "label": "Somewhat picky"
+        },
+        {
+          "id": "very_picky",
+          "label": "Very picky / few accepted foods"
+        },
+        {
+          "id": "so_few_worried_growth",
+          "label": "So few foods I worry about their growth or health"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "There's no right answer — eating changes a lot at this age."
     },
@@ -214,10 +404,22 @@
       "text": "How is [child] sleeping most nights?",
       "type": "buttons",
       "options": [
-        { "id": "sleeps_well", "label": "Sleeps well" },
-        { "id": "some_difficulty", "label": "Some difficulty falling/staying asleep" },
-        { "id": "significant_struggles", "label": "Significant sleep struggles" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "sleeps_well",
+          "label": "Sleeps well"
+        },
+        {
+          "id": "some_difficulty",
+          "label": "Some difficulty falling/staying asleep"
+        },
+        {
+          "id": "significant_struggles",
+          "label": "Significant sleep struggles"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Pick what happens most nights."
     },
@@ -228,12 +430,154 @@
       "text": "Can [child] focus on an activity they enjoy (like a puzzle or book) for a little while?",
       "type": "buttons",
       "options": [
-        { "id": "yes_several_minutes", "label": "Yes, several minutes" },
-        { "id": "briefly", "label": "Briefly" },
-        { "id": "very_hard", "label": "Very hard to hold attention" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_several_minutes",
+          "label": "Yes, several minutes"
+        },
+        {
+          "id": "briefly",
+          "label": "Briefly"
+        },
+        {
+          "id": "very_hard",
+          "label": "Very hard to hold attention"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Pick what feels closest — attention spans are short at this age."
+    },
+    {
+      "id": "T17",
+      "domain": "social",
+      "age_band": "toddler",
+      "text": "If you point at something across the room, does [child] look at where you're pointing?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Try it with something fun, like a pet or a toy — what happens most days is what counts."
+    },
+    {
+      "id": "T18",
+      "domain": "social",
+      "age_band": "toddler",
+      "text": "When other children are around, does [child] show interest in them — watching, smiling, or moving closer?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Watching from a distance counts as interest too."
+    },
+    {
+      "id": "T19",
+      "domain": "communication",
+      "age_band": "toddler",
+      "text": "Does [child] follow a simple spoken request, like \"bring me the cup\", without you pointing or showing?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Words alone, without gestures, is the part we're curious about here."
+    },
+    {
+      "id": "T20",
+      "domain": "sensory",
+      "age_band": "toddler",
+      "text": "Does [child] look at things in uncommon ways — very close to their eyes, from the corner of their eye, or watching spinning things for a long time?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Lots of little ones do this sometimes — we're just building a picture."
+    },
+    {
+      "id": "T21",
+      "domain": "social",
+      "age_band": "toddler",
+      "text": "When [child] is hurt or upset, do they come to you for comfort?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Coming to you in their own way — reaching, leaning, or bringing a blanket — counts."
     }
   ]
 }

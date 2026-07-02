@@ -13,26 +13,18 @@ They must be reviewed and replaced. The bucket thresholds (0–33 / 34–66 / 67
 §8.2) are hard-coded constants in `scoring-engine/src/buckets.ts` and likewise must not change
 without sign-off.
 
-## 2. Red-flag triggers with no source question (BLOCKER)
+## 2. ~~Red-flag triggers with no source question~~ — CLOSED (pending sign-off) 2026-07-02
 
-Product plan §4.8 lists red-flag triggers, but the Toddler/Preschool banks (§4.1c) do not
-contain a question for several of them. The rules exist and are unit-tested against synthetic
-inputs, but they are **inert on real intake data** until these questions are authored and added:
-
-| Red-flag rule | Trigger (product plan §4.8) | Source question status | Placeholder id used |
-|---|---|---|---|
-| `checkLossOfSkills` | Loss of previously-acquired words/skills (regression) | **Missing** — no regression question in any bank | `RF_loss_of_skills` |
-| `checkSelfInjuryRisk` | Signs of self-injury risk | **Missing** | `RF_self_injury` |
-| `checkSuddenBehaviourChange` | Sudden significant behaviour change | **Missing** | `RF_sudden_behaviour_change` |
-| `checkSafetyRisk` | Any immediate safety concern | **Missing** | `RF_safety_concern` |
-| `checkNoNameResponse` | No name response after repeated attempts | Uses T4 / P5 (proxy) | — |
-| `checkNoFunctionalCommunication` | No functional communication method at all | Uses T2+T3 / P1 (proxy) | — |
-| `checkSevereFeeding` | Severe feeding/growth concern | Uses T14 / P16 — "very picky" is a **weak proxy** for "severe" | — |
-| `checkSevereSleep` | Severe sleep disruption | Uses T15 (proxy) | — |
-
-Action: author the four missing questions (regression, self-injury, sudden change, safety) with
-advisor input, then point the rules at the real ids. Review whether "very picky" (feeding) and
-the sleep option truly meet the §4.8 "severe" bar or need a dedicated follow-up.
+The four missing questions (regression, self-injury, sudden behaviour change, safety) are now
+authored in the **universal bank** with ids matching the engine's `RF_*` constants, so all
+eight rules run live on every intake for every age band. The severe-feeding trigger was also
+sharpened: T14/P16 gained an explicit "so few foods I worry about their growth or health"
+option and `checkSevereFeeding` now triggers only on that — "very picky" no longer escalates
+(it stays a weighted sensory signal). `redFlagContentWiring.test.ts` now pins every rule's
+question/option ids to the shipped banks so a rule can never silently go inert again. See
+`2026-07-02-question-bank-professional-alignment.md` — wording and the trigger redefinition
+await advisor sign-off. Still open from this item: whether the severe-sleep proxy (T15) truly
+meets the §4.8 "severe" bar.
 
 ## 3. Domain mapping of feeding & sleep
 
@@ -50,9 +42,11 @@ with question banks and placeholder weights — see
 - Teen self-report flow (spec TS1–TS5) and any young-adult self-report equivalent —
   deliberately deferred with the product owner's agreement (caregiver-report first).
 - Observation activities (§4.2) for the new bands.
-- Red-flag proxy questions for the new bands: the shipped rules key off toddler/preschool
-  ids only, so red flags are effectively inert for primary/teen/young-adult intakes until
-  the item-2 questions land.
+- ~~Red-flag proxy questions for the new bands~~ — closed 2026-07-02: the item-2 questions
+  landed in the universal bank, so the four highest-severity red flags now run for
+  primary/teen/young-adult intakes too. The remaining proxy rules (name response, functional
+  communication) stay toddler/preschool-only by design — they are early-childhood signs; an
+  advisor should confirm no band-appropriate equivalent is needed.
 
 ## 5. Recommendation-tier crosswalk is a placeholder heuristic
 

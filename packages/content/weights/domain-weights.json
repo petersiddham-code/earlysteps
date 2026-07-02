@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0-placeholder",
+  "version": "0.2.0-placeholder",
   "needs_clinical_signoff": true,
   "note": "PLACEHOLDER WEIGHTS — NOT CLINICALLY VALIDATED. Product plan §8 says weights are 'derived from CDC/AAP milestone importance and NICE red-flag weighting' but provides no numbers. These values exist only to exercise the deterministic scoring engine and MUST be replaced under the docs/clinical-review/ gate (CLAUDE.md §9) before any real family uses the app. `combine` = 'max' for single-select questions (score = weight of the chosen option), 'sum' for multi-select (score = sum of chosen chip weights). Per-question max is derived from these same weights, so the engine needs no other input to normalize 0–100.",
   "indicators": [
@@ -7,55 +7,85 @@
       "question_id": "T1",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "not_yet": 10, "after_2y": 6, "18_24mo": 3 }
+      "option_weights": {
+        "not_yet": 10,
+        "after_2y": 6,
+        "18_24mo": 3
+      }
     },
     {
       "question_id": "T2",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "none_yet": 10, "few_1_5": 6, "some_6_20": 3 }
+      "option_weights": {
+        "none_yet": 10,
+        "few_1_5": 6,
+        "some_6_20": 3
+      }
     },
     {
       "question_id": "T3",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "rarely": 10, "sometimes": 5 }
+      "option_weights": {
+        "rarely": 10,
+        "sometimes": 5
+      }
     },
     {
       "question_id": "T4",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "doesnt_notice": 10, "after_few_tries": 6, "depends": 3 }
+      "option_weights": {
+        "doesnt_notice": 10,
+        "after_few_tries": 6,
+        "depends": 3
+      }
     },
     {
       "question_id": "T5",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely": 10, "sometimes": 5 }
+      "option_weights": {
+        "rarely": 10,
+        "sometimes": 5
+      }
     },
     {
       "question_id": "T6",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "not_noticed": 10, "sometimes": 5 }
+      "option_weights": {
+        "not_noticed": 10,
+        "sometimes": 5
+      }
     },
     {
       "question_id": "T7",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely": 8, "sometimes": 4 }
+      "option_weights": {
+        "rarely": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "T8",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely": 8, "sometimes": 4 }
+      "option_weights": {
+        "rarely": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "T9",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "not_yet": 5, "starting_to": 2 }
+      "option_weights": {
+        "not_yet": 5,
+        "starting_to": 2
+      }
     },
     {
       "question_id": "T10",
@@ -73,37 +103,101 @@
       "question_id": "T11",
       "domain": "repetitive_behaviour",
       "combine": "max",
-      "option_weights": { "yes_a_lot": 10, "a_little": 5 }
+      "option_weights": {
+        "yes_a_lot": 10,
+        "a_little": 5
+      }
     },
     {
       "question_id": "T12",
       "domain": "sensory",
       "combine": "max",
-      "option_weights": { "yes_a_lot": 10, "a_little": 5 }
+      "option_weights": {
+        "yes_a_lot": 10,
+        "a_little": 5
+      }
     },
     {
       "question_id": "T13",
       "domain": "sensory",
       "combine": "max",
-      "option_weights": { "yes_a_lot": 10, "a_little": 5 }
+      "option_weights": {
+        "yes_a_lot": 10,
+        "a_little": 5
+      }
     },
     {
       "question_id": "T14",
       "domain": "sensory",
       "combine": "max",
-      "option_weights": { "very_picky": 8, "somewhat_picky": 4 }
+      "option_weights": {
+        "so_few_worried_growth": 10,
+        "very_picky": 8,
+        "somewhat_picky": 4
+      }
     },
     {
       "question_id": "T15",
       "domain": "emotional_regulation",
       "combine": "max",
-      "option_weights": { "significant_struggles": 10, "some_difficulty": 5 }
+      "option_weights": {
+        "significant_struggles": 10,
+        "some_difficulty": 5
+      }
     },
     {
       "question_id": "T16",
       "domain": "attention",
       "combine": "max",
-      "option_weights": { "very_hard": 10, "briefly": 5 }
+      "option_weights": {
+        "very_hard": 10,
+        "briefly": 5
+      }
+    },
+    {
+      "question_id": "T17",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": {
+        "rarely": 10,
+        "sometimes": 5
+      }
+    },
+    {
+      "question_id": "T18",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": {
+        "rarely": 8,
+        "sometimes": 4
+      }
+    },
+    {
+      "question_id": "T19",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": {
+        "rarely": 10,
+        "sometimes": 5
+      }
+    },
+    {
+      "question_id": "T20",
+      "domain": "sensory",
+      "combine": "max",
+      "option_weights": {
+        "yes_often": 8,
+        "sometimes": 4
+      }
+    },
+    {
+      "question_id": "T21",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": {
+        "rarely": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "P1",
@@ -120,61 +214,92 @@
       "question_id": "P2",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "rarely": 10, "with_effort": 5 }
+      "option_weights": {
+        "rarely": 10,
+        "with_effort": 5
+      }
     },
     {
       "question_id": "P3",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "rarely": 8, "sometimes": 4 }
+      "option_weights": {
+        "rarely": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "P4",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "yes_often": 6, "sometimes": 3 }
+      "option_weights": {
+        "yes_often": 6,
+        "sometimes": 3
+      }
     },
     {
       "question_id": "P5",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely_responds": 10, "after_few_tries": 6, "depends": 3 }
+      "option_weights": {
+        "rarely_responds": 10,
+        "after_few_tries": 6,
+        "depends": 3
+      }
     },
     {
       "question_id": "P6",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely": 10, "sometimes": 5 }
+      "option_weights": {
+        "rarely": 10,
+        "sometimes": 5
+      }
     },
     {
       "question_id": "P7",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "prefers_alone": 8, "alongside": 5 }
+      "option_weights": {
+        "prefers_alone": 8,
+        "alongside": 5
+      }
     },
     {
       "question_id": "P8",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely": 8, "sometimes": 4 }
+      "option_weights": {
+        "rarely": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "P9",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely_not_yet": 8, "sometimes": 4 }
+      "option_weights": {
+        "rarely_not_yet": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "P10",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "struggles": 8, "with_reminders": 4 }
+      "option_weights": {
+        "struggles": 8,
+        "with_reminders": 4
+      }
     },
     {
       "question_id": "P11",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely": 8, "sometimes": 4 }
+      "option_weights": {
+        "rarely": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "P12",
@@ -193,13 +318,19 @@
       "question_id": "P13",
       "domain": "repetitive_behaviour",
       "combine": "max",
-      "option_weights": { "yes_very_intense": 8, "strong_but_flexible": 3 }
+      "option_weights": {
+        "yes_very_intense": 8,
+        "strong_but_flexible": 3
+      }
     },
     {
       "question_id": "P14",
       "domain": "repetitive_behaviour",
       "combine": "max",
-      "option_weights": { "yes_a_lot": 10, "a_little": 5 }
+      "option_weights": {
+        "yes_a_lot": 10,
+        "a_little": 5
+      }
     },
     {
       "question_id": "P15",
@@ -217,19 +348,46 @@
       "question_id": "P16",
       "domain": "sensory",
       "combine": "max",
-      "option_weights": { "very_picky": 8, "somewhat_picky": 4 }
+      "option_weights": {
+        "so_few_worried_growth": 10,
+        "very_picky": 8,
+        "somewhat_picky": 4
+      }
     },
     {
       "question_id": "P17",
       "domain": "attention",
       "combine": "max",
-      "option_weights": { "very_hard": 10, "briefly": 5 }
+      "option_weights": {
+        "very_hard": 10,
+        "briefly": 5
+      }
     },
     {
       "question_id": "P18",
       "domain": "learning",
       "combine": "max",
-      "option_weights": { "yes": 8 }
+      "option_weights": {
+        "yes": 8
+      }
+    },
+    {
+      "question_id": "P19",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": {
+        "finds_it_hard": 8,
+        "one_step_at_a_time": 4
+      }
+    },
+    {
+      "question_id": "P20",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": {
+        "yes_often": 6,
+        "a_little": 3
+      }
     },
     {
       "question_id": "PR1",
@@ -245,43 +403,63 @@
       "question_id": "PR2",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "very_literal": 8, "needs_it_explained": 4 }
+      "option_weights": {
+        "very_literal": 8,
+        "needs_it_explained": 4
+      }
     },
     {
       "question_id": "PR3",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "finds_it_hard": 8, "with_prompting": 4 }
+      "option_weights": {
+        "finds_it_hard": 8,
+        "with_prompting": 4
+      }
     },
     {
       "question_id": "PR4",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "struggles_make_keep": 10, "knows_people_few_close": 5 }
+      "option_weights": {
+        "struggles_make_keep": 10,
+        "knows_people_few_close": 5
+      }
     },
     {
       "question_id": "PR5",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "rarely_initiates": 8, "own_topics": 5 }
+      "option_weights": {
+        "rarely_initiates": 8,
+        "own_topics": 5
+      }
     },
     {
       "question_id": "PR6",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "often_doesnt_notice": 8, "sometimes": 4 }
+      "option_weights": {
+        "often_doesnt_notice": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "PR7",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "yes": 4 }
+      "option_weights": {
+        "yes": 4
+      }
     },
     {
       "question_id": "PR8",
       "domain": "repetitive_behaviour",
       "combine": "max",
-      "option_weights": { "very_intense_rigid": 8, "strong_but_flexible": 3 }
+      "option_weights": {
+        "very_intense_rigid": 8,
+        "strong_but_flexible": 3
+      }
     },
     {
       "question_id": "PR9",
@@ -311,55 +489,99 @@
       "question_id": "PR11",
       "domain": "attention",
       "combine": "max",
-      "option_weights": { "very_hard": 10, "frequent_reminders": 5 }
+      "option_weights": {
+        "very_hard": 10,
+        "frequent_reminders": 5
+      }
     },
     {
       "question_id": "PR12",
       "domain": "learning",
       "combine": "max",
-      "option_weights": { "yes": 4 }
+      "option_weights": {
+        "yes": 4
+      }
     },
     {
       "question_id": "PR13",
       "domain": "emotional_regulation",
       "combine": "max",
-      "option_weights": { "big_reactions": 10, "upset_but_recovers": 5 }
+      "option_weights": {
+        "big_reactions": 10,
+        "upset_but_recovers": 5
+      }
     },
     {
       "question_id": "PR14",
       "domain": "daily_living",
       "combine": "max",
-      "option_weights": { "lots_of_support": 10, "some_reminders_help": 5 }
+      "option_weights": {
+        "lots_of_support": 10,
+        "some_reminders_help": 5
+      }
+    },
+    {
+      "question_id": "PR15",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": {
+        "very_distressing": 8,
+        "uncomfortable_but_copes": 3
+      }
+    },
+    {
+      "question_id": "PR16",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": {
+        "rarely": 8,
+        "sometimes": 4
+      }
     },
     {
       "question_id": "TE1",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "prefers_not_talking": 8, "small_talk_hard": 4 }
+      "option_weights": {
+        "prefers_not_talking": 8,
+        "small_talk_hard": 4
+      }
     },
     {
       "question_id": "TE2",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "not_really": 8, "mostly_online_occasional": 4 }
+      "option_weights": {
+        "not_really": 8,
+        "mostly_online_occasional": 4
+      }
     },
     {
       "question_id": "TE3",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "often_unaware": 8, "sometimes_misses": 4 }
+      "option_weights": {
+        "often_unaware": 8,
+        "sometimes_misses": 4
+      }
     },
     {
       "question_id": "TE4",
       "domain": "repetitive_behaviour",
       "combine": "max",
-      "option_weights": { "yes_quite_intense": 8, "strong_but_balanced": 3 }
+      "option_weights": {
+        "yes_quite_intense": 8,
+        "strong_but_balanced": 3
+      }
     },
     {
       "question_id": "TE5",
       "domain": "repetitive_behaviour",
       "combine": "max",
-      "option_weights": { "very_distressing": 10, "uncomfortable_but_copes": 5 }
+      "option_weights": {
+        "very_distressing": 10,
+        "uncomfortable_but_copes": 5
+      }
     },
     {
       "question_id": "TE6",
@@ -376,19 +598,53 @@
       "question_id": "TE7",
       "domain": "emotional_regulation",
       "combine": "max",
-      "option_weights": { "very_difficult": 10, "struggles_some_strategies": 5 }
+      "option_weights": {
+        "very_difficult": 10,
+        "struggles_some_strategies": 5
+      }
     },
     {
       "question_id": "TE8",
       "domain": "emotional_regulation",
       "combine": "max",
-      "option_weights": { "yes": 4 }
+      "option_weights": {
+        "yes": 4
+      }
     },
     {
       "question_id": "TE9",
       "domain": "daily_living",
       "combine": "max",
-      "option_weights": { "needs_lots_support": 10, "needs_some_support": 5 }
+      "option_weights": {
+        "needs_lots_support": 10,
+        "needs_some_support": 5
+      }
+    },
+    {
+      "question_id": "TE10",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": {
+        "yes_often": 8,
+        "sometimes": 4
+      }
+    },
+    {
+      "question_id": "TE11",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": {
+        "very_literal": 8,
+        "needs_explaining": 4
+      }
+    },
+    {
+      "question_id": "TE12",
+      "domain": "learning",
+      "combine": "max",
+      "option_weights": {
+        "yes": 6
+      }
     },
     {
       "question_id": "YA1",
@@ -404,31 +660,47 @@
       "question_id": "YA2",
       "domain": "communication",
       "combine": "max",
-      "option_weights": { "very_literal": 8, "needs_explaining": 4 }
+      "option_weights": {
+        "very_literal": 8,
+        "needs_explaining": 4
+      }
     },
     {
       "question_id": "YA3",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "not_really": 8, "mostly_online_occasional": 4 }
+      "option_weights": {
+        "not_really": 8,
+        "mostly_online_occasional": 4
+      }
     },
     {
       "question_id": "YA4",
       "domain": "social",
       "combine": "max",
-      "option_weights": { "usually_avoids": 8, "draining_but_manages": 4, "depends": 2 }
+      "option_weights": {
+        "usually_avoids": 8,
+        "draining_but_manages": 4,
+        "depends": 2
+      }
     },
     {
       "question_id": "YA5",
       "domain": "repetitive_behaviour",
       "combine": "max",
-      "option_weights": { "yes_quite_intense": 8, "strong_but_balanced": 3 }
+      "option_weights": {
+        "yes_quite_intense": 8,
+        "strong_but_balanced": 3
+      }
     },
     {
       "question_id": "YA6",
       "domain": "repetitive_behaviour",
       "combine": "max",
-      "option_weights": { "very_distressing": 10, "uncomfortable_but_copes": 5 }
+      "option_weights": {
+        "very_distressing": 10,
+        "uncomfortable_but_copes": 5
+      }
     },
     {
       "question_id": "YA7",
@@ -446,19 +718,36 @@
       "question_id": "YA8",
       "domain": "emotional_regulation",
       "combine": "max",
-      "option_weights": { "very_difficult": 10, "struggles_some_strategies": 5 }
+      "option_weights": {
+        "very_difficult": 10,
+        "struggles_some_strategies": 5
+      }
     },
     {
       "question_id": "YA9",
       "domain": "emotional_regulation",
       "combine": "max",
-      "option_weights": { "yes": 4 }
+      "option_weights": {
+        "yes": 4
+      }
     },
     {
       "question_id": "YA10",
       "domain": "daily_living",
       "combine": "max",
-      "option_weights": { "needs_lots_support": 10, "needs_some_support": 5 }
+      "option_weights": {
+        "needs_lots_support": 10,
+        "needs_some_support": 5
+      }
+    },
+    {
+      "question_id": "YA11",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": {
+        "yes_often": 8,
+        "sometimes": 4
+      }
     }
   ]
 }

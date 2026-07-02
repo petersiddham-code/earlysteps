@@ -7,3 +7,6 @@ pnpm-lock.yaml
 # templates, clinical-review notes). Formatting is governed by clinical review, not Prettier,
 # so a reformatter never silently reflows a safety-critical sentence or question wording.
 *.md
+
+# Playwright-MCP session artifacts (screenshots/page snapshots from live verification)
+.playwright-mcp/
