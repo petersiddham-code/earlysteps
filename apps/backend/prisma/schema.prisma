@@ -5,9 +5,9 @@
 // choice (CLAUDE.md: don't design for hypothetical future requirements) — normalize once
 // real trend-graph/report query patterns are known, not before.
 //
-// No migration has been generated against a live database yet (none was available in this
-// environment). Run `pnpm --filter @earlysteps/backend exec prisma migrate dev` against a real
-// Postgres instance to create the initial migration before deploying.
+// The initial migration (prisma/migrations/20260702042258_init) was generated against a real
+// local Postgres instance and is committed — `prisma migrate deploy` (or `migrate dev` for
+// local development) applies it to any fresh database.
 
 generator client {
   provider = "prisma-client-js"
