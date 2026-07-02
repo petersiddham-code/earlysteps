@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { allQuestions } from '@earlysteps/content';
 import {
@@ -10,6 +17,7 @@ import {
   type SignLevelLabel,
 } from '@earlysteps/shared-types';
 import { getIntakeResponses, getResults } from '../../api/index.js';
+import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import {
@@ -64,26 +72,46 @@ const LABEL_TO_SIGN_LEVEL: Record<SignLevelLabel, SignLevel> = {
   'Many signs observed': 'many',
 };
 
-export function ResultsScreen(_props: Props) {
+export function ResultsScreen({ navigation }: Props) {
   const { childId } = useSession();
   const [results, setResults] = useState<ResultsView | null>(null);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!childId) return;
+    let cancelled = false;
+    setError(null);
     Promise.all([getResults(childId), getIntakeResponses(childId)])
       .then(([resultsView, responses]) => {
+        if (cancelled) return;
         setResults(resultsView);
         setStrengths(deriveStrengths(responses));
       })
-      .catch(() => setError("We couldn't load your results. Please try again."));
-  }, [childId]);
+      .catch((err) => {
+        if (cancelled) return;
+        if (err instanceof ApiError && err.status === 404) {
+          // No computed results for this child yet — the questionnaire was never
+          // submitted (e.g. the app was closed partway through onboarding). Send them
+          // there instead of stranding them on an error that can never resolve.
+          navigation.replace('Questionnaire');
+          return;
+        }
+        setError("We couldn't load your results. Please try again.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [childId, navigation, attempt]);
 
   if (error) {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>{error}</Text>
+        <Pressable onPress={() => setAttempt((n) => n + 1)} accessibilityRole="button">
+          <Text style={styles.retryText}>Try again</Text>
+        </Pressable>
       </View>
     );
   }
@@ -134,6 +162,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
   heading: { fontSize: 22, fontWeight: '700', color: '#1F2933', marginBottom: 16 },
   errorText: { fontSize: 15, color: '#5A6672', textAlign: 'center' },
+  retryText: { fontSize: 15, color: '#2E7D6B', fontWeight: '600', marginTop: 12 },
   section: { marginVertical: 12 },
   supportLevelText: {
     fontSize: 15,

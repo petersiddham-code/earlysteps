@@ -26,16 +26,21 @@ export function RedFlagBanner({ redFlagTypes }: RedFlagBannerProps) {
   return (
     <View style={styles.banner} accessibilityRole="alert">
       <Text style={styles.message}>{RED_FLAG_COPY.base_message}</Text>
-      <Text style={styles.heading}>{RED_FLAG_COPY.next_steps_heading}</Text>
+      {/* The next-steps heading only renders when there is content under it (currently the
+          urgent resource block) — a bare "what to do next" promising nothing is worse than
+          letting the base message's own guidance stand alone. */}
       {isUrgent && (
-        <View style={styles.urgentBlock}>
-          <Text style={styles.urgentHeading}>
-            {RED_FLAG_COPY.urgent_resource_heading}
-          </Text>
-          <Text style={styles.urgentMessage}>
-            {RED_FLAG_COPY.urgent_resource_message}
-          </Text>
-        </View>
+        <>
+          <Text style={styles.heading}>{RED_FLAG_COPY.next_steps_heading}</Text>
+          <View style={styles.urgentBlock}>
+            <Text style={styles.urgentHeading}>
+              {RED_FLAG_COPY.urgent_resource_heading}
+            </Text>
+            <Text style={styles.urgentMessage}>
+              {RED_FLAG_COPY.urgent_resource_message}
+            </Text>
+          </View>
+        </>
       )}
     </View>
   );

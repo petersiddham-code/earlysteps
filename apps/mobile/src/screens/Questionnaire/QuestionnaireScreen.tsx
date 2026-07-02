@@ -11,12 +11,23 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getQuestionBank } from '@earlysteps/content';
 import type { Child, IntakeResponse, Question } from '@earlysteps/shared-types';
 import { getChild, submitIntakeResponses } from '../../api/index.js';
+import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { QuestionRenderer } from './QuestionRenderer.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Questionnaire'>;
 type Answer = string | string[];
+
+/**
+ * A question the caregiver can actually answer on this screen: free-text, or at least one
+ * closed-choice option. Filters out picker-style questions whose options aren't populated
+ * yet (e.g. U1's age dropdown, which duplicates Child Profile Setup anyway) so nothing
+ * renders as a dead prompt with no way to respond.
+ */
+function isAnswerable(question: Question): boolean {
+  return question.type === 'text' || question.options.length > 0;
+}
 
 /**
  * Product plan Screen 4 / §4.1. Renders the universal questions plus the child's age-band
@@ -31,24 +42,35 @@ export function QuestionnaireScreen({ navigation }: Props) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [error, setError] = useState<string | null>(null);
+  const [consentDenied, setConsentDenied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!familyId || !childId) return;
+    let cancelled = false;
+    setError(null);
     getChild(familyId, childId)
       .then((fetchedChild) => {
+        if (cancelled) return;
         setChild(fetchedChild);
         const universal = getQuestionBank('universal')?.questions ?? [];
         const ageBand = getQuestionBank(fetchedChild.age_band)?.questions ?? [];
-        setQuestions([...universal, ...ageBand]);
+        setQuestions([...universal, ...ageBand].filter(isAnswerable));
       })
-      .catch(() => setError("We couldn't load the questions. Please try again."));
-  }, [familyId, childId]);
+      .catch(() => {
+        if (!cancelled) setError("We couldn't load the questions. Please try again.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, childId, attempt]);
 
   const handleSubmit = async () => {
     if (!childId) return;
     setSubmitting(true);
     setError(null);
+    setConsentDenied(false);
     const now = new Date().toISOString();
     const responses: Omit<IntakeResponse, 'child_id'>[] = questions
       .filter((q) => {
@@ -65,18 +87,24 @@ export function QuestionnaireScreen({ navigation }: Props) {
     try {
       await submitIntakeResponses(childId, responses);
       navigation.replace('Results');
-    } catch {
-      setError("We couldn't save your answers. Please try again.");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        // Saving answers needs data_storage consent — send them back to grant it, don't
+        // leave them retrying a request that can never succeed.
+        setConsentDenied(true);
+      } else {
+        setError("We couldn't save your answers. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (error && questions.length === 0) {
+  if (error && !child) {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>{error}</Text>
-        <Pressable onPress={() => setError(null)}>
+        <Pressable onPress={() => setAttempt((n) => n + 1)}>
           <Text style={styles.retryText}>Try again</Text>
         </Pressable>
       </View>
@@ -109,6 +137,21 @@ export function QuestionnaireScreen({ navigation }: Props) {
       ))}
 
       {error && <Text style={styles.errorText}>{error}</Text>}
+      {consentDenied && (
+        <View style={styles.consentNotice}>
+          <Text style={styles.consentNoticeText}>
+            To keep your answers, we first need your permission to save them. You can turn
+            that on in a moment — your answers here will stay on this screen.
+          </Text>
+          <Pressable
+            testID="update-permissions-button"
+            onPress={() => navigation.navigate('ConsentCenter')}
+            accessibilityRole="button"
+          >
+            <Text style={styles.retryText}>Update my permissions</Text>
+          </Pressable>
+        </View>
+      )}
 
       <View style={styles.submitButtonWrapper}>
         {submitting ? (
@@ -136,6 +179,13 @@ const styles = StyleSheet.create({
   subheading: { fontSize: 13, color: '#5A6672', marginBottom: 24 },
   errorText: { fontSize: 14, color: '#C0392B', textAlign: 'center', marginVertical: 12 },
   retryText: { fontSize: 15, color: '#2E7D6B', fontWeight: '600', marginTop: 8 },
+  consentNotice: {
+    backgroundColor: '#F0F4F3',
+    borderRadius: 10,
+    padding: 14,
+    marginVertical: 12,
+  },
+  consentNoticeText: { fontSize: 14, lineHeight: 20, color: '#1F3A38' },
   submitButtonWrapper: { marginTop: 12 },
   submitButton: {
     backgroundColor: '#2E7D6B',

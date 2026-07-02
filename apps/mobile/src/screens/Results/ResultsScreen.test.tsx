@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ResultsScreen } from './ResultsScreen';
 import { getIntakeResponses, getResults } from '../../api/index.js';
+import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import { SCREENING_DISCLAIMER } from '@earlysteps/shared-types';
 
@@ -99,5 +100,32 @@ describe('ResultsScreen', () => {
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
 
     expect(await screen.findByText(/couldn't load your results/i)).toBeTruthy();
+  });
+
+  it('routes to the Questionnaire when the child has no computed results yet (404)', async () => {
+    (getResults as jest.Mock).mockRejectedValue(
+      new ApiError(404, { message: 'No computed results yet for child c1' }),
+    );
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(<ResultsScreen navigation={navigation} route={{} as never} />);
+
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Questionnaire'));
+    // Never stranded on an unresolvable error.
+    expect(screen.queryByText(/couldn't load your results/i)).toBeNull();
+  });
+
+  it('actually refetches when Try again is pressed after a failure', async () => {
+    (getResults as jest.Mock)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/couldn't load your results/i);
+
+    fireEvent.press(screen.getByText('Try again'));
+
+    expect(await screen.findByText(SCREENING_DISCLAIMER)).toBeTruthy();
+    expect(getResults).toHaveBeenCalledTimes(2);
   });
 });
