@@ -93,6 +93,17 @@ export const APPROVED_DIFFERENCE_TERMS = [
 ] as const;
 
 /**
+ * Option ids that mean "the caregiver doesn't know / prefers not to say" rather than an
+ * observation about the child. Product plan §4.1b: "I'm not sure is always an option, never
+ * a trap" — so these answers are NO evidence in either direction. The scoring engine treats
+ * them as unanswered (they must not pull a domain score down like a reassuring answer, and
+ * must not raise confidence/completeness), and content validation rejects any weight
+ * assigned to them. Changing this list is clinical content (CLAUDE.md §9).
+ */
+export const UNCERTAINTY_OPTION_IDS = ['not_sure', 'prefer_not_to_say'] as const;
+export type UncertaintyOptionId = (typeof UNCERTAINTY_OPTION_IDS)[number];
+
+/**
  * Layered consent scopes (product plan §4.7, CLAUDE.md §6 `<ConsentToggle />`). Each is
  * togglable independently — never bundled into a single "I agree" checkbox.
  */

@@ -81,3 +81,38 @@ describe('scoreDomains — deterministic normalization', () => {
     expect(scores).toEqual([]);
   });
 });
+
+describe('scoreDomains — uncertainty answers are a gap, not evidence', () => {
+  it('treats a "not_sure" single-select as unanswered (no denominator, no count)', () => {
+    // Without the exclusion this would be 10/20 = 50; "not sure" must not act reassuring.
+    const social = scoreDomainsFirst(
+      [resp('Q1', 'not_sure'), resp('Q2', 'bad')],
+      indicators,
+    );
+    expect(social.score).toBe(100); // 10 / 10 — Q1 contributes nothing either way
+    expect(social.answeredCount).toBe(1); // must not inflate confidence completeness
+  });
+
+  it('treats "prefer_not_to_say" the same way', () => {
+    const scores = scoreDomains([resp('Q1', 'prefer_not_to_say')], indicators);
+    expect(scores).toEqual([]);
+  });
+
+  it('produces no domain score at all for an all-uncertain intake', () => {
+    const scores = scoreDomains(
+      [resp('Q1', 'not_sure'), resp('Q2', 'not_sure')],
+      indicators,
+    );
+    expect(scores).toEqual([]);
+  });
+
+  it('filters uncertainty ids out of a multi-select but keeps real selections', () => {
+    const sensory = scoreDomainsFirst([resp('Q3', ['a', 'not_sure'])], indicators);
+    expect(sensory.score).toBe(25); // 5 / 20 — only the real selection counts
+  });
+
+  it('skips a multi-select whose only selection is an uncertainty id', () => {
+    const scores = scoreDomains([resp('Q3', ['not_sure'])], indicators);
+    expect(scores).toEqual([]);
+  });
+});

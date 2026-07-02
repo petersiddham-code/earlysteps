@@ -13,6 +13,7 @@ import type {
   SupportLevelEstimate,
 } from '@earlysteps/shared-types';
 import { INDICATORS_BY_QUESTION, type Indicator } from '@earlysteps/content';
+import { dedupeLatestByQuestion } from './dedupe.js';
 import { scoreDomains } from './scoreDomain.js';
 import { computeConfidence } from './confidence.js';
 import { combineConfidence, estimateSupportLevel } from './supportLevel.js';
@@ -48,9 +49,12 @@ function defaultTotalsByDomain(
 }
 
 export function recompute(
-  responses: IntakeResponse[],
+  allResponses: IntakeResponse[],
   options: RecomputeOptions,
 ): RecomputeResult {
+  // Only the caregiver's CURRENT answer per question is evidence — a re-answered question
+  // must not double-count in domain scores or feed a stale value to a red-flag rule.
+  const responses = dedupeLatestByQuestion(allResponses);
   const childId = responses[0]?.child_id ?? 'unknown';
   const indicators = options.indicatorsByQuestion ?? INDICATORS_BY_QUESTION;
   const totals = options.domainQuestionTotals ?? defaultTotalsByDomain(indicators);

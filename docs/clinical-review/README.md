@@ -16,3 +16,4 @@ Pure engineering changes (refactors, infra, non-content bug fixes) do not need t
 | Date | Content version | What changed | Advisor | Status |
 |---|---|---|---|---|
 | — | questions 1.0.0 / weights 0.1.0-placeholder | Initial foundation scaffold: Toddler + Preschool + Universal question banks (extracted verbatim from product plan §4.1c), placeholder scoring weights. | _pending_ | ⛔ NOT signed off — see content-gaps.md |
+| 2026-07-02 | scoring engine (no weight/threshold/wording changes) | Uncertainty answers ("not sure"/"prefer not to say") excluded from scoring and confidence; repeated answers deduped, latest wins — see `2026-07-02-uncertainty-answers-and-dedupe.md`. | _pending_ | ⛔ awaiting sign-off |
