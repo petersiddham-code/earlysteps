@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,6 +28,13 @@ import { QuestionRenderer } from './QuestionRenderer.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Questionnaire'>;
 type Answer = string | string[];
+
+/**
+ * Pause between tapping a single-select answer and moving to the next question, so the
+ * caregiver sees their selection register before the card changes — an instant jump
+ * reads as "did it take my answer?".
+ */
+export const AUTO_ADVANCE_DELAY_MS = 450;
 
 /**
  * A question the caregiver can actually answer on this screen: free-text, or at least one
@@ -89,6 +98,40 @@ export function QuestionnaireScreen({ navigation }: Props) {
   const [consentDenied, setConsentDenied] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cardAnim = useRef(new Animated.Value(1)).current;
+
+  const clearAdvanceTimer = () => {
+    if (advanceTimer.current !== null) {
+      clearTimeout(advanceTimer.current);
+      advanceTimer.current = null;
+    }
+  };
+
+  // Clear any pending auto-advance if the screen unmounts mid-pause.
+  useEffect(() => clearAdvanceTimer, []);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => setReduceMotion(enabled === true))
+      .catch(() => {});
+  }, []);
+
+  // Ease each question card in (fade + small rise); reduced-motion users get an
+  // immediate swap instead. Must live above the early returns below (rules of hooks).
+  useEffect(() => {
+    if (reduceMotion) {
+      cardAnim.setValue(1);
+      return;
+    }
+    cardAnim.setValue(0);
+    Animated.timing(cardAnim, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [index, reduceMotion, cardAnim]);
 
   useEffect(() => {
     if (!familyId || !childId) return;
@@ -172,17 +215,27 @@ export function QuestionnaireScreen({ navigation }: Props) {
   // A gentle lift at the path's midpoint — only worth marking on a longer walk.
   const isHalfway = !onReviewStep && total >= 8 && index === Math.floor(total / 2);
 
-  const goForward = () => setIndex((i) => Math.min(i + 1, total));
-  const goBack = () => setIndex((i) => Math.max(i - 1, 0));
+  // Manual navigation (Next / Skip / Back) cancels any pending auto-advance so a tap
+  // followed quickly by Skip can never move two steps.
+  const goForward = () => {
+    clearAdvanceTimer();
+    setIndex((i) => Math.min(i + 1, total));
+  };
+  const goBack = () => {
+    clearAdvanceTimer();
+    setIndex((i) => Math.max(i - 1, 0));
+  };
 
   const handleAnswer = (q: Question, next: Answer) => {
     setAnswers((prev) => ({ ...prev, [q.id]: next }));
-    // One tap = one step forward: single-select answers advance immediately.
-    // Multi-select and free text keep collecting until "Next" — and so do questions
-    // offering an "add anything else" box, or auto-advance would yank the caregiver
-    // away before they could type.
+    // One tap = one step forward: single-select answers advance on their own — after a
+    // short pause so the selection is seen to register. Multi-select and free text keep
+    // collecting until "Next", and so do questions offering an "add anything else" box,
+    // or auto-advance would yank the caregiver away before they could type. Re-tapping
+    // a different option during the pause just restarts it.
     if (q.type !== 'chip_multi_select' && q.type !== 'text' && !q.allow_free_text) {
-      goForward();
+      clearAdvanceTimer();
+      advanceTimer.current = setTimeout(goForward, AUTO_ADVANCE_DELAY_MS);
     }
   };
 
@@ -206,7 +259,19 @@ export function QuestionnaireScreen({ navigation }: Props) {
       )}
 
       {question && (
-        <>
+        <Animated.View
+          style={{
+            opacity: cardAnim,
+            transform: [
+              {
+                translateY: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [10, 0],
+                }),
+              },
+            ],
+          }}
+        >
           <QuestionRenderer
             key={question.id}
             question={question}
@@ -258,7 +323,7 @@ export function QuestionnaireScreen({ navigation }: Props) {
               <Ionicons name="chevron-forward" size={16} color={colors.inkSoft} />
             </Pressable>
           </View>
-        </>
+        </Animated.View>
       )}
 
       {onReviewStep && (

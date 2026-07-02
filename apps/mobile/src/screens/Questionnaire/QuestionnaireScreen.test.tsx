@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { QuestionnaireScreen } from './QuestionnaireScreen';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { AUTO_ADVANCE_DELAY_MS, QuestionnaireScreen } from './QuestionnaireScreen';
 import { getChild, submitIntakeResponses } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
@@ -78,17 +78,21 @@ describe('QuestionnaireScreen', () => {
     );
   });
 
-  it('auto-advances on a single-select answer and keeps it when going back', async () => {
+  it('auto-advances on a single-select answer — after a visible pause — and keeps it when going back', async () => {
     (getChild as jest.Mock).mockResolvedValue(CHILD);
     render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
+    jest.useFakeTimers();
 
     // U3 (question 2) is the first single-select.
     fireEvent.press(screen.getByTestId('skip-button'));
     expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
     fireEvent.press(screen.getByText('Not sure'));
 
-    // One tap = one step forward.
+    // Not an instant jump: the selection stays visible for a beat first.
+    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Not sure', selected: true })).toBeTruthy();
+    act(() => jest.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS));
     expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy();
 
     // Back shows the same question with the selection preserved.
@@ -100,6 +104,23 @@ describe('QuestionnaireScreen', () => {
     // without re-tapping their answer or hitting a misleading "Skip".
     fireEvent.press(screen.getByTestId('next-button'));
     expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy();
+    jest.useRealTimers();
+  });
+
+  it('a Skip during the auto-advance pause moves one step, not two', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+    jest.useFakeTimers();
+
+    fireEvent.press(screen.getByTestId('skip-button')); // to U3
+    fireEvent.press(screen.getByText('Not sure')); // pause starts
+    fireEvent.press(screen.getByTestId('skip-button')); // manual move cancels the timer
+    expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy();
+
+    act(() => jest.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 2));
+    expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy(); // still one step
+    jest.useRealTimers();
   });
 
   it('always renders Next — disabled until the question is answered', async () => {
