@@ -1,6 +1,12 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ResultsScreen } from './ResultsScreen';
-import { getIntakeResponses, getResults } from '../../api/index.js';
+import {
+  analyzeResponses,
+  answerFollowUpSuggestion,
+  getChild,
+  getIntakeResponses,
+  getResults,
+} from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import { SCREENING_DISCLAIMER } from '@earlysteps/shared-types';
@@ -8,6 +14,9 @@ import { SCREENING_DISCLAIMER } from '@earlysteps/shared-types';
 jest.mock('../../api/index.js', () => ({
   getResults: jest.fn(),
   getIntakeResponses: jest.fn(),
+  analyzeResponses: jest.fn(),
+  answerFollowUpSuggestion: jest.fn(),
+  getChild: jest.fn(),
 }));
 jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
 
@@ -59,13 +68,36 @@ const INSUFFICIENT_RESULTS = {
   recommendationTier: null,
 };
 
+const FOLLOW_UP_SUGGESTION = {
+  id: 'suggestion-1',
+  follow_up_id: 'FU_loss_of_skills',
+  red_flag_type: 'loss_of_skills' as const,
+  text: 'Thinking about what you wrote — has [child] lost words or skills they used to have?',
+  hint: 'Only choose yes if that matches what you meant. Your answer here is what counts, not our reading of it.',
+  source_question_id: 'T2',
+  source_quote: 'he stopped speaking last month',
+};
+
 const clearChildId = jest.fn().mockResolvedValue(undefined);
 
 describe('ResultsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     clearChildId.mockResolvedValue(undefined);
-    (useSession as jest.Mock).mockReturnValue({ childId: 'c1', clearChildId });
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      clearChildId,
+    });
+    // Default: analysis is a no-op extra — most tests exercise plain results.
+    (analyzeResponses as jest.Mock).mockResolvedValue([]);
+    (getChild as jest.Mock).mockResolvedValue({
+      id: 'c1',
+      family_id: 'f1',
+      nickname: 'Ava',
+      age_band: 'toddler',
+      languages: ['English'],
+    });
   });
 
   it('renders the disclaimer, strengths-first, domains, and recommendation', async () => {
@@ -251,5 +283,96 @@ describe('ResultsScreen', () => {
 
     expect(await screen.findByText(SCREENING_DISCLAIMER)).toBeTruthy();
     expect(getResults).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    clearChildId.mockResolvedValue(undefined);
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      clearChildId,
+    });
+    (getResults as jest.Mock).mockResolvedValue({ ...RESULTS, redFlagTypes: [] });
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    (getChild as jest.Mock).mockResolvedValue({
+      id: 'c1',
+      family_id: 'f1',
+      nickname: 'Ava',
+      age_band: 'toddler',
+      languages: ['English'],
+    });
+  });
+
+  it("renders the follow-up with the caregiver's own words and the child's name", async () => {
+    (analyzeResponses as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    expect(await screen.findByTestId('follow-up-card')).toBeTruthy();
+    // Verbatim quote — reflection, never a paraphrase.
+    expect(screen.getByText(/he stopped speaking last month/)).toBeTruthy();
+    // Content-authored wording with [child] replaced by the nickname.
+    expect(screen.getByText(/has Ava lost words or skills/)).toBeTruthy();
+    // All three closed choices, labelled from content — never a yes-only trap.
+    expect(screen.getByTestId('follow-up-FU_loss_of_skills-yes')).toBeTruthy();
+    expect(screen.getByTestId('follow-up-FU_loss_of_skills-no')).toBeTruthy();
+    expect(screen.getByTestId('follow-up-FU_loss_of_skills-not_sure')).toBeTruthy();
+    expect(screen.getByText("I'm not sure")).toBeTruthy();
+  });
+
+  it('confirming yes submits the structured answer and shows the recomputed results', async () => {
+    (analyzeResponses as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
+    (answerFollowUpSuggestion as jest.Mock).mockResolvedValue({
+      ...RESULTS,
+      redFlagTypes: ['loss_of_skills'],
+    });
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByTestId('follow-up-card');
+    expect(
+      screen.queryByText(/may benefit from being seen soon by a doctor/i),
+    ).toBeNull();
+
+    fireEvent.press(screen.getByTestId('follow-up-FU_loss_of_skills-yes'));
+
+    // The red flag came from the recomputed deterministic results, not from the AI.
+    expect(
+      await screen.findByText(/may benefit from being seen soon by a doctor/i),
+    ).toBeTruthy();
+    expect(answerFollowUpSuggestion).toHaveBeenCalledWith('c1', 'suggestion-1', 'yes');
+    // Answered — the question is gone.
+    expect(screen.queryByTestId('follow-up-card')).toBeNull();
+  });
+
+  it('no consent / analysis unavailable (403) -> no card, results render normally', async () => {
+    (analyzeResponses as jest.Mock).mockRejectedValue(
+      new ApiError(403, { message: 'requires ai_analysis consent' }),
+    );
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    expect(await screen.findByText(SCREENING_DISCLAIMER)).toBeTruthy();
+    expect(screen.queryByTestId('follow-up-card')).toBeNull();
+    expect(screen.queryByText(/couldn't load your results/i)).toBeNull();
+  });
+
+  it('no suggestions -> no card at all', async () => {
+    (analyzeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(screen.queryByTestId('follow-up-card')).toBeNull();
+  });
+
+  it('a failed answer keeps the question and shows a gentle retryable message', async () => {
+    (analyzeResponses as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
+    (answerFollowUpSuggestion as jest.Mock).mockRejectedValue(new Error('offline'));
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByTestId('follow-up-card');
+
+    fireEvent.press(screen.getByTestId('follow-up-FU_loss_of_skills-yes'));
+
+    expect(await screen.findByText(/couldn't save that answer/i)).toBeTruthy();
+    expect(screen.getByTestId('follow-up-FU_loss_of_skills-yes')).toBeTruthy();
   });
 });

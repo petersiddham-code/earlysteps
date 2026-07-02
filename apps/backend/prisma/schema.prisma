@@ -49,8 +49,9 @@ model Child {
   languages  String[]
   createdAt  DateTime @default(now())
 
-  intakeResponses  IntakeResponseRecord[]
-  activityResults  ActivityResultRecord[]
+  intakeResponses     IntakeResponseRecord[]
+  activityResults     ActivityResultRecord[]
+  followUpSuggestions FollowUpSuggestionRecord[]
   domainProfiles   DomainProfileRecord[]
   supportEstimates SupportLevelEstimateRecord[]
   redFlags         RedFlagRecord[]
@@ -71,6 +72,10 @@ model IntakeResponseRecord {
   /// string | string[] | number — see @earlysteps/shared-types IntakeResponse['answer'].
   answer     Json
   timestamp  DateTime
+  /// When the free-text response-analysis stage (issue #26) processed this row's typed
+  /// text. Null = not yet analyzed (or contains no free text). Only set once the LLM call
+  /// actually returned; scoring never depends on it.
+  analyzedAt DateTime?
 
   @@index([childId])
 }
@@ -126,6 +131,30 @@ model RedFlagRecord {
   resolved     Boolean  @default(false)
 
   @@index([childId])
+}
+
+/// One LLM-proposed confirmation follow-up (issue #26). Created only under ai_analysis
+/// consent, from a schema-validated signal in a caregiver's free-text answer. Purely a
+/// suggestion: nothing here affects scoring — only the caregiver's structured answer to
+/// the follow-up question (a normal IntakeResponseRecord) does.
+model FollowUpSuggestionRecord {
+  id               String    @id @default(cuid())
+  childId          String
+  child            Child     @relation(fields: [childId], references: [id])
+  /// Follow-up question id in packages/content/follow-ups (FU_<red_flag_type>).
+  followUpId       String
+  redFlagType      String
+  /// The intake question the free text was typed under.
+  sourceQuestionId String
+  /// The caregiver's own typed words, verbatim (free_text: prefix stripped).
+  sourceQuote      String
+  /// LLM-reported salience (low/medium/high) — advisory context only, never scored.
+  salience         String
+  status           String    @default("pending") // pending | answered
+  createdAt        DateTime  @default(now())
+  answeredAt       DateTime?
+
+  @@index([childId, status])
 }
 
 model SupportPlanRecord {

@@ -8,13 +8,16 @@
  */
 import {
   CONSENT_SCOPES,
+  FOLLOW_UP_ANSWER_OPTIONS,
   INSUFFICIENT_EVIDENCE_LABEL,
+  RED_FLAG_TYPES,
   SIGN_LEVEL_TO_LABEL,
   SUPPORT_LEVEL_TO_TERM,
   SCREENING_DISCLAIMER,
   SIGN_LEVELS,
   SUPPORT_LEVELS,
   UNCERTAINTY_OPTION_IDS,
+  followUpQuestionId,
 } from '@earlysteps/shared-types';
 import { questionBankSchema } from './schema.js';
 import { QUESTION_BANKS, allQuestions } from './questions.js';
@@ -22,6 +25,7 @@ import { WEIGHTS } from './weights.js';
 import { EVIDENCE_FLOORS } from './evidenceFloors.js';
 import { RESULT_COPY } from './resultCopy.js';
 import { CONSENT_COPY } from './consentCopy.js';
+import { FOLLOW_UPS } from './followUps.js';
 
 export interface ValidationResult {
   ok: boolean;
@@ -132,6 +136,43 @@ export function validateContent(): ValidationResult {
   for (const scope of CONSENT_SCOPES) {
     if (!CONSENT_COPY.scopes[scope]) {
       errors.push(`consent-copy: missing copy for scope '${scope}'`);
+    }
+  }
+
+  // 6. Follow-ups (issue #26): every red-flag type has exactly one confirmation follow-up
+  //    whose id is FU_<type> (what the deterministic red-flag rules read), offering exactly
+  //    the closed yes/no/not_sure choices, with no id collision against the question banks
+  //    and no scoring weight (a confirmation must never also be averaged into a domain score).
+  const followUpsByType = new Map(
+    FOLLOW_UPS.follow_ups.map((fu) => [fu.red_flag_type, fu]),
+  );
+  for (const type of RED_FLAG_TYPES) {
+    const fu = followUpsByType.get(type);
+    if (!fu) {
+      errors.push(
+        `follow-ups: missing confirmation follow-up for red-flag type '${type}'`,
+      );
+      continue;
+    }
+    if (fu.id !== followUpQuestionId(type)) {
+      errors.push(
+        `follow-ups: '${type}' follow-up id '${fu.id}' != expected '${followUpQuestionId(type)}'`,
+      );
+    }
+    const optionIds = fu.options.map((o) => o.id).sort();
+    if (optionIds.join(',') !== [...FOLLOW_UP_ANSWER_OPTIONS].sort().join(',')) {
+      errors.push(`follow-ups: '${fu.id}' must offer exactly yes/no/not_sure options`);
+    }
+  }
+  if (FOLLOW_UPS.follow_ups.length !== followUpsByType.size) {
+    errors.push('follow-ups: duplicate red_flag_type entries');
+  }
+  for (const fu of FOLLOW_UPS.follow_ups) {
+    if (byId.has(fu.id)) {
+      errors.push(`follow-ups: id '${fu.id}' collides with a question bank id`);
+    }
+    if (WEIGHTS.indicators.some((ind) => ind.question_id === fu.id)) {
+      errors.push(`follow-ups: '${fu.id}' must not carry a scoring weight`);
     }
   }
 

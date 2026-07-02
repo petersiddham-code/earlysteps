@@ -10,6 +10,7 @@ import {
   CONSENT_SCOPES,
   DOMAINS,
   QUESTION_TYPES,
+  RED_FLAG_TYPES,
   SIGN_LEVELS,
   SUPPORT_LEVELS,
 } from '@earlysteps/shared-types';
@@ -90,6 +91,28 @@ export const weightsTableSchema = z.object({
   indicators: z.array(indicatorSchema).min(1),
 });
 
+/**
+ * Confirmation follow-ups for LLM-detected free-text signals (issue #26). Each maps one
+ * red-flag type to a caregiver-facing yes/no/not-sure question whose id (`FU_<type>`) the
+ * deterministic red-flag rules read directly — the AI never fires a flag itself.
+ */
+export const followUpSchema = z.object({
+  id: z.string().min(1),
+  red_flag_type: z.enum(RED_FLAG_TYPES),
+  text: safeCopyNonEmpty,
+  // Same rule as questions (CLAUDE.md §5): never ship without a reassuring hint.
+  hint: safeCopyNonEmpty,
+  options: z.array(optionSchema).min(1),
+});
+
+export const followUpsFileSchema = z.object({
+  version: z.string(),
+  locale: z.string(),
+  needs_clinical_signoff: z.boolean(),
+  note: z.string(),
+  follow_ups: z.array(followUpSchema).min(1),
+});
+
 export const resultCopySchema = z.object({
   version: z.string(),
   locale: z.string(),
@@ -157,6 +180,8 @@ export const consentCopySchema = z.object({
   ),
 });
 
+export type FollowUp = z.infer<typeof followUpSchema>;
+export type FollowUpsFile = z.infer<typeof followUpsFileSchema>;
 export type WeightsTable = z.infer<typeof weightsTableSchema>;
 export type Indicator = z.infer<typeof indicatorSchema>;
 export type ResultCopy = z.infer<typeof resultCopySchema>;
