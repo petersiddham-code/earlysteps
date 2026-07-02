@@ -2,13 +2,17 @@
 /**
  * Content-safety lint (CLAUDE.md §10 / §11, `pnpm lint:content`).
  *
- * Fails CI if shipped, caregiver-facing content contains a banned word or an off-list result
- * label, and if any LLM prompt template fails to reference the shared guardrail block.
+ * Fails CI if:
+ *  1. shipped, caregiver-facing content JSON contains a banned word,
+ *  2. result-copy labels drift off the approved list,
+ *  3. an LLM prompt template fails to reference the shared guardrail block,
+ *  4. a string literal in apps/mobile source contains a banned word, or
+ *  5. a results/report screen fails to render <ScreeningDisclaimer /> (CLAUDE.md §2 rule 5).
  *
- * This is a TEXTUAL gate over content JSON + prompt templates. Deeper cross-file integrity
- * (weights referencing real questions, exact-match labels) is enforced by validateContent()
- * in the @earlysteps/content test suite. The "disclaimer present on every results/report
- * route" half of this check (CLAUDE.md §10) is stubbed below until the mobile app exists.
+ * This is a TEXTUAL gate over content JSON + prompt templates + mobile source. Deeper
+ * cross-file integrity (weights referencing real questions, exact-match labels) is enforced
+ * by validateContent() in the @earlysteps/content test suite; runtime behaviour is covered
+ * by the component tests.
  *
  * NOTE: keep BANNED_WORDS in sync with packages/shared-types/src/vocabulary.ts (BANNED_WORDS).
  * This file is plain Node ESM and cannot import the TS source directly.
@@ -138,7 +142,58 @@ for (const file of walkFiles(promptsDir, '.md')) {
   }
 }
 
-// TODO (post-mobile): assert <ScreeningDisclaimer /> renders on every results/report route.
+// 4. Banned words in apps/mobile source — screens carry hardcoded caregiver-facing copy in
+//    two shapes: quoted string literals AND bare JSX text (<Text>Here's what we noticed</Text>
+//    has no quotes). Both are scanned; comments are not (they aren't user-facing, and "fix"
+//    is normal engineering vocabulary there). Test files are excluded (they assert against
+//    copy). Word boundaries keep identifiers like "prefix"/"fixed" from matching.
+const STRING_LITERAL = /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/gs;
+// Text between a closing `>` and the next `<`, with no code punctuation inside — the shape
+// of a JSX text node (expressions live in `{}`, which splits segments). Heuristic, but a
+// false positive can be allowlisted; a false negative here was how a banned word could ship.
+const JSX_TEXT = />([^<>{}`]+)</gs;
+const mobileSrc = join(ROOT, 'apps', 'mobile', 'src');
+const mobileSources = [
+  ...walkFiles(mobileSrc, '.ts'),
+  ...walkFiles(mobileSrc, '.tsx'),
+].filter((f) => !f.endsWith('.test.ts') && !f.endsWith('.test.tsx'));
+for (const file of mobileSources) {
+  const source = readFileSync(file, 'utf8');
+  const candidates = [
+    ...[...source.matchAll(STRING_LITERAL)].map((m) => m[0]),
+    ...[...source.matchAll(JSX_TEXT)].map((m) => m[1]),
+  ];
+  for (const text of candidates) {
+    const match = text.match(bannedPattern);
+    if (match && !isAllowlisted(text)) {
+      errors.push(
+        `[banned word "${match[0]}"] ${relative(ROOT, file)}: ${JSON.stringify(text.trim().slice(0, 120))}`,
+      );
+    }
+  }
+}
+
+// 5. Every results/report screen must render <ScreeningDisclaimer /> (CLAUDE.md §2 rule 5).
+//    Structural source check: a screen file named like a results/report surface must
+//    reference the component. The screens directory must yield at least one such file so a
+//    rename can't silently reduce this check to a no-op.
+const screensDir = join(ROOT, 'apps', 'mobile', 'src', 'screens');
+const resultsScreens = walkFiles(screensDir, '.tsx').filter(
+  (f) => /results|report/i.test(f) && !f.endsWith('.test.tsx'),
+);
+if (resultsScreens.length === 0) {
+  errors.push(
+    '[disclaimer check] no results/report screens found under apps/mobile/src/screens — the disclaimer gate has nothing to verify (was a screen renamed?)',
+  );
+}
+for (const file of resultsScreens) {
+  const source = readFileSync(file, 'utf8');
+  if (!source.includes('ScreeningDisclaimer')) {
+    errors.push(
+      `[missing disclaimer] ${relative(ROOT, file)} is a results/report screen but does not render <ScreeningDisclaimer />`,
+    );
+  }
+}
 
 if (errors.length > 0) {
   console.error(`\n✗ content-safety lint failed with ${errors.length} issue(s):\n`);
