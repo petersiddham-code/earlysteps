@@ -68,6 +68,18 @@ const INSUFFICIENT_RESULTS = {
   recommendationTier: null,
 };
 
+/** Zero questions answered (all skipped, issue #32): nothing scored, nothing gated. */
+const EMPTY_RESULTS = {
+  disclaimer: SCREENING_DISCLAIMER,
+  computedAt: '2026-07-01T00:00:00.000Z',
+  basedOnAnswers: 0,
+  domains: [] as never[],
+  supportLevel: null,
+  insufficientEvidenceOverall: true,
+  redFlagTypes: [] as never[],
+  recommendationTier: null,
+};
+
 const FOLLOW_UP_SUGGESTION = {
   id: 'suggestion-1',
   follow_up_id: 'FU_loss_of_skills',
@@ -176,7 +188,8 @@ describe('ResultsScreen', () => {
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
 
     await screen.findByText(SCREENING_DISCLAIMER);
-    expect(screen.getByText('Not enough information yet')).toBeTruthy();
+    // Twice: once on the gated domain's row, once heading the next-step card (#32).
+    expect(screen.getAllByText('Not enough information yet')).toHaveLength(2);
     expect(screen.getByTestId('insufficient-domain-detail')).toBeTruthy();
     expect(screen.getByTestId('insufficient-overall-detail')).toBeTruthy();
     // Nothing stronger than the evidence: no sign level, no support term, no tier.
@@ -188,6 +201,46 @@ describe('ResultsScreen', () => {
     expect(screen.getAllByText('social interaction style')).toHaveLength(1);
     // Singular provenance for a single answer.
     expect(screen.getByTestId('provenance-line')).toHaveTextContent(/Based on 1 answer /);
+  });
+
+  it('renders a clean empty state when 0 questions were answered: no bare headings, no empty cards (issue #32)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(EMPTY_RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    // No content-less "Strengths"/"Support needs" headings and no empty domain card.
+    expect(screen.queryByText('Strengths')).toBeNull();
+    expect(screen.queryByText('Support needs')).toBeNull();
+    expect(screen.queryByTestId('insufficient-domain-detail')).toBeNull();
+    // The one honest statement: not enough information yet, answers are saved.
+    expect(screen.getByTestId('insufficient-overall-label')).toHaveTextContent(
+      'Not enough information yet',
+    );
+    expect(screen.getByTestId('insufficient-overall-detail')).toBeTruthy();
+    // Never a tier off zero evidence — "Support activities can begin now" was the bug.
+    expect(screen.queryByText(/Formal assessment|Support activities/i)).toBeNull();
+    expect(screen.getByTestId('provenance-line')).toHaveTextContent(/Based on 0 answers/);
+  });
+
+  it('still surfaces a red flag and its recommendation when 0 domains scored (issues #32 + #22)', async () => {
+    (getResults as jest.Mock).mockResolvedValue({
+      ...EMPTY_RESULTS,
+      basedOnAnswers: 1,
+      redFlagTypes: ['loss_of_skills' as const],
+      recommendationTier: 'Formal assessment is recommended' as const,
+    });
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(
+      screen.getByText(/may benefit from being seen soon by a doctor/i),
+    ).toBeTruthy();
+    expect(screen.getByText('Formal assessment is recommended')).toBeTruthy();
+    // Still no bare strengths/needs headings around the banner.
+    expect(screen.queryByText('Strengths')).toBeNull();
+    expect(screen.queryByText('Support needs')).toBeNull();
   });
 
   it('red flags are EXEMPT from the gate: banner and recommendation still surface on a gated view (issue #22)', async () => {

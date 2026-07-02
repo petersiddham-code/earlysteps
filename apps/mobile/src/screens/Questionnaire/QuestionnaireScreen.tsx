@@ -230,9 +230,12 @@ export function QuestionnaireScreen({ navigation }: Props) {
   const total = questions.length;
   const onReviewStep = index >= total;
   const question = onReviewStep ? null : questions[index];
-  const answeredCount = questions.filter((q) =>
+  // One per-question truth drives both the counter and the stones, so they can never
+  // disagree the way "You answered 0 of 33" under a fully green path did (#37).
+  const answeredSteps = questions.map((q) =>
     isAnswered(mergeAnswer(answers[q.id], freeTexts[q.id])),
-  ).length;
+  );
+  const answeredCount = answeredSteps.filter(Boolean).length;
   // A gentle lift at the path's midpoint — only worth marking on a longer walk.
   const isHalfway = !onReviewStep && total >= 8 && index === Math.floor(total / 2);
 
@@ -264,7 +267,7 @@ export function QuestionnaireScreen({ navigation }: Props) {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Text style={styles.eyebrow}>ABOUT {child.nickname.toUpperCase()}</Text>
-        <SteppingStones total={total} currentIndex={index} />
+        <SteppingStones total={total} currentIndex={index} answered={answeredSteps} />
         <Text style={styles.progressLabel}>
           {onReviewStep ? 'All steps walked' : `Question ${index + 1} of ${total}`}
         </Text>

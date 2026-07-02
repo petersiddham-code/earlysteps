@@ -13,6 +13,9 @@ export interface StrengthsFirstListProps {
  * order downstream.
  */
 export function StrengthsFirstList({ strengths, needs }: StrengthsFirstListProps) {
+  // Nothing on either side (e.g. every question skipped, #32): render nothing at all —
+  // two bare headings over empty space read as a rendering bug, not an honest gap.
+  if (strengths.length === 0 && needs.length === 0) return null;
   return (
     <View>
       <View style={styles.section}>

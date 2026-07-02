@@ -6,6 +6,13 @@ export interface SteppingStonesProps {
   total: number;
   /** 0-based index of the step the caregiver is on. Stones before it render filled. */
   currentIndex: number;
+  /**
+   * Per-step answered flags, same order as the steps. A crossed stone fills teal only if
+   * its question was answered; a crossed-but-skipped stone stays a hollow outline, so the
+   * path never claims progress the caregiver didn't give (#37 — all-green after skipping
+   * everything contradicted "You answered 0 of N"). Omitted: every crossed stone fills.
+   */
+  answered?: readonly boolean[];
 }
 
 /**
@@ -17,7 +24,7 @@ export interface SteppingStonesProps {
  * Plain Views only (no SVG dependency): each stone is a small elliptical pebble,
  * alternating a subtle vertical offset to suggest a footpath rather than a ruler.
  */
-export function SteppingStones({ total, currentIndex }: SteppingStonesProps) {
+export function SteppingStones({ total, currentIndex, answered }: SteppingStonesProps) {
   if (total <= 0) return null;
   const clamped = Math.min(Math.max(currentIndex, 0), total);
 
@@ -30,7 +37,14 @@ export function SteppingStones({ total, currentIndex }: SteppingStonesProps) {
       testID="stepping-stones"
     >
       {Array.from({ length: total }, (_, i) => {
-        const state = i < clamped ? 'done' : i === clamped ? 'current' : 'ahead';
+        const state =
+          i < clamped
+            ? (answered?.[i] ?? true)
+              ? 'done'
+              : 'skipped'
+            : i === clamped
+              ? 'current'
+              : 'ahead';
         return (
           <View key={i} style={[styles.slot, i % 2 === 1 && styles.slotLow]}>
             <View
@@ -38,6 +52,7 @@ export function SteppingStones({ total, currentIndex }: SteppingStonesProps) {
               style={[
                 styles.stone,
                 state === 'done' && styles.stoneDone,
+                state === 'skipped' && styles.stoneSkipped,
                 state === 'current' && styles.stoneCurrent,
               ]}
             />
@@ -74,6 +89,12 @@ const styles = StyleSheet.create({
   },
   stoneDone: {
     backgroundColor: colors.primary,
+  },
+  // Crossed but not answered: a hollow pebble — visibly "stepped past", never "filled".
+  stoneSkipped: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: colors.disabled,
   },
   stoneCurrent: {
     width: 14,
