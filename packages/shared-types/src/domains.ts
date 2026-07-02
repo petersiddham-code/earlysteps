@@ -33,17 +33,22 @@ export const DOMAIN_DISPLAY_NAMES: Record<Domain, string> = {
 };
 
 /**
- * Age bands the question banks and activities are organised by (product plan §4.1c).
- * MVP ships toddler + preschool only; primary + teen are defined here but deferred.
+ * Age bands the question banks and activities are organised by (product plan §4.1c A–E,
+ * plus `young_adult`). All five ship a caregiver-answered question bank.
+ *
+ * `young_adult` (19–25) is a deliberate scope EXTENSION beyond the product plan (which ends
+ * at Teen 13–18), added 2026-07-02 at the product owner's request — see
+ * docs/clinical-review/2026-07-02-age-band-expansion.md. Its questions are newly authored,
+ * not spec-extracted, and carry the strongest clinical sign-off requirement in the repo.
  */
-export const AGE_BANDS = ['toddler', 'preschool', 'primary', 'teen'] as const;
-export type AgeBand = (typeof AGE_BANDS)[number];
-
-/** Age bands MVP actually ships (product plan §11). */
-export const MVP_AGE_BANDS = [
+export const AGE_BANDS = [
   'toddler',
   'preschool',
-] as const satisfies readonly AgeBand[];
+  'primary',
+  'teen',
+  'young_adult',
+] as const;
+export type AgeBand = (typeof AGE_BANDS)[number];
 
 /** A question may apply to a specific band or be asked once for everyone. */
 export type QuestionAgeBand = AgeBand | 'universal';

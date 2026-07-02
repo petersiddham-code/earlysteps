@@ -41,11 +41,18 @@ They're currently mapped to `sensory` and `emotional_regulation` respectively fo
 scoring, but primarily drive red-flag rules. Confirm this mapping is clinically acceptable or
 introduce a dedicated handling path.
 
-## 4. Deferred age bands
+## 4. ~~Deferred age bands~~ — PARTIALLY CLOSED 2026-07-02
 
-Primary (6–12y) and Teen (13–18y) banks from product plan §4.1c §D–E, plus the teen self-report
-flow, are defined in the spec but **not yet shipped** (MVP is Toddler + Preschool, product plan
-§11). No scoring weights exist for them.
+Primary (6–12y), Teen (13–18y, parent version), and a new Young Adult (19–25y) band now ship
+with question banks and placeholder weights — see
+`docs/clinical-review/2026-07-02-age-band-expansion.md` (awaiting sign-off; Young Adult is
+**beyond the product plan's scope** and fully newly authored). Still open from this item:
+- Teen self-report flow (spec TS1–TS5) and any young-adult self-report equivalent —
+  deliberately deferred with the product owner's agreement (caregiver-report first).
+- Observation activities (§4.2) for the new bands.
+- Red-flag proxy questions for the new bands: the shipped rules key off toddler/preschool
+  ids only, so red flags are effectively inert for primary/teen/young-adult intakes until
+  the item-2 questions land.
 
 ## 5. Recommendation-tier crosswalk is a placeholder heuristic
 

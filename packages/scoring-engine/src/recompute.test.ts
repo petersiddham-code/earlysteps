@@ -112,4 +112,41 @@ describe('recompute — end-to-end pipeline (uses shipped content weights)', () 
     expect(profile.findings).toEqual([]);
     expect(supportEstimate).toBeNull();
   });
+
+  // The shipped weights cover every band's questions — one end-to-end case per new bank
+  // proves the whole pipeline (bank -> indicator -> domain -> level) is wired for them.
+  it('scores primary-band answers through the shipped weights', () => {
+    const { profile } = recompute(
+      [r('PR4', 'struggles_make_keep'), r('PR13', 'big_reactions')],
+      { computedAt: AT },
+    );
+    const domains = Object.fromEntries(profile.findings.map((f) => [f.domain, f.level]));
+    expect(domains).toEqual({ social: 'many', emotional_regulation: 'many' });
+  });
+
+  it('scores teen-band answers through the shipped weights', () => {
+    const { profile } = recompute([r('TE5', 'very_distressing'), r('TE2', 'yes')], {
+      computedAt: AT,
+    });
+    const domains = Object.fromEntries(profile.findings.map((f) => [f.domain, f.level]));
+    expect(domains).toEqual({ repetitive_behaviour: 'many', social: 'low' });
+  });
+
+  it('scores young-adult-band answers through the shipped weights', () => {
+    const { profile, supportEstimate } = recompute(
+      [
+        r('YA1', 'comfortable_back_and_forth'),
+        r('YA4', 'draining_but_manages'),
+        r('YA7', ['loud_sounds', 'busy_places']),
+      ],
+      { computedAt: AT },
+    );
+    const domains = Object.fromEntries(profile.findings.map((f) => [f.domain, f.level]));
+    expect(domains).toEqual({
+      communication: 'low',
+      social: 'some',
+      sensory: 'some',
+    });
+    expect(supportEstimate).not.toBeNull();
+  });
 });

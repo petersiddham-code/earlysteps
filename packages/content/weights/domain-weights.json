@@ -230,6 +230,235 @@
       "domain": "learning",
       "combine": "max",
       "option_weights": { "yes": 8 }
+    },
+    {
+      "question_id": "PR1",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": {
+        "limited_spoken": 10,
+        "mostly_short_answers": 6,
+        "struggles_back_and_forth": 3
+      }
+    },
+    {
+      "question_id": "PR2",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "very_literal": 8, "needs_it_explained": 4 }
+    },
+    {
+      "question_id": "PR3",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "finds_it_hard": 8, "with_prompting": 4 }
+    },
+    {
+      "question_id": "PR4",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "struggles_make_keep": 10, "knows_people_few_close": 5 }
+    },
+    {
+      "question_id": "PR5",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "rarely_initiates": 8, "own_topics": 5 }
+    },
+    {
+      "question_id": "PR6",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "often_doesnt_notice": 8, "sometimes": 4 }
+    },
+    {
+      "question_id": "PR7",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "yes": 4 }
+    },
+    {
+      "question_id": "PR8",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": { "very_intense_rigid": 8, "strong_but_flexible": 3 }
+    },
+    {
+      "question_id": "PR9",
+      "domain": "repetitive_behaviour",
+      "combine": "sum",
+      "option_weights": {
+        "hand_movements": 5,
+        "rocking": 5,
+        "fidgeting_objects": 5,
+        "pacing": 5,
+        "something_else": 5
+      }
+    },
+    {
+      "question_id": "PR10",
+      "domain": "sensory",
+      "combine": "sum",
+      "option_weights": {
+        "loud_sounds": 5,
+        "bright_lights": 5,
+        "crowded_spaces": 5,
+        "clothing_textures": 5,
+        "food_textures": 5
+      }
+    },
+    {
+      "question_id": "PR11",
+      "domain": "attention",
+      "combine": "max",
+      "option_weights": { "very_hard": 10, "frequent_reminders": 5 }
+    },
+    {
+      "question_id": "PR12",
+      "domain": "learning",
+      "combine": "max",
+      "option_weights": { "yes": 4 }
+    },
+    {
+      "question_id": "PR13",
+      "domain": "emotional_regulation",
+      "combine": "max",
+      "option_weights": { "big_reactions": 10, "upset_but_recovers": 5 }
+    },
+    {
+      "question_id": "PR14",
+      "domain": "daily_living",
+      "combine": "max",
+      "option_weights": { "lots_of_support": 10, "some_reminders_help": 5 }
+    },
+    {
+      "question_id": "TE1",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "prefers_not_talking": 8, "small_talk_hard": 4 }
+    },
+    {
+      "question_id": "TE2",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "not_really": 8, "mostly_online_occasional": 4 }
+    },
+    {
+      "question_id": "TE3",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "often_unaware": 8, "sometimes_misses": 4 }
+    },
+    {
+      "question_id": "TE4",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": { "yes_quite_intense": 8, "strong_but_balanced": 3 }
+    },
+    {
+      "question_id": "TE5",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": { "very_distressing": 10, "uncomfortable_but_copes": 5 }
+    },
+    {
+      "question_id": "TE6",
+      "domain": "sensory",
+      "combine": "sum",
+      "option_weights": {
+        "loud_sounds": 5,
+        "bright_lights": 5,
+        "crowded_places": 5,
+        "clothing_textures": 5
+      }
+    },
+    {
+      "question_id": "TE7",
+      "domain": "emotional_regulation",
+      "combine": "max",
+      "option_weights": { "very_difficult": 10, "struggles_some_strategies": 5 }
+    },
+    {
+      "question_id": "TE8",
+      "domain": "emotional_regulation",
+      "combine": "max",
+      "option_weights": { "yes": 4 }
+    },
+    {
+      "question_id": "TE9",
+      "domain": "daily_living",
+      "combine": "max",
+      "option_weights": { "needs_lots_support": 10, "needs_some_support": 5 }
+    },
+    {
+      "question_id": "YA1",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": {
+        "rarely_starts": 8,
+        "specific_topics_only": 6,
+        "small_talk_hard": 4
+      }
+    },
+    {
+      "question_id": "YA2",
+      "domain": "communication",
+      "combine": "max",
+      "option_weights": { "very_literal": 8, "needs_explaining": 4 }
+    },
+    {
+      "question_id": "YA3",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "not_really": 8, "mostly_online_occasional": 4 }
+    },
+    {
+      "question_id": "YA4",
+      "domain": "social",
+      "combine": "max",
+      "option_weights": { "usually_avoids": 8, "draining_but_manages": 4, "depends": 2 }
+    },
+    {
+      "question_id": "YA5",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": { "yes_quite_intense": 8, "strong_but_balanced": 3 }
+    },
+    {
+      "question_id": "YA6",
+      "domain": "repetitive_behaviour",
+      "combine": "max",
+      "option_weights": { "very_distressing": 10, "uncomfortable_but_copes": 5 }
+    },
+    {
+      "question_id": "YA7",
+      "domain": "sensory",
+      "combine": "sum",
+      "option_weights": {
+        "loud_sounds": 5,
+        "bright_lights": 5,
+        "busy_places": 5,
+        "clothing_textures": 5,
+        "food_textures": 5
+      }
+    },
+    {
+      "question_id": "YA8",
+      "domain": "emotional_regulation",
+      "combine": "max",
+      "option_weights": { "very_difficult": 10, "struggles_some_strategies": 5 }
+    },
+    {
+      "question_id": "YA9",
+      "domain": "emotional_regulation",
+      "combine": "max",
+      "option_weights": { "yes": 4 }
+    },
+    {
+      "question_id": "YA10",
+      "domain": "daily_living",
+      "combine": "max",
+      "option_weights": { "needs_lots_support": 10, "needs_some_support": 5 }
     }
   ]
 }

@@ -5,6 +5,7 @@
  */
 import { z } from 'zod';
 import {
+  AGE_BANDS,
   BANNED_WORDS,
   CONSENT_SCOPES,
   DOMAINS,
@@ -44,7 +45,8 @@ export const safeCopy = z.string().refine(notBanned, bannedMessage);
 export const safeCopyNonEmpty = z.string().min(1).refine(notBanned, bannedMessage);
 
 const questionDomain = z.enum([...DOMAINS, 'profile', 'strengths']);
-const questionAgeBand = z.enum(['toddler', 'preschool', 'primary', 'teen', 'universal']);
+// Derived from the shared-types source of truth so a new band can't silently drift.
+const questionAgeBand = z.enum([...AGE_BANDS, 'universal']);
 
 export const optionSchema = z.object({
   id: z.string().min(1),
