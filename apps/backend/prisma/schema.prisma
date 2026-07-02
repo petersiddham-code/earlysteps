@@ -32,13 +32,22 @@ model Family {
 }
 
 model Child {
-  id        String   @id @default(cuid())
-  familyId  String
-  family    Family   @relation(fields: [familyId], references: [id])
-  nickname  String
-  ageBand   String
-  languages String[]
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  familyId   String
+  family     Family   @relation(fields: [familyId], references: [id])
+  nickname   String
+  /// Birth month (1–12) + year — deliberately month granularity, never the full date
+  /// (data minimization, issue #25). The age band is DERIVED from these at read time
+  /// (shared-types ageBand.ts), never stored, so it can't go stale as the child ages.
+  birthMonth Int
+  birthYear  Int
+  /// Optional inclusive gender ('girl' | 'boy' | 'self_describe' | 'prefer_not_to_say').
+  /// Stored only — any USE of it is gated clinical content (CLAUDE.md §9).
+  gender       String?
+  /// Caregiver's own words, only alongside gender = 'self_describe'.
+  genderDetail String?
+  languages  String[]
+  createdAt  DateTime @default(now())
 
   intakeResponses  IntakeResponseRecord[]
   activityResults  ActivityResultRecord[]
@@ -86,6 +95,10 @@ model DomainProfileRecord {
   childId    String
   child      Child    @relation(fields: [childId], references: [id])
   computedAt DateTime
+  /// The child's (derived) age band when this screening was computed — trend history must
+  /// record which band each screening used, since the band itself is derived and a child
+  /// ages between sessions (issue #25).
+  ageBand    String
   /// DomainFinding[] — { domain, level, score, confidence, evidence_refs[] }.
   findings   Json
 

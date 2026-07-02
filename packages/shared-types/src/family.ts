@@ -14,10 +14,36 @@ export interface Family {
   consent_flags: ConsentFlags;
 }
 
+/**
+ * Optional, inclusively-worded gender field (issue #25). Captured to help narrow down
+ * interpretation later; USING it anywhere (scoring, phrasing, presentation-difference
+ * handling) is clinical content that needs advisor sign-off first (CLAUDE.md §9) — today
+ * it is stored and echoed back, nothing more.
+ */
+export const GENDER_OPTIONS = [
+  'girl',
+  'boy',
+  'self_describe',
+  'prefer_not_to_say',
+] as const;
+export type GenderOption = (typeof GENDER_OPTIONS)[number];
+
 export interface Child {
   id: string;
   family_id: string;
   nickname: string;
+  /** Month of birth, 1–12. Month+year only — deliberately never the full date (issue #25). */
+  birth_month: number;
+  /** Four-digit year of birth. */
+  birth_year: number;
+  /**
+   * DERIVED from birth_month/birth_year at read time (see ageBand.ts) — never stored, so
+   * it can't go stale as the child ages. Kept on the API surface for existing consumers.
+   */
   age_band: AgeBand;
+  /** Optional — absent when the caregiver skipped the question. */
+  gender?: GenderOption;
+  /** Caregiver's own words, only alongside gender === 'self_describe'. */
+  gender_detail?: string;
   languages: string[];
 }

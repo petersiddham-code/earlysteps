@@ -1,4 +1,4 @@
-import type { AgeBand, Child, ConsentScope, Family } from '@earlysteps/shared-types';
+import type { Child, ConsentScope, Family, GenderOption } from '@earlysteps/shared-types';
 import { apiClient } from './client.js';
 
 export interface CreateFamilyInput {
@@ -8,7 +8,11 @@ export interface CreateFamilyInput {
 
 export interface CreateChildInput {
   nickname: string;
-  age_band: AgeBand;
+  /** Month (1–12) + year of birth — the age band is derived server-side, never sent (#25). */
+  birth_month: number;
+  birth_year: number;
+  gender?: GenderOption;
+  gender_detail?: string;
   languages: string[];
 }
 

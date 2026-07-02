@@ -118,6 +118,18 @@ describe('screening pipeline — intake -> scoring -> results', () => {
     expect(await repository.getIntakeResponses(childId)).toHaveLength(2);
   });
 
+  it('stamps each snapshot with the age band the screening used — trend history (#25)', async () => {
+    await service.submitIntakeResponses(childId, [
+      { ...r('T1', 'before_12mo'), child_id: childId },
+    ]);
+
+    const snapshot = await repository.getLatestSnapshot(childId);
+    // The seeded child is 24 months old — squarely toddler. The band is derived from
+    // birth month/year at compute time and recorded on the snapshot, so later trend
+    // graphs know which bank each screening drew from even after the child ages.
+    expect(snapshot?.ageBand).toBe('toddler');
+  });
+
   it('retains history as an append-only sequence of snapshots (never overwritten)', async () => {
     await service.submitIntakeResponses(childId, [
       { ...r('T1', 'before_12mo'), child_id: childId },

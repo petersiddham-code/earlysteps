@@ -4,7 +4,13 @@
  * `hasConsent()` returns false for anything not explicitly granted, so tests can't
  * accidentally rely on a permissive-by-default double masking a missing consent check.
  */
-import type { AgeBand, Child, ConsentScope, Family } from '@earlysteps/shared-types';
+import {
+  ageInMonths,
+  deriveAgeBandOrNearest,
+  type Child,
+  type ConsentScope,
+  type Family,
+} from '@earlysteps/shared-types';
 import type {
   CreateChildInput,
   CreateFamilyInput,
@@ -15,6 +21,22 @@ let nextId = 0;
 function generateId(prefix: string): string {
   nextId += 1;
   return `${prefix}-${nextId}`;
+}
+
+/** Test helper: the birth month/year of a child exactly `months` old right now. */
+export function bornMonthsAgo(months: number): {
+  birthMonth: number;
+  birthYear: number;
+} {
+  const now = new Date();
+  const total = now.getFullYear() * 12 + now.getMonth() - months;
+  const birthMonth = (total % 12) + 1;
+  const birthYear = Math.floor(total / 12);
+  // Sanity-check with the real derivation math so the helper can't silently drift.
+  if (ageInMonths(birthMonth, birthYear, now) !== months) {
+    throw new Error(`bornMonthsAgo(${months}) produced an inconsistent date`);
+  }
+  return { birthMonth, birthYear };
 }
 
 export class InMemoryFamiliesRepository implements FamiliesRepository {
@@ -56,7 +78,11 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
       id: generateId('child'),
       family_id: familyId,
       nickname: input.nickname,
-      age_band: input.ageBand as AgeBand,
+      birth_month: input.birthMonth,
+      birth_year: input.birthYear,
+      age_band: deriveAgeBandOrNearest(input.birthMonth, input.birthYear),
+      ...(input.gender ? { gender: input.gender } : {}),
+      ...(input.genderDetail ? { gender_detail: input.genderDetail } : {}),
       languages: input.languages,
     };
     this.children.set(child.id, child);
@@ -64,7 +90,14 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
   }
 
   async getChild(childId: string): Promise<Child | null> {
-    return this.children.get(childId) ?? null;
+    const child = this.children.get(childId);
+    if (!child) return null;
+    // Mirror the real repository: the band is derived at READ time, never trusted from
+    // storage — a child ages into the next band between sessions (#25).
+    return {
+      ...child,
+      age_band: deriveAgeBandOrNearest(child.birth_month, child.birth_year),
+    };
   }
 
   async hasConsent(childId: string, scope: ConsentScope): Promise<boolean> {
@@ -80,7 +113,8 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
     grantedScopes: ConsentScope[] = [],
     childInput: CreateChildInput = {
       nickname: 'Test Child',
-      ageBand: 'toddler',
+      // 24 months old at test time — squarely in the toddler band.
+      ...bornMonthsAgo(24),
       languages: ['English'],
     },
   ): Promise<{ family: Family; child: Child }> {

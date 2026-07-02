@@ -1,5 +1,15 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { Child, ConsentScope, Family } from '@earlysteps/shared-types';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  deriveAgeBand,
+  type Child,
+  type ConsentScope,
+  type Family,
+} from '@earlysteps/shared-types';
 import {
   FAMILIES_REPOSITORY,
   type CreateChildInput,
@@ -34,7 +44,19 @@ export class FamiliesService {
   async createChild(familyId: string, input: CreateChildInput): Promise<Child> {
     // Fail fast with a clear 404 rather than a raw FK-constraint error from Prisma.
     await this.getFamily(familyId);
-    return this.repository.createChild(familyId, input);
+    // The band is derived, never sent by the client (#25). Strict derivation here: a child
+    // outside the supported 12-month–25-year range gets a clear 400 at creation, while
+    // read paths clamp to the nearest band (a child aging out mustn't break the app).
+    if (deriveAgeBand(input.birthMonth, input.birthYear) === null) {
+      throw new BadRequestException(
+        'Our check-ins are designed for ages 12 months to 25 years. Please check the birth month and year.',
+      );
+    }
+    // gender_detail is only meaningful alongside self_describe — drop it otherwise so a
+    // stray value can never be stored against a child unintentionally (data minimization).
+    const genderDetail =
+      input.gender === 'self_describe' ? input.genderDetail : undefined;
+    return this.repository.createChild(familyId, { ...input, genderDetail });
   }
 
   /**
