@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { getQuestionBank } from '@earlysteps/content';
+import { getQuestionBank, isAskedInQuestionnaire } from '@earlysteps/content';
 import {
   makeFreeTextAnswer,
   type Child,
@@ -38,9 +38,12 @@ export const AUTO_ADVANCE_DELAY_MS = 450;
 
 /**
  * A question the caregiver can actually answer on this screen: free-text, or at least one
- * closed-choice option. Filters out picker-style questions whose options aren't populated
- * yet (e.g. U1's age dropdown, which duplicates Child Profile Setup anyway) so nothing
- * renders as a dead prompt with no way to respond.
+ * closed-choice option. Safety net against a bank entry whose options aren't populated,
+ * so nothing renders as a dead prompt with no way to respond. Deliberate exclusions are
+ * a different concern, carried by the content data itself: questions already answered
+ * during Child Profile Setup (age U1, family languages U2) are flagged
+ * `collected_at: "profile_setup"` in the bank and dropped via isAskedInQuestionnaire()
+ * — a tired caregiver is never asked the same thing twice (#24).
  */
 function isAnswerable(question: Question): boolean {
   return question.type === 'text' || question.options.length > 0;
@@ -143,7 +146,11 @@ export function QuestionnaireScreen({ navigation }: Props) {
         setChild(fetchedChild);
         const universal = getQuestionBank('universal')?.questions ?? [];
         const ageBand = getQuestionBank(fetchedChild.age_band)?.questions ?? [];
-        setQuestions([...universal, ...ageBand].filter(isAnswerable));
+        setQuestions(
+          [...universal, ...ageBand].filter(
+            (q) => isAskedInQuestionnaire(q) && isAnswerable(q),
+          ),
+        );
       })
       .catch(() => {
         if (!cancelled) setError("We couldn't load the questions. Please try again.");

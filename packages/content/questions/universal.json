@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "locale": "en",
   "age_band": "universal",
   "questions": [
@@ -11,7 +11,8 @@
       "type": "dropdown",
       "options": [],
       "hint": "You can update this anytime.",
-      "allow_free_text": false
+      "allow_free_text": false,
+      "collected_at": "profile_setup"
     },
     {
       "id": "U2",
@@ -50,7 +51,8 @@
         }
       ],
       "hint": "Pick all that apply — it's okay if [child] hears more than one.",
-      "allow_free_text": true
+      "allow_free_text": true,
+      "collected_at": "profile_setup"
     },
     {
       "id": "U3",

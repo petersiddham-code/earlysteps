@@ -61,15 +61,18 @@ describe('QuestionnaireScreen', () => {
 
     expect(await screen.findByText(/Question 1 of \d+/)).toBeTruthy();
     expect(screen.getByTestId('stepping-stones')).toBeTruthy();
-    // Only the first question's card is rendered — not the full bank.
+    // Family languages (U2) was already answered during Child Profile Setup — the flow
+    // must not re-ask it (#24), so the path opens with U3 instead.
     expect(
-      screen.getByText('What language(s) does your family mainly speak at home?'),
+      screen.queryByText('What language(s) does your family mainly speak at home?'),
+    ).toBeNull();
+    expect(
+      screen.getByText(/Does Alex hear more than one language regularly/),
     ).toBeTruthy();
     // Hints are interpolated too — no raw "[child]" ever reaches the caregiver.
     expect(screen.queryByText(/\[child\]/)).toBeNull();
-    expect(
-      screen.queryByText(/Does Alex hear more than one language regularly/),
-    ).toBeNull();
+    // Only the first question's card is rendered — not the full bank.
+    expect(screen.queryByText(/born on their due date/)).toBeNull();
   });
 
   it('interpolates [child] with the fetched nickname in question text', async () => {
@@ -89,26 +92,24 @@ describe('QuestionnaireScreen', () => {
     await screen.findByText(/Question 1 of \d+/);
     jest.useFakeTimers();
 
-    // U3 (question 2) is the first single-select.
-    fireEvent.press(screen.getByTestId('skip-button'));
-    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
+    // U3 (question 1 now that U2 is collected at profile setup) is the first single-select.
     fireEvent.press(screen.getByText('Not sure'));
 
     // Not an instant jump: the selection stays visible for a beat first.
-    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
+    expect(screen.getByText(/Question 1 of \d+/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Not sure', selected: true })).toBeTruthy();
     act(() => jest.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS));
-    expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy();
+    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
 
     // Back shows the same question with the selection preserved.
     fireEvent.press(screen.getByTestId('back-button'));
-    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
+    expect(screen.getByText(/Question 1 of \d+/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Not sure', selected: true })).toBeTruthy();
 
     // And Next is available (enabled) so the caregiver can move forward again
     // without re-tapping their answer or hitting a misleading "Skip".
     fireEvent.press(screen.getByTestId('next-button'));
-    expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy();
+    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
     jest.useRealTimers();
   });
 
@@ -118,13 +119,12 @@ describe('QuestionnaireScreen', () => {
     await screen.findByText(/Question 1 of \d+/);
     jest.useFakeTimers();
 
-    fireEvent.press(screen.getByTestId('skip-button')); // to U3
-    fireEvent.press(screen.getByText('Not sure')); // pause starts, forward flips to Next
+    fireEvent.press(screen.getByText('Not sure')); // U3 (Q1): pause starts, forward flips to Next
     fireEvent.press(screen.getByTestId('next-button')); // manual move cancels the timer
-    expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy();
+    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
 
     act(() => jest.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 2));
-    expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy(); // still one step
+    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy(); // still one step
     jest.useRealTimers();
   });
 
@@ -133,12 +133,13 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
-    // Q1 (U2, multi-select) unanswered: Skip on offer, no Next.
+    // U7 (multi-select, so no auto-advance muddies the check) unanswered: Skip, no Next.
+    skipToQuestion('What made you want to check in today?');
     expect(screen.getByTestId('skip-button')).toBeTruthy();
     expect(screen.queryByTestId('next-button')).toBeNull();
 
     // Answering flips the same slot to Next.
-    fireEvent.press(screen.getByText('English'));
+    fireEvent.press(screen.getByText('Something I noticed myself'));
     expect(screen.getByTestId('next-button')).toBeTruthy();
     expect(screen.queryByTestId('skip-button')).toBeNull();
   });
@@ -148,14 +149,15 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
-    // U2 (question 1) is chip_multi_select: picking chips does not advance.
-    fireEvent.press(screen.getByText('English'));
-    expect(screen.getByText(/Question 1 of \d+/)).toBeTruthy(); // still here
-    fireEvent.press(screen.getByText('Hindi'));
-    expect(screen.getByText(/Question 1 of \d+/)).toBeTruthy(); // still here
+    // U7 is chip_multi_select: picking chips does not advance.
+    skipToQuestion('What made you want to check in today?');
+    fireEvent.press(screen.getByText('Something I noticed myself'));
+    expect(screen.getByText('What made you want to check in today?')).toBeTruthy(); // still here
+    fireEvent.press(screen.getByText('A family member raised it'));
+    expect(screen.getByText('What made you want to check in today?')).toBeTruthy(); // still here
 
     fireEvent.press(screen.getByTestId('next-button'));
-    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
+    expect(screen.queryByText('What made you want to check in today?')).toBeNull();
   });
 
   it('shows the halfway encouragement at the midpoint of the path', async () => {
@@ -165,7 +167,8 @@ describe('QuestionnaireScreen', () => {
 
     expect(screen.queryByTestId('halfway-encouragement')).toBeNull();
     skipToQuestion('When you talk to Alex up close, do they usually look at your face?');
-    // T5 sits at index 17 of 34 — the midpoint for a toddler path (13 universal + 21 toddler).
+    // T5 sits at index 16 of 33 — the midpoint for a toddler path (12 universal + 21 toddler,
+    // with U1/U2 collected at profile setup).
     expect(screen.getByTestId('halfway-encouragement')).toBeTruthy();
   });
 
@@ -260,7 +263,7 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
-    fireEvent.press(screen.getByText('English')); // answer Q1 so there is something to save
+    fireEvent.press(screen.getByText('Yes')); // answer Q1 (U3) so there is something to save
     skipToReview();
     fireEvent.press(screen.getByTestId('submit-button'));
 
@@ -291,7 +294,7 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
-    fireEvent.press(screen.getByText('English')); // answer Q1 so the save is attempted
+    fireEvent.press(screen.getByText('Yes')); // answer Q1 (U3) so the save is attempted
     skipToReview();
     fireEvent.press(screen.getByTestId('submit-button'));
 
@@ -299,15 +302,19 @@ describe('QuestionnaireScreen', () => {
     expect(navigation.replace).not.toHaveBeenCalled();
   });
 
-  it('does not render unanswerable questions (no options, not free-text)', async () => {
+  it('never asks questions already collected at profile setup (U1 age, U2 languages) (#24)', async () => {
     (getChild as jest.Mock).mockResolvedValue(CHILD);
     render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
-    // U1 ("How old is [child]?") ships with an empty options array — nothing to tap.
-    // Walk the whole path and make sure it never appears.
+    // Both are answered during Child Profile Setup and flagged
+    // `collected_at: "profile_setup"` in the universal bank — walk the whole path and
+    // make sure neither is ever asked again.
     for (let i = 0; i < 60 && screen.queryByTestId('skip-button'); i++) {
       expect(screen.queryByText('How old is Alex?')).toBeNull();
+      expect(
+        screen.queryByText('What language(s) does your family mainly speak at home?'),
+      ).toBeNull();
       fireEvent.press(screen.getByTestId('skip-button'));
     }
     expect(screen.getByTestId('submit-button')).toBeTruthy();
@@ -335,7 +342,7 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
-    fireEvent.press(screen.getByText('English')); // answer Q1 so the save is attempted
+    fireEvent.press(screen.getByText('Yes')); // answer Q1 (U3) so the save is attempted
     skipToReview();
     fireEvent.press(screen.getByTestId('submit-button'));
 
