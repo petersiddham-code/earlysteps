@@ -4,10 +4,13 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { FamiliesService } from '../src/families/families.service.js';
 import { FAMILIES_REPOSITORY } from '../src/families/families.repository.js';
-import { InMemoryFamiliesRepository } from '../src/families/testing/in-memory-families.repository.js';
+import {
+  InMemoryFamiliesRepository,
+  bornMonthsAgo,
+} from '../src/families/testing/in-memory-families.repository.js';
 
 async function buildService() {
   const repository = new InMemoryFamiliesRepository();
@@ -40,7 +43,7 @@ describe('families — onboarding', () => {
     const family = await service.createFamily({ locale: 'en' });
     const child = await service.createChild(family.id, {
       nickname: 'Alex',
-      ageBand: 'toddler',
+      ...bornMonthsAgo(24), // 24 months old — toddler
       languages: ['English'],
     });
     expect(child.family_id).toBe(family.id);
@@ -68,7 +71,7 @@ describe('families — onboarding', () => {
     const family = await service.createFamily({ locale: 'en' });
     const child = await service.createChild(family.id, {
       nickname: 'Alex',
-      ageBand: 'toddler',
+      ...bornMonthsAgo(24), // 24 months old — toddler
       languages: ['English'],
     });
     await expect(service.getChild(family.id, child.id)).resolves.toMatchObject({
@@ -77,12 +80,85 @@ describe('families — onboarding', () => {
     });
   });
 
+  it('derives the age band from birth month/year — never stored-as-entered (#25)', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+
+    const toddler = await service.createChild(family.id, {
+      nickname: 'Alex',
+      ...bornMonthsAgo(24),
+      languages: ['English'],
+    });
+    expect(toddler.age_band).toBe('toddler');
+
+    // 40 months: a coarse year-difference would call this toddler; month math says preschool.
+    const preschooler = await service.createChild(family.id, {
+      nickname: 'Sam',
+      ...bornMonthsAgo(40),
+      languages: ['English'],
+    });
+    expect(preschooler.age_band).toBe('preschool');
+
+    // The read path re-derives too — age_band stays on the API surface for consumers.
+    await expect(service.getChild(family.id, toddler.id)).resolves.toMatchObject({
+      age_band: 'toddler',
+      birth_month: toddler.birth_month,
+      birth_year: toddler.birth_year,
+    });
+  });
+
+  it('rejects a birth date outside the supported 12-month–25-year range with a clear 400', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+
+    for (const months of [6, 320]) {
+      await expect(
+        service.createChild(family.id, {
+          nickname: 'Alex',
+          ...bornMonthsAgo(months),
+          languages: ['English'],
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    }
+  });
+
+  it('gender is optional, and a self-description only persists alongside self_describe (#25)', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+
+    const skipped = await service.createChild(family.id, {
+      nickname: 'Alex',
+      ...bornMonthsAgo(24),
+      languages: ['English'],
+    });
+    expect(skipped.gender).toBeUndefined();
+    expect(skipped.gender_detail).toBeUndefined();
+
+    const selfDescribed = await service.createChild(family.id, {
+      nickname: 'Sam',
+      ...bornMonthsAgo(24),
+      gender: 'self_describe',
+      genderDetail: 'nonbinary',
+      languages: ['English'],
+    });
+    expect(selfDescribed.gender).toBe('self_describe');
+    expect(selfDescribed.gender_detail).toBe('nonbinary');
+
+    // A stray detail without self_describe is dropped, never silently stored.
+    const strayDetail = await service.createChild(family.id, {
+      nickname: 'Kim',
+      ...bornMonthsAgo(24),
+      gender: 'girl',
+      genderDetail: 'should not persist',
+      languages: ['English'],
+    });
+    expect(strayDetail.gender).toBe('girl');
+    expect(strayDetail.gender_detail).toBeUndefined();
+  });
+
   it("refuses to serve a child under a different family's path (tenancy, same 404 as missing)", async () => {
     const familyA = await service.createFamily({ locale: 'en' });
     const familyB = await service.createFamily({ locale: 'en' });
     const child = await service.createChild(familyA.id, {
       nickname: 'Alex',
-      ageBand: 'toddler',
+      ...bornMonthsAgo(24), // 24 months old — toddler
       languages: ['English'],
     });
 

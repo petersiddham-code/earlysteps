@@ -44,6 +44,14 @@ export class ScreeningService {
       );
     }
 
+    // The band is derived from birth month/year at read time and changes as the child
+    // ages (#25) — snapshot it here so trend history records which band this screening
+    // used. Consent passed above, so the child must exist; a vanished row is a real error.
+    const child = await this.familiesRepository.getChild(childId);
+    if (!child) {
+      throw new NotFoundException(`No child found with id ${childId}`);
+    }
+
     await this.repository.saveIntakeResponses(childId, newResponses);
     const allResponses = await this.repository.getIntakeResponses(childId);
 
@@ -53,6 +61,7 @@ export class ScreeningService {
     });
 
     await this.repository.saveComputedSnapshot(childId, {
+      ageBand: child.age_band,
       profile,
       supportEstimate,
       redFlags,

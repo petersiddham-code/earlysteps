@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type {
+  AgeBand,
   Confidence,
   DomainFinding,
   EvidenceRef,
@@ -56,6 +57,7 @@ export class PrismaScreeningRepository implements ScreeningRepository {
         data: {
           childId,
           computedAt,
+          ageBand: snapshot.ageBand,
           findings: snapshot.profile.findings as unknown as Prisma.InputJsonValue,
         },
       }),
@@ -125,6 +127,7 @@ export class PrismaScreeningRepository implements ScreeningRepository {
     }));
 
     return {
+      ageBand: profileRow.ageBand as AgeBand,
       profile: {
         child_id: childId,
         computed_at: profileRow.computedAt.toISOString(),

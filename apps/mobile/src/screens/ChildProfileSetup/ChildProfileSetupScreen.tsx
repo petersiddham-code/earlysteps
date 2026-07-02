@@ -10,7 +10,12 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { AGE_BANDS, type AgeBand } from '@earlysteps/shared-types';
+import {
+  GENDER_OPTIONS,
+  deriveAgeBand,
+  type AgeBand,
+  type GenderOption,
+} from '@earlysteps/shared-types';
 import { createChild } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
@@ -19,7 +24,7 @@ import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChildProfileSetup'>;
 
-/** Every band ships a caregiver-answered question bank, so all are offered. */
+/** Caregiver-facing names for the derived band, shown as reassurance under the birth date. */
 const AGE_BAND_LABELS: Record<AgeBand, string> = {
   toddler: 'Toddler (12–36 months)',
   preschool: 'Preschool (3–5 years)',
@@ -28,28 +33,63 @@ const AGE_BAND_LABELS: Record<AgeBand, string> = {
   young_adult: 'Young adult (19–25 years)',
 };
 
-/** Decorative icons so each age band reads at a glance. */
-const AGE_BAND_ICONS: Record<AgeBand, keyof typeof Ionicons.glyphMap> = {
-  toddler: 'footsteps-outline',
-  preschool: 'color-palette-outline',
-  primary: 'school-outline',
-  teen: 'headset-outline',
-  young_adult: 'briefcase-outline',
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+/**
+ * Optional, inclusively-worded gender choices (issue #25). Captured only — nothing in the
+ * app uses it yet, and any future use is gated clinical content (CLAUDE.md §9).
+ */
+const GENDER_LABELS: Record<GenderOption, string> = {
+  girl: 'Girl',
+  boy: 'Boy',
+  self_describe: 'Prefer to self-describe',
+  prefer_not_to_say: 'Prefer not to say',
 };
 
 const LANGUAGE_OPTIONS = ['English', 'Spanish', 'Mandarin', 'Hindi', 'Arabic', 'French'];
 
-/** Product plan Screen 3 — no photo/avatar required (no media capture at this step). */
+/**
+ * Product plan Screen 3 — no photo/avatar required (no media capture at this step).
+ *
+ * Issue #25: the caregiver enters the child's birth month + year (never the full date —
+ * month granularity is enough for every band boundary while storing less identifying
+ * data) and the age band is DERIVED, not picked. The derived band is shown back as
+ * reassurance, and the backend re-derives it at read time, so the questionnaire always
+ * serves the right bank even as the child ages between sessions.
+ */
 export function ChildProfileSetupScreen({ navigation }: Props) {
   const { familyId, setChildId } = useSession();
   const [nickname, setNickname] = useState('');
-  const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
+  const [birthMonth, setBirthMonth] = useState<number | null>(null);
+  const [birthYearText, setBirthYearText] = useState('');
+  const [gender, setGender] = useState<GenderOption | null>(null);
+  const [genderDetail, setGenderDetail] = useState('');
   const [languages, setLanguages] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const birthYear = /^\d{4}$/.test(birthYearText) ? Number(birthYearText) : null;
+  const derivedBand =
+    birthMonth !== null && birthYear !== null
+      ? deriveAgeBand(birthMonth, birthYear)
+      : null;
+  const birthComplete = birthMonth !== null && birthYear !== null;
+
   const canContinue =
-    nickname.trim().length > 0 && ageBand !== null && languages.length > 0;
+    nickname.trim().length > 0 && derivedBand !== null && languages.length > 0;
 
   const toggleLanguage = (lang: string) => {
     setLanguages((prev) =>
@@ -57,14 +97,24 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
     );
   };
 
+  // Tapping the selected option again clears it — gender stays genuinely optional, never
+  // a one-way choice the caregiver can't back out of.
+  const toggleGender = (option: GenderOption) => {
+    setGender((prev) => (prev === option ? null : option));
+  };
+
   const handleContinue = async () => {
-    if (!familyId || !ageBand) return;
+    if (!familyId || birthMonth === null || birthYear === null) return;
     setSubmitting(true);
     setError(null);
     try {
+      const detail = genderDetail.trim();
       const child = await createChild(familyId, {
         nickname: nickname.trim(),
-        age_band: ageBand,
+        birth_month: birthMonth,
+        birth_year: birthYear,
+        ...(gender ? { gender } : {}),
+        ...(gender === 'self_describe' && detail ? { gender_detail: detail } : {}),
         languages,
       });
       await setChildId(child.id);
@@ -90,30 +140,87 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
         accessibilityLabel="Child's nickname"
       />
 
-      <Text style={styles.label}>How old are they?</Text>
-      <View style={styles.optionRow}>
-        {AGE_BANDS.map((band) => (
-          <Pressable
-            key={band}
-            onPress={() => setAgeBand(band)}
-            style={[styles.optionButton, ageBand === band && styles.optionButtonSelected]}
-            accessibilityRole="button"
-            accessibilityState={{ selected: ageBand === band }}
-          >
-            <Ionicons
-              name={AGE_BAND_ICONS[band]}
-              size={20}
-              color={ageBand === band ? colors.primaryDeep : colors.inkSoft}
-              style={styles.optionIcon}
-            />
-            <Text
-              style={[styles.optionText, ageBand === band && styles.optionTextSelected]}
+      <Text style={styles.label}>When were they born?</Text>
+      <Text style={styles.hint}>
+        Just the month and year — we use it to show questions made for their age.
+      </Text>
+      <View style={styles.chipRow}>
+        {MONTHS.map((label, i) => {
+          const month = i + 1;
+          const selected = birthMonth === month;
+          return (
+            <Pressable
+              key={label}
+              onPress={() => setBirthMonth(month)}
+              style={[styles.chip, selected && styles.chipSelected]}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
             >
-              {AGE_BAND_LABELS[band]}
-            </Text>
-          </Pressable>
-        ))}
+              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
+      <TextInput
+        style={[styles.input, styles.yearInput]}
+        value={birthYearText}
+        onChangeText={(next) => setBirthYearText(next.replace(/[^\d]/g, ''))}
+        placeholder="Year (e.g. 2024)"
+        placeholderTextColor={colors.inkSoft}
+        keyboardType="number-pad"
+        maxLength={4}
+        accessibilityLabel="Year of birth"
+      />
+      {birthComplete && derivedBand && (
+        <View style={styles.bandPreview} testID="derived-band">
+          <Ionicons name="checkmark-circle-outline" size={18} color={colors.primary} />
+          <Text style={styles.bandPreviewText}>
+            That's the {AGE_BAND_LABELS[derivedBand]} range — we'll show questions made
+            for that age.
+          </Text>
+        </View>
+      )}
+      {birthComplete && !derivedBand && (
+        <Text style={styles.rangeNotice} testID="age-range-notice">
+          Our check-ins are designed for ages 12 months to 25 years. Please check the
+          month and year.
+        </Text>
+      )}
+
+      <Text style={styles.label}>Their gender (optional)</Text>
+      <Text style={styles.hint}>
+        Skip this if you'd rather — it's entirely up to you.
+      </Text>
+      <View style={styles.chipRow}>
+        {GENDER_OPTIONS.map((option) => {
+          const selected = gender === option;
+          return (
+            <Pressable
+              key={option}
+              onPress={() => toggleGender(option)}
+              style={[styles.chip, selected && styles.chipSelected]}
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+            >
+              <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                {GENDER_LABELS[option]}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {gender === 'self_describe' && (
+        <TextInput
+          style={styles.input}
+          value={genderDetail}
+          onChangeText={setGenderDetail}
+          placeholder="In your own words (optional)"
+          placeholderTextColor={colors.inkSoft}
+          accessibilityLabel="Describe their gender in your own words"
+        />
+      )}
 
       <Text style={styles.label}>Which language(s) does your family mainly speak?</Text>
       <Text style={styles.hint}>Pick all that apply.</Text>
@@ -182,24 +289,19 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     ...cardShadow,
   },
-  optionRow: { gap: spacing.sm },
-  optionButton: {
+  yearInput: { marginTop: spacing.sm },
+  bandPreview: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    gap: spacing.sm,
+    backgroundColor: colors.primaryTint,
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.card,
+    marginTop: spacing.sm,
   },
-  optionButtonSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryTint,
-  },
-  optionIcon: { marginRight: spacing.md },
-  optionText: { ...type.body, fontSize: 16, color: colors.ink },
-  optionTextSelected: { ...type.bodyStrong, fontSize: 16, color: colors.primaryDeep },
+  bandPreviewText: { ...type.caption, color: colors.ink, flex: 1 },
+  rangeNotice: { ...type.caption, color: colors.inkSoft, marginTop: spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
     borderWidth: 1.5,

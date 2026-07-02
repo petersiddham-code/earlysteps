@@ -7,7 +7,7 @@
  * ScreeningService also depends on this port directly (just the `hasConsent` method) rather
  * than through an extra wrapper class — see screening.service.ts.
  */
-import type { AgeBand, Child, ConsentScope, Family } from '@earlysteps/shared-types';
+import type { Child, ConsentScope, Family, GenderOption } from '@earlysteps/shared-types';
 
 export const FAMILIES_REPOSITORY = Symbol('FAMILIES_REPOSITORY');
 
@@ -18,7 +18,11 @@ export interface CreateFamilyInput {
 
 export interface CreateChildInput {
   nickname: string;
-  ageBand: AgeBand;
+  /** Month (1–12) + year of birth — the age band is derived from these, never stored (#25). */
+  birthMonth: number;
+  birthYear: number;
+  gender?: GenderOption;
+  genderDetail?: string;
   languages: string[];
 }
 

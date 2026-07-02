@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
-import type {
-  AgeBand,
-  Child,
-  ConsentFlags,
-  ConsentScope,
-  Family,
+import {
+  deriveAgeBandOrNearest,
+  type Child,
+  type ConsentFlags,
+  type ConsentScope,
+  type Family,
+  type GenderOption,
 } from '@earlysteps/shared-types';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
@@ -32,14 +33,24 @@ function toChild(row: {
   id: string;
   familyId: string;
   nickname: string;
-  ageBand: string;
+  birthMonth: number;
+  birthYear: number;
+  gender: string | null;
+  genderDetail: string | null;
   languages: string[];
 }): Child {
   return {
     id: row.id,
     family_id: row.familyId,
     nickname: row.nickname,
-    age_band: row.ageBand as AgeBand,
+    birth_month: row.birthMonth,
+    birth_year: row.birthYear,
+    // Derived at READ time so it can never go stale — a child ages into the next band
+    // between sessions and every consumer (questionnaire included) just sees it (#25).
+    // Nearest-band clamping keeps the app working for a child who ages past 25.
+    age_band: deriveAgeBandOrNearest(row.birthMonth, row.birthYear),
+    ...(row.gender ? { gender: row.gender as GenderOption } : {}),
+    ...(row.genderDetail ? { gender_detail: row.genderDetail } : {}),
     languages: row.languages,
   };
 }
@@ -86,7 +97,10 @@ export class PrismaFamiliesRepository implements FamiliesRepository {
       data: {
         familyId,
         nickname: input.nickname,
-        ageBand: input.ageBand,
+        birthMonth: input.birthMonth,
+        birthYear: input.birthYear,
+        gender: input.gender ?? null,
+        genderDetail: input.genderDetail ?? null,
         languages: input.languages,
       },
     });
