@@ -18,6 +18,16 @@ describe('RedFlagBanner', () => {
     expect(screen.queryByText(RED_FLAG_COPY.urgent_resource_message)).toBeNull();
   });
 
+  it('does not show a bare next-steps heading with nothing under it (non-urgent)', () => {
+    render(<RedFlagBanner redFlagTypes={['no_name_response']} />);
+    expect(screen.queryByText(RED_FLAG_COPY.next_steps_heading)).toBeNull();
+  });
+
+  it('shows the next-steps heading when the urgent block provides content for it', () => {
+    render(<RedFlagBanner redFlagTypes={['safety_risk']} />);
+    expect(screen.getByText(RED_FLAG_COPY.next_steps_heading)).toBeTruthy();
+  });
+
   it('shows the additional urgent resource block for self_injury_risk', () => {
     render(<RedFlagBanner redFlagTypes={['self_injury_risk']} />);
     expect(screen.getByText(RED_FLAG_COPY.urgent_resource_message)).toBeTruthy();

@@ -1,27 +1,35 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react-native';
 import { ConsentCenterScreen } from './ConsentCenterScreen';
-import { createFamily, updateConsent } from '../../api/index.js';
+import { createFamily, getFamily, updateConsent } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import { CONSENT_COPY } from '@earlysteps/content';
 
 jest.mock('../../api/index.js', () => ({
   createFamily: jest.fn(),
+  getFamily: jest.fn(),
   updateConsent: jest.fn(),
 }));
 jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
 
-function navProp() {
-  return { replace: jest.fn() } as unknown as Parameters<
-    typeof ConsentCenterScreen
-  >[0]['navigation'];
+function navProp(canGoBack = false) {
+  return {
+    replace: jest.fn(),
+    goBack: jest.fn(),
+    canGoBack: jest.fn(() => canGoBack),
+  } as unknown as Parameters<typeof ConsentCenterScreen>[0]['navigation'];
 }
 
 const FAMILY = { id: 'f1', locale: 'en', low_bandwidth_mode: false, consent_flags: {} };
+const CONSENTED_FAMILY = { ...FAMILY, consent_flags: { data_storage: true } };
 
 describe('ConsentCenterScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (useSession as jest.Mock).mockReturnValue({ familyId: null, setFamilyId: jest.fn() });
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: null,
+      childId: null,
+      setFamilyId: jest.fn(),
+    });
   });
 
   it('creates a family on mount when there is no familyId yet', async () => {
@@ -30,6 +38,20 @@ describe('ConsentCenterScreen', () => {
 
     await waitFor(() => expect(createFamily).toHaveBeenCalledWith({ locale: 'en' }));
     expect(await screen.findByText(CONSENT_COPY.scopes.data_storage.label)).toBeTruthy();
+  });
+
+  it('loads the existing family instead of creating one on a revisit', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      setFamilyId: jest.fn(),
+    });
+    (getFamily as jest.Mock).mockResolvedValue(FAMILY);
+    render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+
+    expect(await screen.findByText(CONSENT_COPY.scopes.data_storage.label)).toBeTruthy();
+    expect(getFamily).toHaveBeenCalledWith('f1');
+    expect(createFamily).not.toHaveBeenCalled();
   });
 
   it('renders all four consent scopes once the family is created', async () => {
@@ -45,10 +67,7 @@ describe('ConsentCenterScreen', () => {
 
   it('calls updateConsent for exactly the toggled scope when a switch flips', async () => {
     (createFamily as jest.Mock).mockResolvedValue(FAMILY);
-    (updateConsent as jest.Mock).mockResolvedValue({
-      ...FAMILY,
-      consent_flags: { data_storage: true },
-    });
+    (updateConsent as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
     render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(CONSENT_COPY.scopes.data_storage.label);
 
@@ -60,8 +79,19 @@ describe('ConsentCenterScreen', () => {
     );
   });
 
-  it('navigates to ChildProfileSetup on Continue regardless of what was granted', async () => {
+  it('disables Continue (with an explanation) until data_storage is granted', async () => {
     (createFamily as jest.Mock).mockResolvedValue(FAMILY);
+    const navigation = navProp();
+    render(<ConsentCenterScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(CONSENT_COPY.scopes.data_storage.label);
+
+    expect(screen.getByText(/nowhere to keep your answers/i)).toBeTruthy();
+    fireEvent.press(screen.getByText('Continue'));
+    expect(navigation.replace).not.toHaveBeenCalled();
+  });
+
+  it('navigates to ChildProfileSetup on Continue once data_storage is granted', async () => {
+    (createFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
     const navigation = navProp();
     render(<ConsentCenterScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(CONSENT_COPY.scopes.data_storage.label);
@@ -70,10 +100,54 @@ describe('ConsentCenterScreen', () => {
     expect(navigation.replace).toHaveBeenCalledWith('ChildProfileSetup');
   });
 
+  it('navigates to Questionnaire on Continue when a child already exists', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      setFamilyId: jest.fn(),
+    });
+    (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+    const navigation = navProp();
+    render(<ConsentCenterScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(CONSENT_COPY.scopes.data_storage.label);
+
+    fireEvent.press(screen.getByText('Continue'));
+    expect(navigation.replace).toHaveBeenCalledWith('Questionnaire');
+  });
+
+  it('pops back on Continue when pushed on top of another screen (answers preserved)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      setFamilyId: jest.fn(),
+    });
+    (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+    const navigation = navProp(true);
+    render(<ConsentCenterScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(CONSENT_COPY.scopes.data_storage.label);
+
+    fireEvent.press(screen.getByText('Continue'));
+    expect(navigation.goBack).toHaveBeenCalled();
+    expect(navigation.replace).not.toHaveBeenCalled();
+  });
+
   it('shows a retryable error state when family creation fails', async () => {
     (createFamily as jest.Mock).mockRejectedValue(new Error('network down'));
     render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
 
     expect(await screen.findByText(/couldn't start your session/i)).toBeTruthy();
+  });
+
+  it('actually refetches when Try again is pressed after a failure', async () => {
+    (createFamily as jest.Mock)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(FAMILY);
+    render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/couldn't start your session/i);
+
+    fireEvent.press(screen.getByText('Try again'));
+
+    expect(await screen.findByText(CONSENT_COPY.scopes.data_storage.label)).toBeTruthy();
+    expect(createFamily).toHaveBeenCalledTimes(2);
   });
 });
