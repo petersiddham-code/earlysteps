@@ -37,10 +37,13 @@ const RESULTS = {
   recommendationTier: 'Formal assessment is recommended' as const,
 };
 
+const clearChildId = jest.fn().mockResolvedValue(undefined);
+
 describe('ResultsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (useSession as jest.Mock).mockReturnValue({ childId: 'c1' });
+    clearChildId.mockResolvedValue(undefined);
+    (useSession as jest.Mock).mockReturnValue({ childId: 'c1', clearChildId });
   });
 
   it('renders the disclaimer, strengths-first, domains, and recommendation', async () => {
@@ -133,16 +136,24 @@ describe('ResultsScreen', () => {
     expect(screen.queryByText(/couldn't load your results/i)).toBeNull();
   });
 
-  it('offers to answer the questions again, replacing so no stale Results lingers (#20)', async () => {
+  it('starts a new set of questions: forgets the child, then child details (#20)', async () => {
     (getResults as jest.Mock).mockResolvedValue(RESULTS);
     (getIntakeResponses as jest.Mock).mockResolvedValue([]);
     const navigation = navProp();
     render(<ResultsScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(SCREENING_DISCLAIMER);
 
-    fireEvent.press(screen.getByTestId('retake-button'));
+    fireEvent.press(screen.getByTestId('new-questions-button'));
 
-    expect(navigation.replace).toHaveBeenCalledWith('Questionnaire');
+    // The child must be forgotten BEFORE navigating — the app holds one child at a
+    // time, and a fresh screening starts from the child's details, not the questions.
+    await waitFor(() =>
+      expect(navigation.replace).toHaveBeenCalledWith('ChildProfileSetup'),
+    );
+    expect(clearChildId).toHaveBeenCalled();
+    expect(clearChildId.mock.invocationCallOrder[0]).toBeLessThan(
+      (navigation.replace as jest.Mock).mock.invocationCallOrder[0],
+    );
   });
 
   it('offers a way back to the Consent Center to review permissions (#20)', async () => {

@@ -1,5 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { clearSession, loadSession, saveChildId, saveFamilyId } from './storage';
+import {
+  clearChildId,
+  clearSession,
+  loadSession,
+  saveChildId,
+  saveFamilyId,
+} from './storage';
 
 describe('session storage', () => {
   afterEach(async () => {
@@ -19,6 +25,13 @@ describe('session storage', () => {
     await saveFamilyId('f1');
     await saveChildId('c1');
     expect(await loadSession()).toEqual({ familyId: 'f1', childId: 'c1' });
+  });
+
+  it('clearChildId removes only the child, keeping the family (#20)', async () => {
+    await saveFamilyId('f1');
+    await saveChildId('c1');
+    await clearChildId();
+    expect(await loadSession()).toEqual({ familyId: 'f1', childId: null });
   });
 
   it('clearSession removes both ids', async () => {

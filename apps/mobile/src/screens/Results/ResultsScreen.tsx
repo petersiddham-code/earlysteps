@@ -83,7 +83,7 @@ const LABEL_TO_SIGN_LEVEL: Record<SignLevelLabel, SignLevel> = {
 };
 
 export function ResultsScreen({ navigation }: Props) {
-  const { childId } = useSession();
+  const { childId, clearChildId } = useSession();
   const [results, setResults] = useState<ResultsView | null>(null);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -168,18 +168,25 @@ export function ResultsScreen({ navigation }: Props) {
 
       {/* Issue #20: results must never be a dead end. Splash replace()s straight here for
           a returning session, so without these the caregiver has no path back into the
-          app's flows. Re-walking the questions is safe by design: scoring keeps full
-          answer history but only the newest answer per question counts (dedupe). replace,
-          not navigate — a stale Results screen must not linger beneath the questionnaire. */}
+          app's flows. Starting a new set of questions forgets the child but keeps the
+          family (consent stays granted) and begins at the child's details — the app holds
+          one child at a time, so this is also how a different child gets screened until
+          multi-child support lands (#23). The old profile stays stored server-side for
+          when accounts/login exist; it just stops being viewable on this device, which
+          the hint says plainly. replace, not navigate — no stale Results underneath. */}
       <View style={styles.actions}>
         <Text style={styles.actionsHint}>
-          Children grow and change. You can walk through the questions again any time —
-          we'll always use your newest answers.
+          Starting a new set of questions begins fresh with a child's details. These
+          results won't be shown in the app afterwards, so note down anything you want to
+          keep.
         </Text>
         <PrimaryButton
-          label="Answer the questions again"
-          onPress={() => navigation.replace('Questionnaire')}
-          testID="retake-button"
+          label="Start a new set of questions"
+          onPress={async () => {
+            await clearChildId();
+            navigation.replace('ChildProfileSetup');
+          }}
+          testID="new-questions-button"
         />
         <PrimaryButton
           label="Review my permissions"

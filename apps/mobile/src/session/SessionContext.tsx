@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { clearSession, loadSession, saveChildId, saveFamilyId } from './storage.js';
+import {
+  clearChildId as clearStoredChildId,
+  clearSession,
+  loadSession,
+  saveChildId,
+  saveFamilyId,
+} from './storage.js';
 
 export interface SessionValue {
   isLoading: boolean;
@@ -7,6 +13,8 @@ export interface SessionValue {
   childId: string | null;
   setFamilyId: (familyId: string) => Promise<void>;
   setChildId: (childId: string) => Promise<void>;
+  /** Forget the child, keep the family + consent — start a fresh screening (#20). */
+  clearChildId: () => Promise<void>;
   reset: () => Promise<void>;
 }
 
@@ -35,6 +43,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setChildIdState(id);
   };
 
+  const clearChildId = async () => {
+    await clearStoredChildId();
+    setChildIdState(null);
+  };
+
   const reset = async () => {
     await clearSession();
     setFamilyIdState(null);
@@ -43,7 +56,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   return (
     <SessionContext.Provider
-      value={{ isLoading, familyId, childId, setFamilyId, setChildId, reset }}
+      value={{
+        isLoading,
+        familyId,
+        childId,
+        setFamilyId,
+        setChildId,
+        clearChildId,
+        reset,
+      }}
     >
       {children}
     </SessionContext.Provider>
