@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Button,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,9 +11,11 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CONSENT_SCOPES, type ConsentScope, type Family } from '@earlysteps/shared-types';
 import { CONSENT_COPY } from '@earlysteps/content';
 import { ConsentToggle } from '../../components/ConsentToggle/ConsentToggle.js';
+import { PrimaryButton } from '../../components/PrimaryButton/PrimaryButton.js';
 import { createFamily, getFamily, updateConsent } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
+import { colors, spacing, type } from '../../theme/index.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ConsentCenter'>;
 
@@ -75,7 +76,7 @@ export function ConsentCenterScreen({ navigation }: Props) {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>{error}</Text>
-        <Button title="Try again" onPress={() => setAttempt((n) => n + 1)} />
+        <PrimaryButton label="Try again" onPress={() => setAttempt((n) => n + 1)} />
       </View>
     );
   }
@@ -83,7 +84,7 @@ export function ConsentCenterScreen({ navigation }: Props) {
   if (!family) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -104,7 +105,9 @@ export function ConsentCenterScreen({ navigation }: Props) {
           onChange={(next) => handleToggle(scope, next)}
         />
       ))}
-      {pendingScope && <ActivityIndicator style={styles.pendingIndicator} />}
+      {pendingScope && (
+        <ActivityIndicator style={styles.pendingIndicator} color={colors.primary} />
+      )}
       {!hasDataStorage && (
         <Text style={styles.requiredNote}>
           To continue, please turn on "{CONSENT_COPY.scopes.data_storage.label}" — without
@@ -112,8 +115,8 @@ export function ConsentCenterScreen({ navigation }: Props) {
         </Text>
       )}
       <View style={styles.continueButton}>
-        <Button
-          title="Continue"
+        <PrimaryButton
+          label="Continue"
           disabled={!hasDataStorage}
           onPress={() => {
             // Pushed on top of the Questionnaire (consent was missing at submit)? Pop back
@@ -134,45 +137,45 @@ export function ConsentCenterScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   content: {
-    padding: 20,
-    paddingTop: 60,
+    padding: spacing.xl,
+    paddingTop: spacing.xxxl + spacing.xxl,
+    paddingBottom: spacing.xxxl,
   },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: spacing.xl,
+    backgroundColor: colors.background,
   },
   heading: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1F2933',
-    marginBottom: 6,
+    ...type.title,
+    color: colors.ink,
+    marginBottom: spacing.xs,
   },
   subheading: {
-    fontSize: 14,
-    color: '#5A6672',
-    marginBottom: 20,
+    ...type.body,
+    color: colors.inkSoft,
+    marginBottom: spacing.xl,
   },
   errorText: {
-    fontSize: 15,
-    color: '#5A6672',
+    ...type.body,
+    color: colors.inkSoft,
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   pendingIndicator: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   requiredNote: {
-    marginTop: 16,
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#5A6672',
+    marginTop: spacing.lg,
+    ...type.caption,
+    color: colors.inkSoft,
   },
   continueButton: {
-    marginTop: 24,
+    marginTop: spacing.xxl,
   },
 });

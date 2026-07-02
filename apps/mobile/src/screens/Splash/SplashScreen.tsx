@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
+import { colors, radius, spacing, type } from '../../theme/index.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
@@ -28,8 +30,11 @@ export function SplashScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
+      <View style={styles.mark}>
+        <Ionicons name="footsteps-outline" size={34} color={colors.primary} />
+      </View>
       <Text style={styles.title}>EarlySteps</Text>
-      <ActivityIndicator style={styles.spinner} />
+      <ActivityIndicator style={styles.spinner} color={colors.primary} />
     </View>
   );
 }
@@ -39,15 +44,23 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
+  },
+  mark: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1F2933',
-    marginBottom: 16,
+    ...type.display,
+    color: colors.ink,
+    marginBottom: spacing.lg,
   },
   spinner: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
 });

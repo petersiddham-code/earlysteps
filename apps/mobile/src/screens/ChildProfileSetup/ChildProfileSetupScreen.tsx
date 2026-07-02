@@ -9,10 +9,13 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { AGE_BANDS, type AgeBand } from '@earlysteps/shared-types';
 import { createChild } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
+import { PrimaryButton } from '../../components/index.js';
+import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChildProfileSetup'>;
 
@@ -23,6 +26,15 @@ const AGE_BAND_LABELS: Record<AgeBand, string> = {
   primary: 'Primary (6–12 years)',
   teen: 'Teen (13–18 years)',
   young_adult: 'Young adult (19–25 years)',
+};
+
+/** Decorative icons so each age band reads at a glance. */
+const AGE_BAND_ICONS: Record<AgeBand, keyof typeof Ionicons.glyphMap> = {
+  toddler: 'footsteps-outline',
+  preschool: 'color-palette-outline',
+  primary: 'school-outline',
+  teen: 'headset-outline',
+  young_adult: 'briefcase-outline',
 };
 
 const LANGUAGE_OPTIONS = ['English', 'Spanish', 'Mandarin', 'Hindi', 'Arabic', 'French'];
@@ -74,6 +86,7 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
         value={nickname}
         onChangeText={setNickname}
         placeholder="Nickname"
+        placeholderTextColor={colors.inkSoft}
         accessibilityLabel="Child's nickname"
       />
 
@@ -87,6 +100,12 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
             accessibilityRole="button"
             accessibilityState={{ selected: ageBand === band }}
           >
+            <Ionicons
+              name={AGE_BAND_ICONS[band]}
+              size={20}
+              color={ageBand === band ? colors.primaryDeep : colors.inkSoft}
+              style={styles.optionIcon}
+            />
             <Text
               style={[styles.optionText, ageBand === band && styles.optionTextSelected]}
             >
@@ -123,18 +142,14 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
 
       <View style={styles.continueButton}>
         {submitting ? (
-          <ActivityIndicator />
+          <ActivityIndicator color={colors.primary} />
         ) : (
-          <Pressable
+          <PrimaryButton
             testID="continue-button"
+            label="Continue"
             onPress={handleContinue}
             disabled={!canContinue}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !canContinue }}
-            style={[styles.primaryButton, !canContinue && styles.primaryButtonDisabled]}
-          >
-            <Text style={styles.primaryButtonText}>Continue</Text>
-          </Pressable>
+          />
         )}
       </View>
     </ScrollView>
@@ -142,55 +157,61 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 20, paddingTop: 60 },
-  heading: { fontSize: 22, fontWeight: '700', color: '#1F2933', marginBottom: 20 },
+  screen: { flex: 1, backgroundColor: colors.background },
+  content: {
+    padding: spacing.xl,
+    paddingTop: spacing.xxxl + spacing.xxl,
+    paddingBottom: spacing.xxxl,
+  },
+  heading: { ...type.title, color: colors.ink, marginBottom: spacing.xl },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F2933',
-    marginTop: 16,
-    marginBottom: 6,
+    ...type.bodyStrong,
+    color: colors.ink,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
-  hint: { fontSize: 12, color: '#5A6672', marginBottom: 8 },
+  hint: { ...type.caption, color: colors.inkSoft, marginBottom: spacing.sm },
   input: {
-    borderWidth: 1,
-    borderColor: '#D1D9E0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    fontSize: 16,
+    color: colors.ink,
+    backgroundColor: colors.card,
+    ...cardShadow,
   },
-  optionRow: { gap: 8 },
+  optionRow: { gap: spacing.sm },
   optionButton: {
-    borderWidth: 1,
-    borderColor: '#D1D9E0',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  optionButtonSelected: { borderColor: '#2E7D6B', backgroundColor: '#E3F2F1' },
-  optionText: { fontSize: 15, color: '#1F2933' },
-  optionTextSelected: { fontWeight: '600', color: '#1F3A38' },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    borderWidth: 1,
-    borderColor: '#D1D9E0',
-    borderRadius: 16,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-  },
-  chipSelected: { borderColor: '#2E7D6B', backgroundColor: '#E3F2F1' },
-  chipText: { fontSize: 14, color: '#1F2933' },
-  chipTextSelected: { fontWeight: '600', color: '#1F3A38' },
-  errorText: { fontSize: 14, color: '#C0392B', marginTop: 16 },
-  continueButton: { marginTop: 28, marginBottom: 20 },
-  primaryButton: {
-    backgroundColor: '#2E7D6B',
-    borderRadius: 8,
-    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.card,
   },
-  primaryButtonDisabled: { backgroundColor: '#B7C6C3' },
-  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  optionButtonSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryTint,
+  },
+  optionIcon: { marginRight: spacing.md },
+  optionText: { ...type.body, fontSize: 16, color: colors.ink },
+  optionTextSelected: { ...type.bodyStrong, fontSize: 16, color: colors.primaryDeep },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderRadius: radius.pill,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.card,
+  },
+  chipSelected: { borderColor: colors.primary, backgroundColor: colors.primaryTint },
+  chipText: { ...type.body, color: colors.ink },
+  chipTextSelected: { ...type.bodyStrong, color: colors.primaryDeep },
+  errorText: { ...type.body, color: colors.error, marginTop: spacing.lg },
+  continueButton: { marginTop: spacing.xxl, marginBottom: spacing.xl },
 });

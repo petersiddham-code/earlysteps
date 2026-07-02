@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SCREENING_DISCLAIMER } from '@earlysteps/shared-types';
+import { colors, radius, spacing, type } from '../../theme/index.js';
 
 export interface ScreeningDisclaimerProps {
   style?: StyleProp<ViewStyle>;
@@ -23,13 +24,14 @@ export function ScreeningDisclaimer({ style }: ScreeningDisclaimerProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#F0F4F8',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: colors.primaryTint,
+    borderRadius: radius.sm,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.primary,
+    padding: spacing.md,
   },
   text: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#3A4A5A',
+    ...type.caption,
+    color: colors.ink,
   },
 });
