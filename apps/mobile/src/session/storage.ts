@@ -29,6 +29,12 @@ export async function saveChildId(childId: string): Promise<void> {
   await AsyncStorage.setItem(CHILD_ID_KEY, childId);
 }
 
+/** Forget the child but keep the family (and its consent flags) — used to start a fresh
+ * screening for another child's details (#20 interim, until multi-child lands, #23). */
+export async function clearChildId(): Promise<void> {
+  await AsyncStorage.removeItem(CHILD_ID_KEY);
+}
+
 export async function clearSession(): Promise<void> {
   await AsyncStorage.multiRemove([FAMILY_ID_KEY, CHILD_ID_KEY]);
 }

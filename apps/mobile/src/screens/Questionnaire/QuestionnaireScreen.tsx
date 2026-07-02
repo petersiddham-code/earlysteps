@@ -171,6 +171,16 @@ export function QuestionnaireScreen({ navigation }: Props) {
         timestamp: now,
       }));
 
+    // Every question skipped — nothing to save. Don't POST an empty batch (the backend
+    // rejects it as a validation error, surfacing as a bogus "couldn't save" message
+    // right after we promised skipping is fine, #20). Results handles both outcomes: it
+    // shows the latest computed profile if one exists, or routes back here if none does.
+    if (responses.length === 0) {
+      setSubmitting(false);
+      navigation.replace('Results');
+      return;
+    }
+
     try {
       await submitIntakeResponses(childId, responses);
       navigation.replace('Results');

@@ -4,7 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SessionProvider, useSession } from './SessionContext';
 
 function Probe() {
-  const { isLoading, familyId, childId, setFamilyId, setChildId, reset } = useSession();
+  const { isLoading, familyId, childId, setFamilyId, setChildId, clearChildId, reset } =
+    useSession();
   if (isLoading) return <Text>loading</Text>;
   return (
     <>
@@ -15,6 +16,9 @@ function Probe() {
       </Pressable>
       <Pressable onPress={() => setChildId('c1')}>
         <Text>set child</Text>
+      </Pressable>
+      <Pressable onPress={() => clearChildId()}>
+        <Text>clear child</Text>
       </Pressable>
       <Pressable onPress={() => reset()}>
         <Text>reset</Text>
@@ -63,6 +67,25 @@ describe('SessionProvider / useSession', () => {
 
     expect(await screen.findByText('familyId:f1')).toBeTruthy();
     expect(screen.getByText('childId:c1')).toBeTruthy();
+  });
+
+  it('clearChildId forgets the child in state and storage but keeps the family (#20)', async () => {
+    render(
+      <SessionProvider>
+        <Probe />
+      </SessionProvider>,
+    );
+    await screen.findByText('familyId:none');
+    fireEvent.press(screen.getByText('set family'));
+    fireEvent.press(screen.getByText('set child'));
+    await waitFor(() => expect(screen.getByText('childId:c1')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('clear child'));
+
+    await waitFor(() => expect(screen.getByText('childId:none')).toBeTruthy());
+    expect(screen.getByText('familyId:f1')).toBeTruthy();
+    expect(await AsyncStorage.getItem('earlysteps.familyId')).toBe('f1');
+    expect(await AsyncStorage.getItem('earlysteps.childId')).toBeNull();
   });
 
   it('reset clears both context state and storage', async () => {
