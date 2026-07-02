@@ -37,9 +37,18 @@ export class FamiliesService {
     return this.repository.createChild(familyId, input);
   }
 
-  async getChild(childId: string): Promise<Child> {
+  /**
+   * Tenancy check: the child must actually belong to the family in the request path. A
+   * mismatch gets the same 404 as a missing child — no confirmation that the id exists
+   * under some other family. (Real account auth is still an open gap — see
+   * docs/clinical-review/content-gaps.md §6 — but this stops one family's URL from ever
+   * addressing another family's child once it lands.)
+   */
+  async getChild(familyId: string, childId: string): Promise<Child> {
     const child = await this.repository.getChild(childId);
-    if (!child) throw new NotFoundException(`No child found with id ${childId}`);
+    if (!child || child.family_id !== familyId) {
+      throw new NotFoundException(`No child found with id ${childId}`);
+    }
     return child;
   }
 }

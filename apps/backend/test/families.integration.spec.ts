@@ -58,7 +58,35 @@ describe('families — onboarding', () => {
   });
 
   it('getChild throws NotFoundException for an unknown child', async () => {
-    await expect(service.getChild('unknown-child')).rejects.toBeInstanceOf(
+    const family = await service.createFamily({ locale: 'en' });
+    await expect(service.getChild(family.id, 'unknown-child')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('getChild returns the child when queried under its own family', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+    const child = await service.createChild(family.id, {
+      nickname: 'Alex',
+      ageBand: 'toddler',
+      languages: ['English'],
+    });
+    await expect(service.getChild(family.id, child.id)).resolves.toMatchObject({
+      id: child.id,
+      family_id: family.id,
+    });
+  });
+
+  it("refuses to serve a child under a different family's path (tenancy, same 404 as missing)", async () => {
+    const familyA = await service.createFamily({ locale: 'en' });
+    const familyB = await service.createFamily({ locale: 'en' });
+    const child = await service.createChild(familyA.id, {
+      nickname: 'Alex',
+      ageBand: 'toddler',
+      languages: ['English'],
+    });
+
+    await expect(service.getChild(familyB.id, child.id)).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });

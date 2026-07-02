@@ -43,7 +43,10 @@ export class FamiliesController {
   }
 
   @Get(':familyId/children/:childId')
-  getChild(@Param('childId') childId: string): Promise<Child> {
-    return this.familiesService.getChild(childId);
+  getChild(
+    @Param('familyId') familyId: string,
+    @Param('childId') childId: string,
+  ): Promise<Child> {
+    return this.familiesService.getChild(familyId, childId);
   }
 }

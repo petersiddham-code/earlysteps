@@ -44,36 +44,48 @@ export class PrismaScreeningRepository implements ScreeningRepository {
     }));
   }
 
+  /**
+   * All-or-nothing: the profile, estimate, and red flags of one recompute() are a single
+   * logical snapshot, so they commit in one transaction — a mid-write failure must never
+   * leave a profile without its red flags (getLatestSnapshot pairs them by computedAt).
+   */
   async saveComputedSnapshot(childId: string, snapshot: ComputedSnapshot): Promise<void> {
     const computedAt = new Date(snapshot.profile.computed_at);
-    await this.prisma.domainProfileRecord.create({
-      data: {
-        childId,
-        computedAt,
-        findings: snapshot.profile.findings as unknown as Prisma.InputJsonValue,
-      },
-    });
-    if (snapshot.supportEstimate) {
-      await this.prisma.supportLevelEstimateRecord.create({
+    const writes: Prisma.PrismaPromise<unknown>[] = [
+      this.prisma.domainProfileRecord.create({
         data: {
           childId,
-          level: snapshot.supportEstimate.level,
-          confidence: snapshot.supportEstimate.confidence,
-          computedAt: new Date(snapshot.supportEstimate.computed_at),
+          computedAt,
+          findings: snapshot.profile.findings as unknown as Prisma.InputJsonValue,
         },
-      });
+      }),
+    ];
+    if (snapshot.supportEstimate) {
+      writes.push(
+        this.prisma.supportLevelEstimateRecord.create({
+          data: {
+            childId,
+            level: snapshot.supportEstimate.level,
+            confidence: snapshot.supportEstimate.confidence,
+            computedAt: new Date(snapshot.supportEstimate.computed_at),
+          },
+        }),
+      );
     }
     if (snapshot.redFlags.length > 0) {
-      await this.prisma.redFlagRecord.createMany({
-        data: snapshot.redFlags.map((f) => ({
-          childId,
-          type: f.type,
-          triggeredAt: new Date(f.triggered_at),
-          evidenceRefs: f.evidence_refs as unknown as Prisma.InputJsonValue,
-          resolved: f.resolved,
-        })),
-      });
+      writes.push(
+        this.prisma.redFlagRecord.createMany({
+          data: snapshot.redFlags.map((f) => ({
+            childId,
+            type: f.type,
+            triggeredAt: new Date(f.triggered_at),
+            evidenceRefs: f.evidence_refs as unknown as Prisma.InputJsonValue,
+            resolved: f.resolved,
+          })),
+        }),
+      );
     }
+    await this.prisma.$transaction(writes);
   }
 
   async getLatestSnapshot(childId: string): Promise<ComputedSnapshot | null> {
@@ -83,10 +95,12 @@ export class PrismaScreeningRepository implements ScreeningRepository {
     });
     if (!profileRow) return null;
 
+    // The estimate and red flags are matched to the profile's own computedAt (recompute()
+    // stamps all three identically) — never "latest of each" independently, which could
+    // pair a newer profile with a stale estimate from an earlier snapshot.
     const [estimateRow, redFlagRows] = await Promise.all([
       this.prisma.supportLevelEstimateRecord.findFirst({
-        where: { childId },
-        orderBy: { computedAt: 'desc' },
+        where: { childId, computedAt: profileRow.computedAt },
       }),
       this.prisma.redFlagRecord.findMany({
         where: { childId, triggeredAt: profileRow.computedAt },
