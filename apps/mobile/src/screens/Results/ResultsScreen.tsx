@@ -23,6 +23,7 @@ import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import {
+  PrimaryButton,
   ScreeningDisclaimer,
   StrengthsFirstList,
   TrafficLightBar,
@@ -164,6 +165,29 @@ export function ResultsScreen({ navigation }: Props) {
         )}
         <Text style={styles.recommendationText}>{results.recommendationTier}</Text>
       </View>
+
+      {/* Issue #20: results must never be a dead end. Splash replace()s straight here for
+          a returning session, so without these the caregiver has no path back into the
+          app's flows. Re-walking the questions is safe by design: scoring keeps full
+          answer history but only the newest answer per question counts (dedupe). replace,
+          not navigate — a stale Results screen must not linger beneath the questionnaire. */}
+      <View style={styles.actions}>
+        <Text style={styles.actionsHint}>
+          Children grow and change. You can walk through the questions again any time —
+          we'll always use your newest answers.
+        </Text>
+        <PrimaryButton
+          label="Answer the questions again"
+          onPress={() => navigation.replace('Questionnaire')}
+          testID="retake-button"
+        />
+        <PrimaryButton
+          label="Review my permissions"
+          variant="quiet"
+          onPress={() => navigation.navigate('ConsentCenter')}
+          testID="permissions-button"
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -198,4 +222,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   recommendationText: { ...type.body, color: colors.inkSoft },
+  actions: { marginTop: spacing.md, gap: spacing.sm },
+  actionsHint: {
+    ...type.caption,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
 });

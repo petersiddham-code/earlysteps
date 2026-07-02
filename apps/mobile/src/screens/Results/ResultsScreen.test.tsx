@@ -12,7 +12,7 @@ jest.mock('../../api/index.js', () => ({
 jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
 
 function navProp() {
-  return { replace: jest.fn() } as unknown as Parameters<
+  return { replace: jest.fn(), navigate: jest.fn() } as unknown as Parameters<
     typeof ResultsScreen
   >[0]['navigation'];
 }
@@ -131,6 +131,30 @@ describe('ResultsScreen', () => {
     await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Questionnaire'));
     // Never stranded on an unresolvable error.
     expect(screen.queryByText(/couldn't load your results/i)).toBeNull();
+  });
+
+  it('offers to answer the questions again, replacing so no stale Results lingers (#20)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(<ResultsScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    fireEvent.press(screen.getByTestId('retake-button'));
+
+    expect(navigation.replace).toHaveBeenCalledWith('Questionnaire');
+  });
+
+  it('offers a way back to the Consent Center to review permissions (#20)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(<ResultsScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    fireEvent.press(screen.getByTestId('permissions-button'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith('ConsentCenter');
   });
 
   it('actually refetches when Try again is pressed after a failure', async () => {

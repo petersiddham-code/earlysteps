@@ -119,9 +119,9 @@ export function ConsentCenterScreen({ navigation }: Props) {
           label="Continue"
           disabled={!hasDataStorage}
           onPress={() => {
-            // Pushed on top of the Questionnaire (consent was missing at submit)? Pop back
-            // to it so the caregiver's in-progress answers are still there. Otherwise this
-            // is the onboarding flow — move forward.
+            // Pushed on top of another screen (Questionnaire when consent was missing at
+            // submit — in-progress answers still there — or Results via "Review my
+            // permissions")? Pop back to it. Otherwise this is onboarding — move forward.
             if (navigation.canGoBack()) {
               navigation.goBack();
             } else {

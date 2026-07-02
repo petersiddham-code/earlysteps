@@ -260,10 +260,28 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
+    fireEvent.press(screen.getByText('English')); // answer Q1 so there is something to save
     skipToReview();
     fireEvent.press(screen.getByTestId('submit-button'));
 
     await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Results'));
+  });
+
+  it('skips the save entirely when every question was skipped — straight to Results (#20)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    const navigation = navProp();
+    render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    skipToReview();
+    expect(screen.getByText(/You answered 0 of \d+/)).toBeTruthy();
+    fireEvent.press(screen.getByTestId('submit-button'));
+
+    // An empty batch is a backend validation error — never send one. Skipping all
+    // questions must not dead-end in "we couldn't save your answers".
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Results'));
+    expect(submitIntakeResponses).not.toHaveBeenCalled();
+    expect(screen.queryByText(/couldn't save your answers/i)).toBeNull();
   });
 
   it('shows a retryable error and does not navigate when submission fails', async () => {
@@ -273,6 +291,7 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
+    fireEvent.press(screen.getByText('English')); // answer Q1 so the save is attempted
     skipToReview();
     fireEvent.press(screen.getByTestId('submit-button'));
 
@@ -316,6 +335,7 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
+    fireEvent.press(screen.getByText('English')); // answer Q1 so the save is attempted
     skipToReview();
     fireEvent.press(screen.getByTestId('submit-button'));
 
