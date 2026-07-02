@@ -11,6 +11,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { allQuestions } from '@earlysteps/content';
 import {
   DOMAIN_DISPLAY_NAMES,
+  isFreeTextAnswer,
+  stripFreeTextPrefix,
   type IntakeResponse,
   type ResultsView,
   type SignLevel,
@@ -26,6 +28,7 @@ import {
   TrafficLightBar,
   RedFlagBanner,
 } from '../../components/index.js';
+import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Results'>;
 
@@ -46,6 +49,12 @@ function deriveStrengths(responses: IntakeResponse[]): string[] {
       ? response.answer
       : [String(response.answer)];
     for (const id of selectedIds) {
+      // A caregiver-typed strength (free_text: entry) is their own words — show it
+      // verbatim, same as a selected option label.
+      if (isFreeTextAnswer(id)) {
+        labels.push(stripFreeTextPrefix(id));
+        continue;
+      }
       const option = question.options.find((o) => o.id === id);
       if (option) labels.push(option.label);
     }
@@ -119,7 +128,7 @@ export function ResultsScreen({ navigation }: Props) {
   if (!results) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -129,9 +138,12 @@ export function ResultsScreen({ navigation }: Props) {
       <Text style={styles.heading}>Here's what we noticed</Text>
       <ScreeningDisclaimer />
 
-      <StrengthsFirstList strengths={strengths} needs={deriveNeeds(results)} />
+      {/* Strengths stay first — enforced by the component, honoured by the layout. */}
+      <View style={styles.card}>
+        <StrengthsFirstList strengths={strengths} needs={deriveNeeds(results)} />
+      </View>
 
-      <View style={styles.section}>
+      <View style={styles.card}>
         {results.domains.map((domain) => (
           <TrafficLightBar
             key={domain.domain}
@@ -144,7 +156,7 @@ export function ResultsScreen({ navigation }: Props) {
 
       <RedFlagBanner redFlagTypes={results.redFlagTypes} />
 
-      <View style={styles.section}>
+      <View style={styles.card}>
         {results.supportLevel && (
           <Text style={styles.supportLevelText}>
             {results.supportLevel.term} ({results.supportLevel.confidence} confidence)
@@ -157,18 +169,33 @@ export function ResultsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 20, paddingTop: 60, paddingBottom: 40 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  heading: { fontSize: 22, fontWeight: '700', color: '#1F2933', marginBottom: 16 },
-  errorText: { fontSize: 15, color: '#5A6672', textAlign: 'center' },
-  retryText: { fontSize: 15, color: '#2E7D6B', fontWeight: '600', marginTop: 12 },
-  section: { marginVertical: 12 },
-  supportLevelText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F2933',
-    marginBottom: 4,
+  screen: { flex: 1, backgroundColor: colors.background },
+  content: {
+    padding: spacing.xl,
+    paddingTop: spacing.xxxl + spacing.xxl,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.lg,
   },
-  recommendationText: { fontSize: 14, color: '#3A4A5A' },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+    backgroundColor: colors.background,
+  },
+  heading: { ...type.title, color: colors.ink },
+  errorText: { ...type.body, color: colors.inkSoft, textAlign: 'center' },
+  retryText: { ...type.bodyStrong, color: colors.primary, marginTop: spacing.md },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    ...cardShadow,
+  },
+  supportLevelText: {
+    ...type.bodyStrong,
+    color: colors.ink,
+    marginBottom: spacing.xs,
+  },
+  recommendationText: { ...type.body, color: colors.inkSoft },
 });

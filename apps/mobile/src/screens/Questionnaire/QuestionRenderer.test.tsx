@@ -30,17 +30,20 @@ const multiSelectQuestion: Question = {
 };
 
 describe('QuestionRenderer', () => {
-  it('renders the interpolated text and the hint', () => {
+  it('renders the interpolated text and the interpolated hint', () => {
     render(
       <QuestionRenderer
         question={buttonsQuestion}
         text={buttonsQuestion.text}
+        hint="Pick what happens with Alex most days."
         value={undefined}
         onChange={() => {}}
       />,
     );
     expect(screen.getByText(buttonsQuestion.text)).toBeTruthy();
-    expect(screen.getByText('Pick what happens most days.')).toBeTruthy();
+    // The hint prop (already interpolated by the caller) wins over question.hint.
+    expect(screen.getByText('Pick what happens with Alex most days.')).toBeTruthy();
+    expect(screen.queryByText('Pick what happens most days.')).toBeNull();
   });
 
   it('single-select: calls onChange with the pressed option id, replacing any prior value', () => {
@@ -49,6 +52,7 @@ describe('QuestionRenderer', () => {
       <QuestionRenderer
         question={buttonsQuestion}
         text={buttonsQuestion.text}
+        hint={buttonsQuestion.hint}
         value="doesnt_notice"
         onChange={onChange}
       />,
@@ -63,6 +67,7 @@ describe('QuestionRenderer', () => {
       <QuestionRenderer
         question={multiSelectQuestion}
         text={multiSelectQuestion.text}
+        hint={multiSelectQuestion.hint}
         value={['rocking']}
         onChange={onChange}
       />,
@@ -71,12 +76,45 @@ describe('QuestionRenderer', () => {
     expect(onChange).toHaveBeenCalledWith(['rocking', 'hand_flapping']);
   });
 
+  it('renders round radios for single-select and square checkboxes for multi-select', () => {
+    const single = render(
+      <QuestionRenderer
+        question={buttonsQuestion}
+        text={buttonsQuestion.text}
+        hint={buttonsQuestion.hint}
+        value={undefined}
+        onChange={() => {}}
+      />,
+    );
+    expect(single.getByTestId('option-radio-looks_right_away')).toBeTruthy();
+    expect(single.queryByTestId('option-checkbox-looks_right_away')).toBeNull();
+    single.unmount();
+
+    render(
+      <QuestionRenderer
+        question={multiSelectQuestion}
+        text={multiSelectQuestion.text}
+        hint={multiSelectQuestion.hint}
+        value={['rocking']}
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('option-checkbox-rocking')).toBeTruthy();
+    expect(screen.queryByTestId('option-radio-rocking')).toBeNull();
+    // Announced as a real checkbox with checked state for screen readers.
+    expect(screen.getByRole('checkbox', { name: 'Rocking', checked: true })).toBeTruthy();
+    expect(
+      screen.getByRole('checkbox', { name: 'Hand-flapping', checked: false }),
+    ).toBeTruthy();
+  });
+
   it('multi-select: removes an option that was already selected', () => {
     const onChange = jest.fn();
     render(
       <QuestionRenderer
         question={multiSelectQuestion}
         text={multiSelectQuestion.text}
+        hint={multiSelectQuestion.hint}
         value={['rocking', 'hand_flapping']}
         onChange={onChange}
       />,

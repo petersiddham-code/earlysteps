@@ -43,11 +43,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 6,
-    color: '#1F2933',
+    color: '#24403B',
   },
   item: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#3A4A5A',
+    color: '#5C6F69',
   },
 });

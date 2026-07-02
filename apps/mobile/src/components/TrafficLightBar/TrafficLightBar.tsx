@@ -50,13 +50,13 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 8,
   },
   dot: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    marginRight: 10,
+    marginRight: 12,
   },
   textColumn: {
     flex: 1,
@@ -64,10 +64,10 @@ const styles = StyleSheet.create({
   domainLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2933',
+    color: '#24403B',
   },
   levelLabel: {
     fontSize: 13,
-    color: '#5A6672',
+    color: '#5C6F69',
   },
 });

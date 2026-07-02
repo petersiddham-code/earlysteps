@@ -51,3 +51,27 @@ export interface QuestionBank {
   age_band: QuestionAgeBand;
   questions: Question[];
 }
+
+/**
+ * Namespace prefix for caregiver free-text entries inside an `IntakeResponse.answer`
+ * array (questions with `allow_free_text`). The prefix guarantees a typed answer can
+ * never be mistaken for an option id downstream: the scoring engine weights unknown ids
+ * as 0, and red-flag rules compare exact option ids — but a caregiver typing e.g. "yes"
+ * must still never collide with an option literally named "yes".
+ */
+export const FREE_TEXT_ANSWER_PREFIX = 'free_text:';
+
+/** Wraps caregiver-typed text for storage inside an answer array. */
+export function makeFreeTextAnswer(text: string): string {
+  return `${FREE_TEXT_ANSWER_PREFIX}${text}`;
+}
+
+/** True if this answer-array entry is caregiver-typed text, not an option id. */
+export function isFreeTextAnswer(entry: string): boolean {
+  return entry.startsWith(FREE_TEXT_ANSWER_PREFIX);
+}
+
+/** Returns the caregiver's own words from a free-text entry. */
+export function stripFreeTextPrefix(entry: string): string {
+  return isFreeTextAnswer(entry) ? entry.slice(FREE_TEXT_ANSWER_PREFIX.length) : entry;
+}

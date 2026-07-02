@@ -21,6 +21,16 @@ function r(question_id: string, answer: IntakeResponse['answer']): IntakeRespons
 }
 
 describe('red-flag rules — each independent and traceable (product plan §8.5)', () => {
+  it('free-text entries can never trip a rule, even if the typed words echo a trigger id', () => {
+    // "yes" typed as a caregiver note is namespaced free_text:yes — not the option id "yes".
+    expect(checkLossOfSkills([r(RF_LOSS_OF_SKILLS_Q, ['no', 'free_text:yes'])])).toEqual(
+      [],
+    );
+    expect(
+      checkNoNameResponse([r('T4', ['looks_right_away', 'free_text:doesnt_notice'])]),
+    ).toEqual([]);
+  });
+
   it('loss of skills triggers on the placeholder question = yes', () => {
     expect(checkLossOfSkills([r(RF_LOSS_OF_SKILLS_Q, 'yes')])).toHaveLength(1);
     expect(checkLossOfSkills([r(RF_LOSS_OF_SKILLS_Q, 'no')])).toEqual([]);

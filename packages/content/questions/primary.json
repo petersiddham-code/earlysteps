@@ -151,7 +151,8 @@
         { "id": "food_textures", "label": "Food textures" },
         { "id": "none_noticed", "label": "None noticed" }
       ],
-      "hint": "Pick any that apply — or none."
+      "hint": "Pick any that apply — or none.",
+      "allow_free_text": true
     },
     {
       "id": "PR11",
