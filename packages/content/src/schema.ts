@@ -64,6 +64,9 @@ export const questionSchema = z.object({
   hint: safeCopyNonEmpty,
   allow_free_text: z.boolean().optional(),
   follow_up: z.string().optional(),
+  // Answer is captured elsewhere (e.g. Child Profile Setup) — the questionnaire flow
+  // deliberately skips these instead of asking the caregiver twice (#24).
+  collected_at: z.enum(['profile_setup']).optional(),
 });
 
 export const questionBankSchema = z.object({

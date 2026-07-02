@@ -48,12 +48,31 @@ export function validateContent(): ValidationResult {
   }
   const byId = new Map(questions.map((q) => [q.id, q]));
 
+  // 2b. A question the wizard would render but the caregiver could not answer (no options,
+  // not free-text) must carry `collected_at` — its exclusion from the flow has to be a
+  // deliberate, reviewable content decision, never an accident of an empty options array (#24).
+  for (const q of questions) {
+    const answerable = q.type === 'text' || q.options.length > 0;
+    if (!answerable && q.collected_at === undefined) {
+      errors.push(
+        `questions: ${q.id} has no options and is not free-text — either give it options or mark where its answer is collected (collected_at)`,
+      );
+    }
+  }
+
   // 3. Weights reference real questions, matching domains, and real option ids.
   for (const ind of WEIGHTS.indicators) {
     const q = byId.get(ind.question_id);
     if (!q) {
       errors.push(`weights: indicator references unknown question ${ind.question_id}`);
       continue;
+    }
+    // A collected_at question is never asked in the questionnaire, so a weight on it
+    // would silently never fire — that's a content bug, not a tuning choice.
+    if (q.collected_at !== undefined) {
+      errors.push(
+        `weights: ${ind.question_id} is collected at '${q.collected_at}', not asked in the questionnaire — its weight would never apply`,
+      );
     }
     if (q.domain !== ind.domain) {
       errors.push(

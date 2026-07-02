@@ -42,6 +42,14 @@ export interface Question {
   allow_free_text?: boolean;
   /** Optional follow-up question id, surfaced conditionally. */
   follow_up?: string;
+  /**
+   * Where this answer is collected instead of the questionnaire flow. Questions carrying
+   * this flag stay in the bank (single source of truth, versioned, reviewable) but are
+   * deliberately not asked again in the wizard — e.g. U1 (age) and U2 (family languages)
+   * are already answered during Child Profile Setup, and re-asking costs goodwill with
+   * tired caregivers (#24).
+   */
+  collected_at?: 'profile_setup';
 }
 
 /** A versioned, localised question-bank file as stored in packages/content. */

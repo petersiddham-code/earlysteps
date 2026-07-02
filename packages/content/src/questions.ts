@@ -28,3 +28,14 @@ export function getQuestionBank(ageBand: QuestionAgeBand): QuestionBank | undefi
 export function allQuestions(): Question[] {
   return Object.values(QUESTION_BANKS).flatMap((bank) => bank.questions);
 }
+
+/**
+ * True if the questionnaire wizard should ask this question. Questions whose answer is
+ * already collected elsewhere (`collected_at`, e.g. age and family languages during Child
+ * Profile Setup) are deliberately excluded so a tired caregiver is never asked twice (#24).
+ * The flag lives in the bank JSON — content stays the single source of truth for why a
+ * question exists but isn't asked, rather than ids hardcoded in a screen.
+ */
+export function isAskedInQuestionnaire(question: Question): boolean {
+  return question.collected_at === undefined;
+}
