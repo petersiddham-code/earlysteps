@@ -9,11 +9,6 @@ jest.mock('../../api/index.js', () => ({
 }));
 jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
 
-// This screen renders the full universal + toddler question bank (20+ questions, each with
-// several option pills) — real render time on a loaded/slower CI runner can exceed Jest's
-// default 5s test timeout even though nothing is actually hanging.
-jest.setTimeout(15000);
-
 function navProp() {
   return { replace: jest.fn() } as unknown as Parameters<
     typeof QuestionnaireScreen
