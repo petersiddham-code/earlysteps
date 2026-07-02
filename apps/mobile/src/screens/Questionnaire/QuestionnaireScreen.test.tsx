@@ -95,6 +95,24 @@ describe('QuestionnaireScreen', () => {
     fireEvent.press(screen.getByTestId('back-button'));
     expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Not sure', selected: true })).toBeTruthy();
+
+    // And Next is available (enabled) so the caregiver can move forward again
+    // without re-tapping their answer or hitting a misleading "Skip".
+    fireEvent.press(screen.getByTestId('next-button'));
+    expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy();
+  });
+
+  it('always renders Next — disabled until the question is answered', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    // Q2 (U3) is a single-select: Next is present but disabled while unanswered,
+    // so pressing it goes nowhere.
+    fireEvent.press(screen.getByTestId('skip-button'));
+    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
+    fireEvent.press(screen.getByTestId('next-button'));
+    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
   });
 
   it('multi-select questions collect until Next instead of auto-advancing', async () => {

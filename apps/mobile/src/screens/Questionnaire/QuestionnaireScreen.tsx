@@ -180,16 +180,18 @@ export function QuestionnaireScreen({ navigation }: Props) {
             onChange={(next) => handleAnswer(question, next)}
           />
 
-          {(question.type === 'chip_multi_select' || question.type === 'text') && (
-            <View style={styles.nextButton}>
-              <PrimaryButton
-                label="Next"
-                onPress={goForward}
-                disabled={!isAnswered(answers[question.id])}
-                testID="next-button"
-              />
-            </View>
-          )}
+          {/* Every question shows Next (disabled until answered), so the screen never
+              loses its forward affordance — before this, single-selects relied purely on
+              tap-to-advance, which left no way forward after coming Back to an answered
+              one except re-tapping the answer or a misleading "Skip". */}
+          <View style={styles.nextButton}>
+            <PrimaryButton
+              label="Next"
+              onPress={goForward}
+              disabled={!isAnswered(answers[question.id])}
+              testID="next-button"
+            />
+          </View>
 
           <View style={styles.footerNav}>
             <Pressable
