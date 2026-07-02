@@ -175,7 +175,8 @@
         { "id": "no", "label": "No" },
         { "id": "not_sure", "label": "Not sure" }
       ],
-      "hint": "Pick what feels closest."
+      "hint": "Pick what feels closest.",
+      "allow_free_text": true
     },
     {
       "id": "T13",
@@ -189,7 +190,8 @@
         { "id": "no", "label": "No" },
         { "id": "not_sure", "label": "Not sure" }
       ],
-      "hint": "Pick what feels closest."
+      "hint": "Pick what feels closest.",
+      "allow_free_text": true
     },
     {
       "id": "T14",

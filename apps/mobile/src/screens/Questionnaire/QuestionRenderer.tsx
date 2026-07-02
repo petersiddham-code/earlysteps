@@ -12,6 +12,9 @@ export interface QuestionRendererProps {
   hint: string;
   value: string | string[] | undefined;
   onChange: (value: string | string[]) => void;
+  /** Caregiver-typed add-on for `allow_free_text` questions (product plan §4.1b). */
+  freeText?: string;
+  onFreeTextChange?: (value: string) => void;
 }
 
 /**
@@ -32,9 +35,18 @@ export function QuestionRenderer({
   hint,
   value,
   onChange,
+  freeText,
+  onFreeTextChange,
 }: QuestionRendererProps) {
   const isMultiSelect = question.type === 'chip_multi_select';
   const selectedIds = isMultiSelect ? ((value as string[]) ?? []) : undefined;
+  // The "add anything else" box (§4.1b: free text is always optional, never the primary
+  // input) — only for option questions the content flags, never for plain text questions
+  // which already ARE a text box.
+  const showFreeText =
+    question.allow_free_text === true &&
+    question.type !== 'text' &&
+    onFreeTextChange !== undefined;
 
   return (
     <View style={styles.card}>
@@ -96,6 +108,21 @@ export function QuestionRenderer({
               </Pressable>
             );
           })}
+        </View>
+      )}
+      {showFreeText && (
+        <View style={styles.freeTextBlock}>
+          <Text style={styles.freeTextLabel}>
+            Anything else you'd like to add, in your own words? (optional)
+          </Text>
+          <TextInput
+            style={styles.input}
+            value={freeText ?? ''}
+            onChangeText={onFreeTextChange}
+            accessibilityLabel="Anything else you'd like to add, in your own words? (optional)"
+            testID={`free-text-${question.id}`}
+            multiline
+          />
         </View>
       )}
     </View>
@@ -184,5 +211,13 @@ const styles = StyleSheet.create({
     color: colors.ink,
     minHeight: 88,
     textAlignVertical: 'top',
+  },
+  freeTextBlock: {
+    marginTop: spacing.lg,
+  },
+  freeTextLabel: {
+    ...type.caption,
+    color: colors.inkSoft,
+    marginBottom: spacing.sm,
   },
 });

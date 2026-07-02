@@ -11,6 +11,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { allQuestions } from '@earlysteps/content';
 import {
   DOMAIN_DISPLAY_NAMES,
+  isFreeTextAnswer,
+  stripFreeTextPrefix,
   type IntakeResponse,
   type ResultsView,
   type SignLevel,
@@ -47,6 +49,12 @@ function deriveStrengths(responses: IntakeResponse[]): string[] {
       ? response.answer
       : [String(response.answer)];
     for (const id of selectedIds) {
+      // A caregiver-typed strength (free_text: entry) is their own words — show it
+      // verbatim, same as a selected option label.
+      if (isFreeTextAnswer(id)) {
+        labels.push(stripFreeTextPrefix(id));
+        continue;
+      }
       const option = question.options.find((o) => o.id === id);
       if (option) labels.push(option.label);
     }

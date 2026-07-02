@@ -56,6 +56,24 @@ describe('ResultsScreen', () => {
     expect(screen.getByText('Formal assessment is recommended')).toBeTruthy();
   });
 
+  it('shows a caregiver-typed strength verbatim (their own words, free_text: stripped)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([
+      {
+        question_id: 'U9',
+        domain: 'strengths',
+        answer: ['music', 'free_text:builds huge lego towers'],
+        timestamp: 't',
+      },
+    ]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(screen.getByText('Music')).toBeTruthy();
+    expect(screen.getByText('builds huge lego towers')).toBeTruthy();
+    expect(screen.queryByText(/free_text:/)).toBeNull();
+  });
+
   it('renders strengths before support-need domains in the tree (CLAUDE.md §2 rule 6)', async () => {
     (getResults as jest.Mock).mockResolvedValue(RESULTS);
     (getIntakeResponses as jest.Mock).mockResolvedValue([

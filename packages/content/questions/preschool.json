@@ -218,7 +218,8 @@
         { "id": "touch_hugs", "label": "Touch/hugs" },
         { "id": "none", "label": "None noticed" }
       ],
-      "hint": "Pick all that apply — or 'None noticed'."
+      "hint": "Pick all that apply — or 'None noticed'.",
+      "allow_free_text": true
     },
     {
       "id": "P16",

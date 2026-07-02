@@ -92,7 +92,8 @@
         { "id": "clothing_textures", "label": "Clothing textures" },
         { "id": "none_noticed", "label": "None noticed" }
       ],
-      "hint": "Pick any that apply — or none."
+      "hint": "Pick any that apply — or none.",
+      "allow_free_text": true
     },
     {
       "id": "TE7",

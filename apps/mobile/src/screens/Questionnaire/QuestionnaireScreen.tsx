@@ -10,7 +10,12 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { getQuestionBank } from '@earlysteps/content';
-import type { Child, IntakeResponse, Question } from '@earlysteps/shared-types';
+import {
+  makeFreeTextAnswer,
+  type Child,
+  type IntakeResponse,
+  type Question,
+} from '@earlysteps/shared-types';
 import { getChild, submitIntakeResponses } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
@@ -40,6 +45,27 @@ function isAnswered(answer: Answer | undefined): answer is Answer {
 }
 
 /**
+ * Folds an optional caregiver-typed note into the submitted answer. Free text rides in
+ * the same answer array as the selected option ids, namespaced with the free_text:
+ * prefix so it can never collide with an option id downstream (scoring weights unknown
+ * entries as 0; red-flag rules compare exact option ids). Typed text alone — no option
+ * picked — is still a valid answer: "my son doesn't like kids crying" is real evidence.
+ */
+function mergeAnswer(
+  selected: Answer | undefined,
+  freeText: string | undefined,
+): Answer | undefined {
+  const note = freeText?.trim();
+  if (!note) return isAnswered(selected) ? selected : undefined;
+  const base = !isAnswered(selected)
+    ? []
+    : Array.isArray(selected)
+      ? selected
+      : [selected];
+  return [...base, makeFreeTextAnswer(note)];
+}
+
+/**
  * Product plan Screen 4 / §4.1, revamped per issue #16 into a one-question-at-a-time flow:
  * ~26 questions in a single scroll exhausted tired caregivers, so each question now gets a
  * full-screen card, tapping an answer auto-advances, and progress reads as a stepping-stone
@@ -57,6 +83,7 @@ export function QuestionnaireScreen({ navigation }: Props) {
   const [child, setChild] = useState<Child | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+  const [freeTexts, setFreeTexts] = useState<Record<string, string>>({});
   const [index, setIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [consentDenied, setConsentDenied] = useState(false);
@@ -90,11 +117,14 @@ export function QuestionnaireScreen({ navigation }: Props) {
     setConsentDenied(false);
     const now = new Date().toISOString();
     const responses: Omit<IntakeResponse, 'child_id'>[] = questions
-      .filter((q) => isAnswered(answers[q.id]))
-      .map((q) => ({
+      .map((q) => ({ q, merged: mergeAnswer(answers[q.id], freeTexts[q.id]) }))
+      .filter((entry): entry is { q: Question; merged: Answer } =>
+        isAnswered(entry.merged),
+      )
+      .map(({ q, merged }) => ({
         question_id: q.id,
         domain: q.domain,
-        answer: answers[q.id]!,
+        answer: merged,
         timestamp: now,
       }));
 
@@ -136,7 +166,9 @@ export function QuestionnaireScreen({ navigation }: Props) {
   const total = questions.length;
   const onReviewStep = index >= total;
   const question = onReviewStep ? null : questions[index];
-  const answeredCount = questions.filter((q) => isAnswered(answers[q.id])).length;
+  const answeredCount = questions.filter((q) =>
+    isAnswered(mergeAnswer(answers[q.id], freeTexts[q.id])),
+  ).length;
   // A gentle lift at the path's midpoint — only worth marking on a longer walk.
   const isHalfway = !onReviewStep && total >= 8 && index === Math.floor(total / 2);
 
@@ -146,8 +178,12 @@ export function QuestionnaireScreen({ navigation }: Props) {
   const handleAnswer = (q: Question, next: Answer) => {
     setAnswers((prev) => ({ ...prev, [q.id]: next }));
     // One tap = one step forward: single-select answers advance immediately.
-    // Multi-select and free text keep collecting until "Next".
-    if (q.type !== 'chip_multi_select' && q.type !== 'text') goForward();
+    // Multi-select and free text keep collecting until "Next" — and so do questions
+    // offering an "add anything else" box, or auto-advance would yank the caregiver
+    // away before they could type.
+    if (q.type !== 'chip_multi_select' && q.type !== 'text' && !q.allow_free_text) {
+      goForward();
+    }
   };
 
   return (
@@ -178,6 +214,10 @@ export function QuestionnaireScreen({ navigation }: Props) {
             hint={question.hint.replace(/\[child\]/g, child.nickname)}
             value={answers[question.id]}
             onChange={(next) => handleAnswer(question, next)}
+            freeText={freeTexts[question.id]}
+            onFreeTextChange={(next) =>
+              setFreeTexts((prev) => ({ ...prev, [question.id]: next }))
+            }
           />
 
           {/* Every question shows Next (disabled until answered), so the screen never
@@ -188,7 +228,9 @@ export function QuestionnaireScreen({ navigation }: Props) {
             <PrimaryButton
               label="Next"
               onPress={goForward}
-              disabled={!isAnswered(answers[question.id])}
+              disabled={
+                !isAnswered(mergeAnswer(answers[question.id], freeTexts[question.id]))
+              }
               testID="next-button"
             />
           </View>

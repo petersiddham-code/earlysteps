@@ -39,6 +39,20 @@ function scoreDomainsFirst(
 }
 
 describe('scoreDomains — deterministic normalization', () => {
+  it('ignores namespaced free-text entries in answer arrays (weight 0, order-safe)', () => {
+    // A caregiver note rides in the same array as option ids, prefixed free_text: —
+    // it must add nothing to the numerator and never displace the option id.
+    const social = scoreDomainsFirst(
+      [
+        resp('Q1', ['bad', 'free_text:my son does not like kids crying']),
+        resp('Q2', 'bad'),
+      ],
+      indicators,
+    );
+    expect(social.score).toBe(100);
+    expect(social.answeredCount).toBe(2);
+  });
+
   it('scores a fully concerning domain at 100 (many)', () => {
     const social = scoreDomainsFirst([resp('Q1', 'bad'), resp('Q2', 'bad')], indicators);
     expect(social.score).toBe(100);

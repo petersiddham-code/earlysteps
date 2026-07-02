@@ -144,6 +144,67 @@ describe('QuestionnaireScreen', () => {
     expect(screen.getByTestId('halfway-encouragement')).toBeTruthy();
   });
 
+  it('offers "add anything else" on flagged questions, holds auto-advance, and submits the note namespaced', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    (submitIntakeResponses as jest.Mock).mockResolvedValue({});
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    // T4 is not flagged — no free-text box there.
+    skipToQuestion(
+      "When you call Alex's name from across the room, what usually happens?",
+    );
+    expect(screen.queryByTestId('free-text-T4')).toBeNull();
+
+    // T12 (sensory sounds) is flagged allow_free_text.
+    skipToQuestion(/get upset or cover their ears at loud sounds/);
+
+    // Picking an option must NOT auto-advance — the caregiver may still want to type.
+    fireEvent.press(screen.getByText('Yes, a lot'));
+    expect(screen.getByText(/get upset or cover their ears at loud sounds/)).toBeTruthy();
+
+    fireEvent.changeText(
+      screen.getByTestId('free-text-T12'),
+      'does not like other kids crying or whining',
+    );
+    fireEvent.press(screen.getByTestId('next-button'));
+    expect(screen.queryByText(/get upset or cover their ears at loud sounds/)).toBeNull();
+
+    skipToReview();
+    fireEvent.press(screen.getByTestId('submit-button'));
+    await waitFor(() => expect(submitIntakeResponses).toHaveBeenCalled());
+    const [, responses] = (submitIntakeResponses as jest.Mock).mock.calls[0];
+    expect(responses).toContainEqual(
+      expect.objectContaining({
+        question_id: 'T12',
+        answer: ['yes_a_lot', 'free_text:does not like other kids crying or whining'],
+      }),
+    );
+  });
+
+  it('a typed note alone (no option picked) counts as an answer and is submitted', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    (submitIntakeResponses as jest.Mock).mockResolvedValue({});
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    skipToQuestion(/avoid certain textures/); // T13, flagged allow_free_text
+    fireEvent.changeText(screen.getByTestId('free-text-T13'), 'only certain socks');
+    fireEvent.press(screen.getByTestId('next-button')); // enabled by the note alone
+
+    skipToReview();
+    expect(screen.getByText(/You answered 1 of \d+/)).toBeTruthy();
+    fireEvent.press(screen.getByTestId('submit-button'));
+    await waitFor(() => expect(submitIntakeResponses).toHaveBeenCalled());
+    const [, responses] = (submitIntakeResponses as jest.Mock).mock.calls[0];
+    expect(responses).toEqual([
+      expect.objectContaining({
+        question_id: 'T13',
+        answer: ['free_text:only certain socks'],
+      }),
+    ]);
+  });
+
   it('only submits answered questions, with the correct payload shape', async () => {
     (getChild as jest.Mock).mockResolvedValue(CHILD);
     (submitIntakeResponses as jest.Mock).mockResolvedValue({});
