@@ -16,6 +16,10 @@ import { INDICATORS_BY_QUESTION, type Indicator } from '@earlysteps/content';
 import { dedupeLatestByQuestion } from './dedupe.js';
 import { scoreDomains } from './scoreDomain.js';
 import { computeConfidence } from './confidence.js';
+import {
+  hasSufficientDomainEvidence,
+  hasSufficientOverallEvidence,
+} from './evidenceGate.js';
 import { combineConfidence, estimateSupportLevel } from './supportLevel.js';
 import { RED_FLAG_RULES } from './redFlags.js';
 
@@ -34,8 +38,13 @@ export interface RecomputeOptions {
 
 export interface RecomputeResult {
   profile: DomainProfile;
+  /** Null when no domain evidence exists OR the overall evidence floor is unmet (issue #22). */
   supportEstimate: SupportLevelEstimate | null;
   redFlags: RedFlag[];
+  /** Provenance: how many answers (latest per question) this recompute rested on. */
+  answeredTotal: number;
+  /** Overall minimum-evidence gate outcome. Red flags are exempt and reported regardless. */
+  sufficientEvidenceOverall: boolean;
 }
 
 function defaultTotalsByDomain(
@@ -81,11 +90,25 @@ export function recompute(
         score: Math.round(ds.score),
         confidence,
         evidence_refs: ds.evidence_refs,
+        answered_count: ds.answeredCount,
+        // Minimum-evidence gate (issue #22): level/score stay on the finding for audit and
+        // trend history, but consumers must show "not enough information yet" instead of
+        // them while this is false. Red flags below are exempt.
+        sufficient_evidence: hasSufficientDomainEvidence(
+          ds.answeredCount,
+          totals[ds.domain],
+        ),
       };
     }),
   };
 
-  const estimate = estimateSupportLevel(domainScores);
+  // Overall minimum-evidence gate (issue #22): below the floor of total scored answers, no
+  // support-level estimate at all — "moderate support needs (low confidence)" off one
+  // answer is still far too strong a statement.
+  const scoredAnswerTotal = domainScores.reduce((sum, ds) => sum + ds.answeredCount, 0);
+  const sufficientEvidenceOverall = hasSufficientOverallEvidence(scoredAnswerTotal);
+
+  const estimate = sufficientEvidenceOverall ? estimateSupportLevel(domainScores) : null;
   const supportEstimate: SupportLevelEstimate | null = estimate
     ? {
         child_id: childId,
@@ -95,7 +118,9 @@ export function recompute(
       }
     : null;
 
-  // Red flags evaluated independently of the domain aggregation above.
+  // Red flags evaluated independently of the domain aggregation above — and EXEMPT from
+  // the minimum-evidence gate: one serious sign surfaces even as the only answer given
+  // (CLAUDE.md §2 rule 8).
   const redFlags: RedFlag[] = [];
   for (const rule of RED_FLAG_RULES) {
     const refs = rule.check(responses);
@@ -110,5 +135,11 @@ export function recompute(
     }
   }
 
-  return { profile, supportEstimate, redFlags };
+  return {
+    profile,
+    supportEstimate,
+    redFlags,
+    answeredTotal: responses.length,
+    sufficientEvidenceOverall,
+  };
 }

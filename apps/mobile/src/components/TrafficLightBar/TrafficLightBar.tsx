@@ -1,17 +1,22 @@
 import { StyleSheet, Text, View } from 'react-native';
 import {
   DOMAIN_DISPLAY_NAMES,
+  INSUFFICIENT_EVIDENCE_LABEL,
   SIGN_LEVEL_TO_LABEL,
   type Confidence,
   type Domain,
   type SignLevel,
 } from '@earlysteps/shared-types';
 
-export interface TrafficLightBarProps {
-  domain: Domain;
-  level: SignLevel;
-  confidence: Confidence;
-}
+/**
+ * Either a real bucketed level (which must always come with its confidence, CLAUDE.md §2
+ * rule 3) or the minimum-evidence "not enough information yet" state (issue #22), which
+ * carries NO level and no confidence — the union makes rendering a sign-level label from
+ * too few answers a compile error, not a review catch.
+ */
+export type TrafficLightBarProps =
+  | { domain: Domain; level: SignLevel; confidence: Confidence }
+  | { domain: Domain; level: 'insufficient_evidence' };
 
 /**
  * Traffic-light domain indicator (CLAUDE.md §6, product plan §4.4: "never a single
@@ -25,21 +30,27 @@ const LEVEL_COLOR: Record<SignLevel, string> = {
   many: '#C0392B', // red
 };
 
+/** Deliberately OFF the traffic-light palette: "not enough info" is not a fourth severity. */
+const INSUFFICIENT_COLOR = '#9AA8A3';
+
 const CONFIDENCE_LABEL: Record<Confidence, string> = {
   low: 'low confidence',
   medium: 'medium confidence',
   high: 'high confidence',
 };
 
-export function TrafficLightBar({ domain, level, confidence }: TrafficLightBarProps) {
-  const color = LEVEL_COLOR[level];
+export function TrafficLightBar(props: TrafficLightBarProps) {
+  const insufficient = props.level === 'insufficient_evidence';
+  const color = insufficient ? INSUFFICIENT_COLOR : LEVEL_COLOR[props.level];
   return (
     <View style={styles.row}>
       <View style={[styles.dot, { backgroundColor: color }]} accessibilityRole="image" />
       <View style={styles.textColumn}>
-        <Text style={styles.domainLabel}>{DOMAIN_DISPLAY_NAMES[domain]}</Text>
+        <Text style={styles.domainLabel}>{DOMAIN_DISPLAY_NAMES[props.domain]}</Text>
         <Text style={styles.levelLabel}>
-          {SIGN_LEVEL_TO_LABEL[level]} · {CONFIDENCE_LABEL[confidence]}
+          {props.level === 'insufficient_evidence'
+            ? INSUFFICIENT_EVIDENCE_LABEL
+            : `${SIGN_LEVEL_TO_LABEL[props.level]} · ${CONFIDENCE_LABEL[props.confidence]}`}
         </Text>
       </View>
     </View>

@@ -24,4 +24,12 @@ describe('TrafficLightBar', () => {
     expect(screen.getByText('repetitive/self-regulating behaviours')).toBeTruthy();
     expect(screen.queryByText('repetitive_behaviour')).toBeNull();
   });
+
+  it('renders the "not enough information yet" state with NO sign-level label (issue #22)', () => {
+    render(<TrafficLightBar domain="social" level="insufficient_evidence" />);
+    expect(screen.getByText('Not enough information yet')).toBeTruthy();
+    // No traffic-light claim and no confidence may leak from too few answers.
+    expect(screen.queryByText(/signs observed/i)).toBeNull();
+    expect(screen.queryByText(/confidence/i)).toBeNull();
+  });
 });

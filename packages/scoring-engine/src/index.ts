@@ -6,6 +6,7 @@ export * from './buckets.js';
 export * from './dedupe.js';
 export * from './scoreDomain.js';
 export * from './confidence.js';
+export * from './evidenceGate.js';
 export * from './supportLevel.js';
 export * from './redFlags.js';
 export * from './recompute.js';

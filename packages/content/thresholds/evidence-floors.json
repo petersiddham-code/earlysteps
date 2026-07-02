@@ -1,0 +1,7 @@
+{
+  "version": "0.1.0-placeholder",
+  "needs_clinical_signoff": true,
+  "note": "PLACEHOLDER THRESHOLDS — NOT CLINICALLY VALIDATED (issue #22, docs/clinical-review/2026-07-02-minimum-evidence-gate.md). Below these floors of answered SCORED questions the engine emits the 'not enough information yet' state instead of a domain level / support estimate / recommendation tier — established screeners (e.g. M-CHAT-R) emit no score until the instrument is complete. Red-flag rules are EXEMPT and always evaluated on raw answers (CLAUDE.md §2 rule 8). Values exist only so the gate mechanism is real and testable; a clinical advisor must set them (possibly per age band) before release, same precedent as the placeholder scoring weights.",
+  "min_scored_answers_per_domain": 3,
+  "min_scored_answers_overall": 10
+}

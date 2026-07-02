@@ -8,6 +8,7 @@
  */
 import {
   CONSENT_SCOPES,
+  INSUFFICIENT_EVIDENCE_LABEL,
   SIGN_LEVEL_TO_LABEL,
   SUPPORT_LEVEL_TO_TERM,
   SCREENING_DISCLAIMER,
@@ -18,6 +19,7 @@ import {
 import { questionBankSchema } from './schema.js';
 import { QUESTION_BANKS, allQuestions } from './questions.js';
 import { WEIGHTS } from './weights.js';
+import { EVIDENCE_FLOORS } from './evidenceFloors.js';
 import { RESULT_COPY } from './resultCopy.js';
 import { CONSENT_COPY } from './consentCopy.js';
 
@@ -107,6 +109,23 @@ export function validateContent(): ValidationResult {
     if (RESULT_COPY.support_level_terms[level] !== SUPPORT_LEVEL_TO_TERM[level]) {
       errors.push(`result-copy: support_level_terms.${level} is off-list`);
     }
+  }
+
+  if (RESULT_COPY.insufficient_evidence.label !== INSUFFICIENT_EVIDENCE_LABEL) {
+    errors.push(
+      'result-copy: insufficient_evidence.label does not match the approved "not enough information yet" state string',
+    );
+  }
+
+  // 4b. Evidence floors must be internally coherent: an overall floor below the per-domain
+  // floor would let a single almost-gated domain unlock the overall estimate.
+  if (
+    EVIDENCE_FLOORS.min_scored_answers_overall <
+    EVIDENCE_FLOORS.min_scored_answers_per_domain
+  ) {
+    errors.push(
+      'evidence-floors: min_scored_answers_overall is below min_scored_answers_per_domain',
+    );
   }
 
   // 5. Every consent scope in the vocabulary has copy — no silent gaps in the consent screen.

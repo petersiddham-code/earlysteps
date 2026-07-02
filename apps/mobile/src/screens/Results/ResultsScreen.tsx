@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { allQuestions } from '@earlysteps/content';
+import { allQuestions, RESULT_COPY } from '@earlysteps/content';
 import {
   DOMAIN_DISPLAY_NAMES,
   isFreeTextAnswer,
@@ -70,9 +70,26 @@ function deriveStrengths(responses: IntakeResponse[]): string[] {
  * direct, data-grounded list — never invents a claim beyond what was computed.
  */
 function deriveNeeds(results: ResultsView): string[] {
+  // Only domains with a real (evidence-sufficient) level can be named as support needs —
+  // a "not enough information yet" domain is a gap, not a need (issue #22).
   return results.domains
-    .filter((d) => d.label !== 'Low signs observed')
+    .filter((d) => d.status === 'scored' && d.label !== 'Low signs observed')
     .map((d) => DOMAIN_DISPLAY_NAMES[d.domain]);
+}
+
+/**
+ * Provenance (issue #22): results must say what they rest on — after an all-skipped retake
+ * the previous profile is still shown, and without this line it reads as if results
+ * materialized from zero input.
+ */
+function provenanceLine(results: ResultsView): string {
+  const noun = results.basedOnAnswers === 1 ? 'answer' : 'answers';
+  const updated = new Date(results.computedAt).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+  return `Based on ${results.basedOnAnswers} ${noun} · last updated ${updated}`;
 }
 
 /** <TrafficLightBar/> takes the internal SignLevel key, the API returns the display label. */
@@ -137,6 +154,9 @@ export function ResultsScreen({ navigation }: Props) {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>Here's what we noticed</Text>
+      <Text style={styles.provenance} testID="provenance-line">
+        {provenanceLine(results)}
+      </Text>
       <ScreeningDisclaimer />
 
       {/* Strengths stay first — enforced by the component, honoured by the layout. */}
@@ -145,14 +165,29 @@ export function ResultsScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.card}>
-        {results.domains.map((domain) => (
-          <TrafficLightBar
-            key={domain.domain}
-            domain={domain.domain}
-            level={LABEL_TO_SIGN_LEVEL[domain.label]}
-            confidence={domain.confidence}
-          />
-        ))}
+        {results.domains.map((domain) =>
+          // Minimum-evidence gate (issue #22): a gated domain has NO label/confidence on
+          // the wire — it renders as "not enough information yet", never a traffic light.
+          domain.status === 'scored' ? (
+            <TrafficLightBar
+              key={domain.domain}
+              domain={domain.domain}
+              level={LABEL_TO_SIGN_LEVEL[domain.label]}
+              confidence={domain.confidence}
+            />
+          ) : (
+            <TrafficLightBar
+              key={domain.domain}
+              domain={domain.domain}
+              level="insufficient_evidence"
+            />
+          ),
+        )}
+        {results.domains.some((d) => d.status === 'insufficient_evidence') && (
+          <Text style={styles.insufficientDetail} testID="insufficient-domain-detail">
+            {RESULT_COPY.insufficient_evidence.domain_detail}
+          </Text>
+        )}
       </View>
 
       <RedFlagBanner redFlagTypes={results.redFlagTypes} />
@@ -163,7 +198,16 @@ export function ResultsScreen({ navigation }: Props) {
             {results.supportLevel.term} ({results.supportLevel.confidence} confidence)
           </Text>
         )}
-        <Text style={styles.recommendationText}>{results.recommendationTier}</Text>
+        {/* A null tier means "not enough information yet" AND no red flag (flags always
+            force a tier — they're exempt from the evidence gate). Say so honestly instead
+            of implying "we checked, support can begin now" off a couple of answers. */}
+        {results.recommendationTier ? (
+          <Text style={styles.recommendationText}>{results.recommendationTier}</Text>
+        ) : (
+          <Text style={styles.recommendationText} testID="insufficient-overall-detail">
+            {RESULT_COPY.insufficient_evidence.overall_detail}
+          </Text>
+        )}
       </View>
 
       {/* Issue #20: results must never be a dead end. Splash replace()s straight here for
@@ -215,6 +259,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   heading: { ...type.title, color: colors.ink },
+  provenance: { ...type.caption, color: colors.inkSoft },
+  insufficientDetail: {
+    ...type.caption,
+    color: colors.inkSoft,
+    marginTop: spacing.sm,
+  },
   errorText: { ...type.body, color: colors.inkSoft, textAlign: 'center' },
   retryText: { ...type.bodyStrong, color: colors.primary, marginTop: spacing.md },
   card: {
