@@ -6,12 +6,18 @@ import type { QuestionBank, QuestionAgeBand, Question } from '@earlysteps/shared
 import universal from '../questions/universal.json' with { type: 'json' };
 import toddler from '../questions/toddler.json' with { type: 'json' };
 import preschool from '../questions/preschool.json' with { type: 'json' };
+import primary from '../questions/primary.json' with { type: 'json' };
+import teen from '../questions/teen.json' with { type: 'json' };
+import youngAdult from '../questions/young-adult.json' with { type: 'json' };
 
 /** Raw banks keyed by age band. Validated by validateContent()/tests before trusted. */
 export const QUESTION_BANKS: Record<string, QuestionBank> = {
   universal: universal as QuestionBank,
   toddler: toddler as QuestionBank,
   preschool: preschool as QuestionBank,
+  primary: primary as QuestionBank,
+  teen: teen as QuestionBank,
+  young_adult: youngAdult as QuestionBank,
 };
 
 export function getQuestionBank(ageBand: QuestionAgeBand): QuestionBank | undefined {

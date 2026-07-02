@@ -9,21 +9,20 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { MVP_AGE_BANDS, type AgeBand } from '@earlysteps/shared-types';
+import { AGE_BANDS, type AgeBand } from '@earlysteps/shared-types';
 import { createChild } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChildProfileSetup'>;
 
-/** Ages we can actually screen right now — the questionnaire only has Toddler/Preschool
- * content shipped (see docs/clinical-review/content-gaps.md item 4). Not offering an age
- * that would dead-end at an empty questionnaire. */
+/** Every band ships a caregiver-answered question bank, so all are offered. */
 const AGE_BAND_LABELS: Record<AgeBand, string> = {
   toddler: 'Toddler (12–36 months)',
   preschool: 'Preschool (3–5 years)',
   primary: 'Primary (6–12 years)',
   teen: 'Teen (13–18 years)',
+  young_adult: 'Young adult (19–25 years)',
 };
 
 const LANGUAGE_OPTIONS = ['English', 'Spanish', 'Mandarin', 'Hindi', 'Arabic', 'French'];
@@ -80,7 +79,7 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
 
       <Text style={styles.label}>How old are they?</Text>
       <View style={styles.optionRow}>
-        {MVP_AGE_BANDS.map((band) => (
+        {AGE_BANDS.map((band) => (
           <Pressable
             key={band}
             onPress={() => setAgeBand(band)}
