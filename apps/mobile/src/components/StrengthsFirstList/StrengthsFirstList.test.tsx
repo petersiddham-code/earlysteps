@@ -31,4 +31,9 @@ describe('StrengthsFirstList', () => {
     render(<StrengthsFirstList strengths={[]} needs={['Needs support with sleep']} />);
     expect(screen.getByText('Strengths')).toBeTruthy();
   });
+
+  it('renders nothing at all when both lists are empty (#32)', () => {
+    const { toJSON } = render(<StrengthsFirstList strengths={[]} needs={[]} />);
+    expect(toJSON()).toBeNull();
+  });
 });

@@ -20,6 +20,28 @@ describe('SteppingStones', () => {
     expect(screen.queryByTestId('stone-ahead')).toBeNull();
   });
 
+  it('renders crossed-but-unanswered stones as skipped, not done (#37)', () => {
+    render(
+      <SteppingStones
+        total={5}
+        currentIndex={3}
+        answered={[true, false, true, false, false]}
+      />,
+    );
+    expect(screen.getAllByTestId('stone-done')).toHaveLength(2); // steps 0 and 2
+    expect(screen.getAllByTestId('stone-skipped')).toHaveLength(1); // step 1
+    expect(screen.getAllByTestId('stone-current')).toHaveLength(1);
+    expect(screen.getAllByTestId('stone-ahead')).toHaveLength(1);
+  });
+
+  it('shows no filled stones on the review step when everything was skipped (#37)', () => {
+    render(
+      <SteppingStones total={5} currentIndex={5} answered={new Array(5).fill(false)} />,
+    );
+    expect(screen.queryByTestId('stone-done')).toBeNull();
+    expect(screen.getAllByTestId('stone-skipped')).toHaveLength(5);
+  });
+
   it('renders nothing for an empty path', () => {
     render(<SteppingStones total={0} currentIndex={0} />);
     expect(screen.queryByTestId('stepping-stones')).toBeNull();

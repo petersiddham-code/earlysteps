@@ -269,6 +269,9 @@ describe('QuestionnaireScreen', () => {
     expect(screen.getByTestId('low-evidence-notice')).toHaveTextContent(
       /may not have much to share yet/,
     );
+    // The stones must agree with the counter: nothing answered, nothing filled (#37).
+    expect(screen.queryByTestId('stone-done')).toBeNull();
+    expect(screen.getAllByTestId('stone-skipped').length).toBeGreaterThan(0);
   });
 
   it('drops the low-evidence notice once enough questions are answered (issue #22)', async () => {

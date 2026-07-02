@@ -219,6 +219,8 @@ export function ResultsScreen({ navigation }: Props) {
     );
   }
 
+  const needs = deriveNeeds(results);
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>Here's what we noticed</Text>
@@ -227,36 +229,44 @@ export function ResultsScreen({ navigation }: Props) {
       </Text>
       <ScreeningDisclaimer />
 
-      {/* Strengths stay first — enforced by the component, honoured by the layout. */}
-      <View style={styles.card}>
-        <StrengthsFirstList strengths={strengths} needs={deriveNeeds(results)} />
-      </View>
+      {/* Strengths stay first — enforced by the component, honoured by the layout.
+          With nothing on either side (everything skipped, #32) the card disappears —
+          two bare headings read as a broken screen, not as honesty. */}
+      {(strengths.length > 0 || needs.length > 0) && (
+        <View style={styles.card}>
+          <StrengthsFirstList strengths={strengths} needs={needs} />
+        </View>
+      )}
 
-      <View style={styles.card}>
-        {results.domains.map((domain) =>
-          // Minimum-evidence gate (issue #22): a gated domain has NO label/confidence on
-          // the wire — it renders as "not enough information yet", never a traffic light.
-          domain.status === 'scored' ? (
-            <TrafficLightBar
-              key={domain.domain}
-              domain={domain.domain}
-              level={LABEL_TO_SIGN_LEVEL[domain.label]}
-              confidence={domain.confidence}
-            />
-          ) : (
-            <TrafficLightBar
-              key={domain.domain}
-              domain={domain.domain}
-              level="insufficient_evidence"
-            />
-          ),
-        )}
-        {results.domains.some((d) => d.status === 'insufficient_evidence') && (
-          <Text style={styles.insufficientDetail} testID="insufficient-domain-detail">
-            {RESULT_COPY.insufficient_evidence.domain_detail}
-          </Text>
-        )}
-      </View>
+      {/* No domains at all (0 scored answers, #32): drop the card rather than render an
+          empty white box — the recommendation card below says "not enough information". */}
+      {results.domains.length > 0 && (
+        <View style={styles.card}>
+          {results.domains.map((domain) =>
+            // Minimum-evidence gate (issue #22): a gated domain has NO label/confidence on
+            // the wire — it renders as "not enough information yet", never a traffic light.
+            domain.status === 'scored' ? (
+              <TrafficLightBar
+                key={domain.domain}
+                domain={domain.domain}
+                level={LABEL_TO_SIGN_LEVEL[domain.label]}
+                confidence={domain.confidence}
+              />
+            ) : (
+              <TrafficLightBar
+                key={domain.domain}
+                domain={domain.domain}
+                level="insufficient_evidence"
+              />
+            ),
+          )}
+          {results.domains.some((d) => d.status === 'insufficient_evidence') && (
+            <Text style={styles.insufficientDetail} testID="insufficient-domain-detail">
+              {RESULT_COPY.insufficient_evidence.domain_detail}
+            </Text>
+          )}
+        </View>
+      )}
 
       <RedFlagBanner redFlagTypes={results.redFlagTypes} />
 
@@ -268,13 +278,20 @@ export function ResultsScreen({ navigation }: Props) {
         )}
         {/* A null tier means "not enough information yet" AND no red flag (flags always
             force a tier — they're exempt from the evidence gate). Say so honestly instead
-            of implying "we checked, support can begin now" off a couple of answers. */}
+            of implying "we checked, support can begin now" off a couple of answers. The
+            approved gate label heads the card so the empty state reads as a state, not a
+            glitch (#32). */}
         {results.recommendationTier ? (
           <Text style={styles.recommendationText}>{results.recommendationTier}</Text>
         ) : (
-          <Text style={styles.recommendationText} testID="insufficient-overall-detail">
-            {RESULT_COPY.insufficient_evidence.overall_detail}
-          </Text>
+          <>
+            <Text style={styles.supportLevelText} testID="insufficient-overall-label">
+              {RESULT_COPY.insufficient_evidence.label}
+            </Text>
+            <Text style={styles.recommendationText} testID="insufficient-overall-detail">
+              {RESULT_COPY.insufficient_evidence.overall_detail}
+            </Text>
+          </>
         )}
       </View>
 
