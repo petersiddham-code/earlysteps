@@ -26,9 +26,18 @@ config.resolver.unstable_enablePackageExports = true;
 // Node ESM style) even though the files are `.ts`. Unlike Vite/Vitest's bundler resolution,
 // Metro takes a literal `.js` extension at face value and won't try `.ts` — same class of
 // issue as Jest's default resolver (see apps/mobile/jest.config.js moduleNameMapper).
+//
+// The rewrite must NEVER apply to imports originating inside node_modules: those `.js`
+// imports refer to real .js files, and because sourceExts ranks ts/tsx/mjs ABOVE js, the
+// extensionless retry can resolve to a DIFFERENT file. Concretely: merge-options'
+// index.mjs (a dep of async-storage's web backend) imports './index.js'; stripping the
+// extension resolved it back to index.mjs itself, and the resulting require cycle left its
+// `default` export undefined — crashing the whole web app at boot ("Cannot read properties
+// of undefined (reading 'bind')", i.e. a blank screen before React ever mounts).
 const defaultResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName.startsWith('.') && moduleName.endsWith('.js')) {
+  const fromWorkspaceSource = !context.originModulePath.includes('node_modules');
+  if (fromWorkspaceSource && moduleName.startsWith('.') && moduleName.endsWith('.js')) {
     try {
       return context.resolveRequest(context, moduleName.slice(0, -3), platform);
     } catch {
