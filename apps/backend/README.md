@@ -56,15 +56,23 @@ See `docs/clinical-review/content-gaps.md` items 5–6:
 
 ## Data model
 
-`prisma/schema.prisma` maps product plan §7. No migration has been generated — there was no
-live Postgres instance available to generate one against. Before deploying:
+`prisma/schema.prisma` maps product plan §7. The initial migration
+(`prisma/migrations/20260702042258_init`) is committed and has been run against a real local
+Postgres — verified end to end via the actual `start:dev` server, not just the in-memory test
+doubles. To set up your own local database:
 
 ```bash
-cp .env.example .env   # point DATABASE_URL at a real Postgres instance
-pnpm --filter @earlysteps/backend exec prisma migrate dev --name init
+createdb earlysteps   # or your Postgres tool of choice
+cp .env.example .env  # then edit DATABASE_URL to match your local user/db
+pnpm --filter @earlysteps/backend exec prisma migrate dev
 ```
 
-`prisma generate` (client generation, no DB connection required) is verified to run cleanly.
+Note the connection string needs an explicit user for Prisma even when `psql` connects fine
+via peer/socket auth without one — `postgresql://<your-macos-username>@localhost:5432/earlysteps`
+is the usual fix if you hit `P1010: User `` was denied access`.
+
+`prisma generate` (client generation, no DB connection required) is verified to run cleanly
+even without a live database — useful for CI/typecheck where nothing needs to actually query.
 
 ## Commands
 
