@@ -37,7 +37,10 @@ export class FamiliesController {
   ): Promise<Child> {
     return this.familiesService.createChild(familyId, {
       nickname: dto.nickname,
-      ageBand: dto.age_band,
+      birthMonth: dto.birth_month,
+      birthYear: dto.birth_year,
+      gender: dto.gender,
+      genderDetail: dto.gender_detail,
       languages: dto.languages,
     });
   }

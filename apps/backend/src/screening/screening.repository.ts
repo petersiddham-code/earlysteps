@@ -8,6 +8,7 @@
  * intake -> recompute -> persist -> results-view logic without a live database.
  */
 import type {
+  AgeBand,
   DomainProfile,
   IntakeResponse,
   RedFlag,
@@ -15,6 +16,12 @@ import type {
 } from '@earlysteps/shared-types';
 
 export interface ComputedSnapshot {
+  /**
+   * The child's (derived) age band when this screening was computed. The band itself is
+   * derived from birth month/year and changes as the child ages (#25), so trend history
+   * must record which band each screening actually used.
+   */
+  ageBand: AgeBand;
   profile: DomainProfile;
   supportEstimate: SupportLevelEstimate | null;
   redFlags: RedFlag[];

@@ -35,12 +35,14 @@ describe('families API wrappers', () => {
   it('createChild posts under the family', async () => {
     await createChild('f1', {
       nickname: 'Alex',
-      age_band: 'toddler',
+      birth_month: 6,
+      birth_year: 2024,
       languages: ['English'],
     });
     expect(apiClient.post).toHaveBeenCalledWith('/families/f1/children', {
       nickname: 'Alex',
-      age_band: 'toddler',
+      birth_month: 6,
+      birth_year: 2024,
       languages: ['English'],
     });
   });
