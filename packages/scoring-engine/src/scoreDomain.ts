@@ -1,6 +1,30 @@
-import type { Domain, EvidenceRef, IntakeResponse } from '@earlysteps/shared-types';
+import {
+  UNCERTAINTY_OPTION_IDS,
+  type Domain,
+  type EvidenceRef,
+  type IntakeResponse,
+} from '@earlysteps/shared-types';
 import type { Indicator } from '@earlysteps/content';
 import { bucketScore } from './buckets.js';
+
+const UNCERTAIN = new Set<string>(UNCERTAINTY_OPTION_IDS);
+
+/**
+ * Strips uncertainty selections ("not sure" / "prefer not to say") from an answer, returning
+ * null when nothing evidentiary remains. An uncertain answer is a GAP, not evidence: it must
+ * not pull the domain score down the way a reassuring answer does, and it must not count
+ * toward answeredCount (which feeds confidence/completeness). Without this, a caregiver
+ * answering "not sure" everywhere would get "Low signs observed" at inflated confidence.
+ */
+function withoutUncertainty(
+  answer: IntakeResponse['answer'],
+): IntakeResponse['answer'] | null {
+  if (Array.isArray(answer)) {
+    const kept = answer.filter((id) => !UNCERTAIN.has(id));
+    return kept.length > 0 ? kept : null;
+  }
+  return UNCERTAIN.has(String(answer)) ? null : answer;
+}
 
 export interface DomainScore {
   domain: Domain;
@@ -55,7 +79,9 @@ export function scoreDomains(
   for (const response of responses) {
     const indicator = indicatorsByQuestion[response.question_id];
     if (!indicator) continue;
-    const { contribution, max } = scoreOne(indicator, response.answer);
+    const answer = withoutUncertainty(response.answer);
+    if (answer === null) continue; // "not sure" is a gap, not evidence — treat as unanswered
+    const { contribution, max } = scoreOne(indicator, answer);
     if (max === 0) continue; // nothing weighted on this question — ignore
 
     const bucket = acc.get(indicator.domain) ?? {

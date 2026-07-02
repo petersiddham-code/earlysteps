@@ -78,21 +78,13 @@ Still open:
   real to persist), but nothing currently gates on them — no LLM calls, media capture, or
   report-sharing feature exists yet to enforce them against.
 
-## 7. Scoring engine does not dedupe repeated answers to the same question (BLOCKER for re-answering)
+## 7. ~~Scoring engine does not dedupe repeated answers to the same question~~ — CLOSED 2026-07-02
 
-`scoreDomains()` (`packages/scoring-engine/src/scoreDomain.ts`) iterates every `IntakeResponse`
-with no dedup by `question_id` — if the same question is answered twice across separate
-submissions (e.g. a caregiver revisits the questionnaire and changes an answer), **both**
-answers contribute to the domain's raw/max score, inflating the denominator and distorting the
-result rather than correctly using only the latest answer. Confirmed by reading the
-implementation while building `apps/mobile`'s Questionnaire screen; not yet fixed.
-
-Mitigated in the UI for now, not fixed at the source: `SplashScreen` deliberately never routes
-back to the Questionnaire once a child exists (routes straight to Results instead), so the
-mobile app can't trigger this by design. But any other client (a future edit-answers feature,
-a second device, direct API use) can still hit it. Needs a real fix — most likely: recompute
-should dedupe `IntakeResponse[]` by `question_id`, keeping only the most recent timestamp per
-question, before scoring.
+Fixed at the source: `recompute()` now dedupes `IntakeResponse[]` by `question_id`, keeping
+only the latest-timestamped answer, before both domain scoring and red-flag evaluation
+(`packages/scoring-engine/src/dedupe.ts`). Re-answering a question is now safe from any
+client. See `docs/clinical-review/2026-07-02-uncertainty-answers-and-dedupe.md` for the
+behaviour details awaiting advisor sign-off (including the red-flag "latest wins" semantics).
 
 ## 8. Results-screen "strengths" and "needs" are not the LLM-summary narrative
 

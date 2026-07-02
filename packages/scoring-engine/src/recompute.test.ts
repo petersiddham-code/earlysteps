@@ -74,4 +74,42 @@ describe('recompute — end-to-end pipeline (uses shipped content weights)', () 
     const social = profile.findings.find((f) => f.domain === 'social');
     expect(social?.confidence).toBe('low');
   });
+
+  it('scores a re-answered question once, using only the latest answer', () => {
+    const stale = { ...r('T4', 'doesnt_notice'), timestamp: '2026-06-01T00:00:00.000Z' };
+    const updated = { ...r('T4', 'looks_right_away'), timestamp: AT };
+    const { profile } = recompute([stale, updated], { computedAt: AT });
+    const social = profile.findings.find((f) => f.domain === 'social');
+    // The concerning first answer was superseded — it must not linger in the score.
+    expect(social?.level).toBe('low');
+    expect(social?.evidence_refs).toEqual([]);
+  });
+
+  it('red-flag rules see the latest answer, not a stale superseded one', () => {
+    const stale = {
+      ...r(RF_LOSS_OF_SKILLS_Q, 'yes'),
+      timestamp: '2026-06-01T00:00:00.000Z',
+    };
+    const updated = { ...r(RF_LOSS_OF_SKILLS_Q, 'no'), timestamp: AT };
+    const { redFlags } = recompute([stale, updated], { computedAt: AT });
+    expect(redFlags).toEqual([]);
+  });
+
+  it('still fires a red flag when the latest re-answer is the concerning one', () => {
+    const stale = {
+      ...r(RF_LOSS_OF_SKILLS_Q, 'no'),
+      timestamp: '2026-06-01T00:00:00.000Z',
+    };
+    const updated = { ...r(RF_LOSS_OF_SKILLS_Q, 'yes'), timestamp: AT };
+    const { redFlags } = recompute([stale, updated], { computedAt: AT });
+    expect(redFlags.map((f) => f.type)).toContain('loss_of_skills');
+  });
+
+  it('produces no findings and no estimate for an all-"not sure" intake', () => {
+    const allUnsure = ['T1', 'T3', 'T4', 'T5', 'T6', 'T7'].map((id) => r(id, 'not_sure'));
+    const { profile, supportEstimate } = recompute(allUnsure, { computedAt: AT });
+    // No evidence in either direction — must NOT read as reassuring "all low" results.
+    expect(profile.findings).toEqual([]);
+    expect(supportEstimate).toBeNull();
+  });
 });

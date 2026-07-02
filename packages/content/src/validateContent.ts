@@ -13,6 +13,7 @@ import {
   SCREENING_DISCLAIMER,
   SIGN_LEVELS,
   SUPPORT_LEVELS,
+  UNCERTAINTY_OPTION_IDS,
 } from '@earlysteps/shared-types';
 import { questionBankSchema } from './schema.js';
 import { QUESTION_BANKS, allQuestions } from './questions.js';
@@ -63,6 +64,13 @@ export function validateContent(): ValidationResult {
     for (const optId of Object.keys(ind.option_weights)) {
       if (!optionIds.has(optId)) {
         errors.push(`weights: ${ind.question_id} references unknown option '${optId}'`);
+      }
+      // "Not sure" is never a trap (product plan §4.1b): the scoring engine skips
+      // uncertainty answers entirely, so a weight here would be silently ignored.
+      if ((UNCERTAINTY_OPTION_IDS as readonly string[]).includes(optId)) {
+        errors.push(
+          `weights: ${ind.question_id} assigns a weight to uncertainty option '${optId}' — uncertainty answers are never scored`,
+        );
       }
     }
   }
