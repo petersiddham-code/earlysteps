@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "locale": "en",
   "age_band": "universal",
   "questions": [
@@ -20,13 +20,34 @@
       "text": "What language(s) does your family mainly speak at home?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "english", "label": "English" },
-        { "id": "spanish", "label": "Spanish" },
-        { "id": "mandarin", "label": "Mandarin" },
-        { "id": "hindi", "label": "Hindi" },
-        { "id": "arabic", "label": "Arabic" },
-        { "id": "french", "label": "French" },
-        { "id": "other", "label": "Other — type it" }
+        {
+          "id": "english",
+          "label": "English"
+        },
+        {
+          "id": "spanish",
+          "label": "Spanish"
+        },
+        {
+          "id": "mandarin",
+          "label": "Mandarin"
+        },
+        {
+          "id": "hindi",
+          "label": "Hindi"
+        },
+        {
+          "id": "arabic",
+          "label": "Arabic"
+        },
+        {
+          "id": "french",
+          "label": "French"
+        },
+        {
+          "id": "other",
+          "label": "Other — type it"
+        }
       ],
       "hint": "Pick all that apply — it's okay if [child] hears more than one.",
       "allow_free_text": true
@@ -38,9 +59,18 @@
       "text": "Does [child] hear more than one language regularly (e.g., from grandparents, daycare)?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "This just helps us understand their language environment — it's not a concern by itself."
     },
@@ -51,11 +81,26 @@
       "text": "Was [child] born on their due date, early, or late?",
       "type": "dropdown",
       "options": [
-        { "id": "on_time", "label": "On time" },
-        { "id": "few_weeks_early", "label": "A few weeks early" },
-        { "id": "very_early", "label": "Very early (before 32 weeks)" },
-        { "id": "late", "label": "Late" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "on_time",
+          "label": "On time"
+        },
+        {
+          "id": "few_weeks_early",
+          "label": "A few weeks early"
+        },
+        {
+          "id": "very_early",
+          "label": "Very early (before 32 weeks)"
+        },
+        {
+          "id": "late",
+          "label": "Late"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Totally optional — skip if you don't know or would rather not say."
     },
@@ -66,10 +111,22 @@
       "text": "Did [child] need any extra medical care right after birth (like a NICU stay)?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" },
-        { "id": "prefer_not_to_say", "label": "Prefer not to say" }
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        },
+        {
+          "id": "prefer_not_to_say",
+          "label": "Prefer not to say"
+        }
       ],
       "hint": "Totally optional — skip if you'd rather not say."
     },
@@ -80,10 +137,22 @@
       "text": "Is there anyone else in the family — parents, siblings, cousins — with autism, ADHD, or a learning difference?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" },
-        { "id": "prefer_not_to_say", "label": "Prefer not to say" }
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        },
+        {
+          "id": "prefer_not_to_say",
+          "label": "Prefer not to say"
+        }
       ],
       "hint": "This helps us understand family patterns — it doesn't predict anything on its own."
     },
@@ -94,12 +163,30 @@
       "text": "What made you want to check in today?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "noticed_myself", "label": "Something I noticed myself" },
-        { "id": "teacher_carer", "label": "A teacher/carer mentioned something" },
-        { "id": "doctor", "label": "A doctor suggested it" },
-        { "id": "proactive", "label": "I'm just being proactive" },
-        { "id": "family_member", "label": "A family member raised it" },
-        { "id": "other", "label": "Other" }
+        {
+          "id": "noticed_myself",
+          "label": "Something I noticed myself"
+        },
+        {
+          "id": "teacher_carer",
+          "label": "A teacher/carer mentioned something"
+        },
+        {
+          "id": "doctor",
+          "label": "A doctor suggested it"
+        },
+        {
+          "id": "proactive",
+          "label": "I'm just being proactive"
+        },
+        {
+          "id": "family_member",
+          "label": "A family member raised it"
+        },
+        {
+          "id": "other",
+          "label": "Other"
+        }
       ],
       "hint": "There's no wrong answer — we just want to understand your starting point."
     },
@@ -110,10 +197,108 @@
       "text": "On a scale of how worried you feel right now, where would you put yourself?",
       "type": "emoji_slider",
       "options": [
-        { "id": "not_very_worried", "label": "😌 Not very worried" },
-        { "id": "very_worried", "label": "😟 Very worried" }
+        {
+          "id": "not_very_worried",
+          "label": "😌 Not very worried"
+        },
+        {
+          "id": "very_worried",
+          "label": "😟 Very worried"
+        }
       ],
       "hint": "However you're feeling is valid — this just helps us support you better."
+    },
+    {
+      "id": "RF_loss_of_skills",
+      "domain": "profile",
+      "age_band": "universal",
+      "text": "Has [child] ever lost skills they once had — like words they stopped using, or things they stopped doing?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This can happen for many reasons — noticing it just helps us point you to the right support.",
+      "allow_free_text": true
+    },
+    {
+      "id": "RF_self_injury",
+      "domain": "profile",
+      "age_band": "universal",
+      "text": "Does [child] ever hurt themselves on purpose — like head-banging, biting, or hitting themselves?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is a hard question — an honest answer helps us suggest the right kind of support.",
+      "allow_free_text": true
+    },
+    {
+      "id": "RF_sudden_behaviour_change",
+      "domain": "profile",
+      "age_band": "universal",
+      "text": "Has [child]'s behaviour or mood changed suddenly in the last few weeks or months?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think of a clear change from how they usually are, not everyday ups and downs.",
+      "allow_free_text": true
+    },
+    {
+      "id": "RF_safety_concern",
+      "domain": "profile",
+      "age_band": "universal",
+      "text": "Do you have worries about [child]'s safety day to day — like running off near roads, or not noticing danger?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Many families manage safety worries — telling us helps us make safety part of the plan.",
+      "allow_free_text": true
     },
     {
       "id": "U9",
@@ -122,16 +307,46 @@
       "text": "What does [child] love doing most?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "music", "label": "Music" },
-        { "id": "drawing_art", "label": "Drawing/art" },
-        { "id": "building_blocks", "label": "Building/blocks" },
-        { "id": "books", "label": "Books" },
-        { "id": "screens_videos", "label": "Screens/videos" },
-        { "id": "outdoor_play", "label": "Outdoor play" },
-        { "id": "animals", "label": "Animals" },
-        { "id": "numbers_letters", "label": "Numbers/letters" },
-        { "id": "sports", "label": "Sports" },
-        { "id": "other", "label": "Other — type it" }
+        {
+          "id": "music",
+          "label": "Music"
+        },
+        {
+          "id": "drawing_art",
+          "label": "Drawing/art"
+        },
+        {
+          "id": "building_blocks",
+          "label": "Building/blocks"
+        },
+        {
+          "id": "books",
+          "label": "Books"
+        },
+        {
+          "id": "screens_videos",
+          "label": "Screens/videos"
+        },
+        {
+          "id": "outdoor_play",
+          "label": "Outdoor play"
+        },
+        {
+          "id": "animals",
+          "label": "Animals"
+        },
+        {
+          "id": "numbers_letters",
+          "label": "Numbers/letters"
+        },
+        {
+          "id": "sports",
+          "label": "Sports"
+        },
+        {
+          "id": "other",
+          "label": "Other — type it"
+        }
       ],
       "hint": "This isn't a small question — we build the whole support plan around what [child] already enjoys.",
       "allow_free_text": true
@@ -143,12 +358,30 @@
       "text": "What's something [child] is really good at?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "remembering_details", "label": "Remembering details" },
-        { "id": "being_kind_gentle", "label": "Being kind/gentle" },
-        { "id": "making_people_laugh", "label": "Making people laugh" },
-        { "id": "focus_on_loved_things", "label": "Focus on things they love" },
-        { "id": "physical_skills", "label": "Physical skills" },
-        { "id": "other", "label": "Other" }
+        {
+          "id": "remembering_details",
+          "label": "Remembering details"
+        },
+        {
+          "id": "being_kind_gentle",
+          "label": "Being kind/gentle"
+        },
+        {
+          "id": "making_people_laugh",
+          "label": "Making people laugh"
+        },
+        {
+          "id": "focus_on_loved_things",
+          "label": "Focus on things they love"
+        },
+        {
+          "id": "physical_skills",
+          "label": "Physical skills"
+        },
+        {
+          "id": "other",
+          "label": "Other"
+        }
       ],
       "hint": "Brag a little — this matters as much as anything else in this form.",
       "allow_free_text": true

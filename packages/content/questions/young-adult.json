@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -22,8 +22,14 @@
           "id": "specific_topics_only",
           "label": "Prefers to talk mainly about specific topics"
         },
-        { "id": "rarely_starts", "label": "Rarely starts conversations" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "rarely_starts",
+          "label": "Rarely starts conversations"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "It's fine to answer this together — their own view counts most."
     },
@@ -34,10 +40,22 @@
       "text": "Does [child] understand jokes, sarcasm, or indirect hints in conversation?",
       "type": "buttons",
       "options": [
-        { "id": "yes_usually", "label": "Yes, usually" },
-        { "id": "needs_explaining", "label": "Sometimes, needs it explained" },
-        { "id": "very_literal", "label": "Often takes things very literally" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "needs_explaining",
+          "label": "Sometimes, needs it explained"
+        },
+        {
+          "id": "very_literal",
+          "label": "Often takes things very literally"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Taking things literally is a communication style, not a failing."
     },
@@ -48,13 +66,22 @@
       "text": "Does [child] have close friends or a consistent social group?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
         {
           "id": "mostly_online_occasional",
           "label": "A little, mostly online or occasional"
         },
-        { "id": "not_really", "label": "Not really" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "not_really",
+          "label": "Not really"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Online friendships count as real friendships here."
     },
@@ -65,14 +92,26 @@
       "text": "How does [child] find social events like gatherings, parties, or group meals?",
       "type": "buttons",
       "options": [
-        { "id": "enjoys_them", "label": "Generally enjoys them" },
+        {
+          "id": "enjoys_them",
+          "label": "Generally enjoys them"
+        },
         {
           "id": "draining_but_manages",
           "label": "Manages, but finds them draining"
         },
-        { "id": "usually_avoids", "label": "Usually avoids them" },
-        { "id": "depends", "label": "Depends a lot on the situation" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "usually_avoids",
+          "label": "Usually avoids them"
+        },
+        {
+          "id": "depends",
+          "label": "Depends a lot on the situation"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Preferring quiet or small groups is common — we're just building a picture."
     },
@@ -83,10 +122,22 @@
       "text": "Does [child] have a very deep, specific interest they spend a lot of time on?",
       "type": "buttons",
       "options": [
-        { "id": "yes_quite_intense", "label": "Yes, quite intense" },
-        { "id": "strong_but_balanced", "label": "Has strong hobbies, fairly balanced" },
-        { "id": "not_particularly", "label": "Not particularly" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_quite_intense",
+          "label": "Yes, quite intense"
+        },
+        {
+          "id": "strong_but_balanced",
+          "label": "Has strong hobbies, fairly balanced"
+        },
+        {
+          "id": "not_particularly",
+          "label": "Not particularly"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Deep interests are often a real strength — not just a concern flag."
     },
@@ -97,10 +148,22 @@
       "text": "How does [child] react when plans or routines change unexpectedly?",
       "type": "buttons",
       "options": [
-        { "id": "adjusts_easily", "label": "Adjusts fairly easily" },
-        { "id": "uncomfortable_but_copes", "label": "Gets uncomfortable but copes" },
-        { "id": "very_distressing", "label": "Finds it very distressing" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "adjusts_easily",
+          "label": "Adjusts fairly easily"
+        },
+        {
+          "id": "uncomfortable_but_copes",
+          "label": "Gets uncomfortable but copes"
+        },
+        {
+          "id": "very_distressing",
+          "label": "Finds it very distressing"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Think about unexpected changes, not planned ones."
     },
@@ -111,12 +174,30 @@
       "text": "Any strong reactions to sounds, lights, textures, or busy places (shops, public transport, open-plan spaces)?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "loud_sounds", "label": "Loud sounds" },
-        { "id": "bright_lights", "label": "Bright lights" },
-        { "id": "busy_places", "label": "Busy or crowded places" },
-        { "id": "clothing_textures", "label": "Clothing textures" },
-        { "id": "food_textures", "label": "Food textures" },
-        { "id": "none_noticed", "label": "None noticed" }
+        {
+          "id": "loud_sounds",
+          "label": "Loud sounds"
+        },
+        {
+          "id": "bright_lights",
+          "label": "Bright lights"
+        },
+        {
+          "id": "busy_places",
+          "label": "Busy or crowded places"
+        },
+        {
+          "id": "clothing_textures",
+          "label": "Clothing textures"
+        },
+        {
+          "id": "food_textures",
+          "label": "Food textures"
+        },
+        {
+          "id": "none_noticed",
+          "label": "None noticed"
+        }
       ],
       "hint": "Pick any that apply — or none.",
       "allow_free_text": true
@@ -128,13 +209,22 @@
       "text": "How does [child] cope with stress, frustration, or being overwhelmed?",
       "type": "buttons",
       "options": [
-        { "id": "manages_fairly_well", "label": "Manages fairly well" },
+        {
+          "id": "manages_fairly_well",
+          "label": "Manages fairly well"
+        },
         {
           "id": "struggles_some_strategies",
           "label": "Struggles but has some coping strategies"
         },
-        { "id": "very_difficult", "label": "Very difficult to manage" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "very_difficult",
+          "label": "Very difficult to manage"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Adult life brings real pressure — pick what feels typical, not the worst day."
     },
@@ -145,9 +235,18 @@
       "text": "Has [child] mentioned feeling different from others, misunderstood, or exhausted by social expectations?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "If comfortable, a short note helps — no pressure to share details.",
       "allow_free_text": true
@@ -159,12 +258,50 @@
       "text": "Can [child] manage adult responsibilities like appointments, money basics, cooking, or a work/study routine?",
       "type": "buttons",
       "options": [
-        { "id": "mostly_independent", "label": "Mostly independent" },
-        { "id": "needs_some_support", "label": "Needs some support" },
-        { "id": "needs_lots_support", "label": "Needs a lot of support" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "mostly_independent",
+          "label": "Mostly independent"
+        },
+        {
+          "id": "needs_some_support",
+          "label": "Needs some support"
+        },
+        {
+          "id": "needs_lots_support",
+          "label": "Needs a lot of support"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Many young adults need support here — knowing helps us suggest useful next steps."
+    },
+    {
+      "id": "YA11",
+      "domain": "social",
+      "age_band": "young_adult",
+      "text": "Does [child] put a lot of effort into appearing \"fine\" around other people, then need a long time alone to recover?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "not_really",
+          "label": "Not really"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Lots of adults do this — we're asking how much effort it takes."
     }
   ]
 }

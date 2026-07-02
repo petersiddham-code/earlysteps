@@ -164,10 +164,8 @@ describe('QuestionnaireScreen', () => {
     await screen.findByText(/Question 1 of \d+/);
 
     expect(screen.queryByTestId('halfway-encouragement')).toBeNull();
-    skipToQuestion(
-      "When you call Alex's name from across the room, what usually happens?",
-    );
-    // T4 sits at index 12 of 25 — the midpoint for a toddler bank.
+    skipToQuestion('When you talk to Alex up close, do they usually look at your face?');
+    // T5 sits at index 17 of 34 — the midpoint for a toddler path (13 universal + 21 toddler).
     expect(screen.getByTestId('halfway-encouragement')).toBeTruthy();
   });
 

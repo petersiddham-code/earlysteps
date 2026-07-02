@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "locale": "en",
   "age_band": "teen",
   "questions": [
@@ -14,9 +14,18 @@
           "id": "comfortable_back_and_forth",
           "label": "Comfortable, easy back-and-forth"
         },
-        { "id": "small_talk_hard", "label": "Can talk but finds small talk hard" },
-        { "id": "prefers_not_talking", "label": "Prefers not to talk much with others" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "small_talk_hard",
+          "label": "Can talk but finds small talk hard"
+        },
+        {
+          "id": "prefers_not_talking",
+          "label": "Prefers not to talk much with others"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Preferring less small talk is a style, not a problem by itself."
     },
@@ -27,13 +36,22 @@
       "text": "Does [child] have close friends or a consistent social group?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
         {
           "id": "mostly_online_occasional",
           "label": "A little, mostly online or occasional"
         },
-        { "id": "not_really", "label": "Not really" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "not_really",
+          "label": "Not really"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Online friendships count as real friendships here."
     },
@@ -44,10 +62,22 @@
       "text": "Does [child] seem to notice or care about unwritten social rules (e.g., personal space, taking turns in group chats)?",
       "type": "buttons",
       "options": [
-        { "id": "yes_generally", "label": "Yes, generally" },
-        { "id": "sometimes_misses", "label": "Sometimes misses these" },
-        { "id": "often_unaware", "label": "Often seems unaware" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_generally",
+          "label": "Yes, generally"
+        },
+        {
+          "id": "sometimes_misses",
+          "label": "Sometimes misses these"
+        },
+        {
+          "id": "often_unaware",
+          "label": "Often seems unaware"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Your best guess is fine — these rules are invisible by definition."
     },
@@ -58,10 +88,22 @@
       "text": "Does [child] have a very deep, specific interest they spend a lot of time on?",
       "type": "buttons",
       "options": [
-        { "id": "yes_quite_intense", "label": "Yes, quite intense" },
-        { "id": "strong_but_balanced", "label": "Has strong hobbies, fairly balanced" },
-        { "id": "not_particularly", "label": "Not particularly" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_quite_intense",
+          "label": "Yes, quite intense"
+        },
+        {
+          "id": "strong_but_balanced",
+          "label": "Has strong hobbies, fairly balanced"
+        },
+        {
+          "id": "not_particularly",
+          "label": "Not particularly"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Deep interests are often a real strength — not just a concern flag."
     },
@@ -72,10 +114,22 @@
       "text": "How does [child] react to changes in plans or routine?",
       "type": "buttons",
       "options": [
-        { "id": "adjusts_easily", "label": "Adjusts fairly easily" },
-        { "id": "uncomfortable_but_copes", "label": "Gets uncomfortable but copes" },
-        { "id": "very_distressing", "label": "Finds it very distressing" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "adjusts_easily",
+          "label": "Adjusts fairly easily"
+        },
+        {
+          "id": "uncomfortable_but_copes",
+          "label": "Gets uncomfortable but copes"
+        },
+        {
+          "id": "very_distressing",
+          "label": "Finds it very distressing"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Think about unexpected changes, not planned ones."
     },
@@ -86,11 +140,26 @@
       "text": "Any strong reactions to sounds, lights, textures, or crowded places?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "loud_sounds", "label": "Loud sounds" },
-        { "id": "bright_lights", "label": "Bright lights" },
-        { "id": "crowded_places", "label": "Crowded places" },
-        { "id": "clothing_textures", "label": "Clothing textures" },
-        { "id": "none_noticed", "label": "None noticed" }
+        {
+          "id": "loud_sounds",
+          "label": "Loud sounds"
+        },
+        {
+          "id": "bright_lights",
+          "label": "Bright lights"
+        },
+        {
+          "id": "crowded_places",
+          "label": "Crowded places"
+        },
+        {
+          "id": "clothing_textures",
+          "label": "Clothing textures"
+        },
+        {
+          "id": "none_noticed",
+          "label": "None noticed"
+        }
       ],
       "hint": "Pick any that apply — or none.",
       "allow_free_text": true
@@ -102,13 +171,22 @@
       "text": "How does [child] cope with stress or frustration?",
       "type": "buttons",
       "options": [
-        { "id": "manages_fairly_well", "label": "Manages fairly well" },
+        {
+          "id": "manages_fairly_well",
+          "label": "Manages fairly well"
+        },
         {
           "id": "struggles_some_strategies",
           "label": "Struggles but has some coping strategies"
         },
-        { "id": "very_difficult", "label": "Very difficult to manage" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "very_difficult",
+          "label": "Very difficult to manage"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "The teen years are stressful for everyone — pick what feels typical."
     },
@@ -119,9 +197,18 @@
       "text": "Has [child] mentioned feeling anxious, low, different from peers, or misunderstood?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "If comfortable, a short note helps — no pressure to share details.",
       "allow_free_text": true
@@ -133,12 +220,99 @@
       "text": "Can [child] independently manage things like their schedule, hygiene routine, or basic responsibilities for their age?",
       "type": "buttons",
       "options": [
-        { "id": "mostly_independent", "label": "Mostly independent" },
-        { "id": "needs_some_support", "label": "Needs some support" },
-        { "id": "needs_lots_support", "label": "Needs a lot of support" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "mostly_independent",
+          "label": "Mostly independent"
+        },
+        {
+          "id": "needs_some_support",
+          "label": "Needs some support"
+        },
+        {
+          "id": "needs_lots_support",
+          "label": "Needs a lot of support"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Support needs here are common and useful to know — nothing more."
+    },
+    {
+      "id": "TE10",
+      "domain": "social",
+      "age_band": "teen",
+      "text": "After school or time with people, does [child] seem worn out from the effort of fitting in — needing a lot of alone time to recover?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "not_really",
+          "label": "Not really"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Needing recharge time is common — we're asking about the effort of fitting in."
+    },
+    {
+      "id": "TE11",
+      "domain": "communication",
+      "age_band": "teen",
+      "text": "Does [child] understand jokes, sarcasm, or indirect hints in conversation?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "needs_explaining",
+          "label": "Sometimes, needs it explained"
+        },
+        {
+          "id": "very_literal",
+          "label": "Often takes things very literally"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Taking things literally is a communication style, not a failing."
+    },
+    {
+      "id": "TE12",
+      "domain": "learning",
+      "age_band": "teen",
+      "text": "Has anyone at school raised concerns about [child]'s learning, focus, or social life?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Feel free to summarize what they said, if you'd like.",
+      "allow_free_text": true
     }
   ]
 }

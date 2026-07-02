@@ -31,7 +31,7 @@ describe('red-flag rules — each independent and traceable (product plan §8.5)
     ).toEqual([]);
   });
 
-  it('loss of skills triggers on the placeholder question = yes', () => {
+  it('loss of skills triggers on the universal red-flag question = yes', () => {
     expect(checkLossOfSkills([r(RF_LOSS_OF_SKILLS_Q, 'yes')])).toHaveLength(1);
     expect(checkLossOfSkills([r(RF_LOSS_OF_SKILLS_Q, 'no')])).toEqual([]);
     expect(checkLossOfSkills([])).toEqual([]);
@@ -55,14 +55,15 @@ describe('red-flag rules — each independent and traceable (product plan §8.5)
     expect(checkNoFunctionalCommunication([r('P1', 'not_yet_talking')])).toHaveLength(1);
   });
 
-  it('self-injury risk triggers on the placeholder question', () => {
+  it('self-injury risk triggers on the universal red-flag question', () => {
     expect(checkSelfInjuryRisk([r(RF_SELF_INJURY_Q, 'yes')])).toHaveLength(1);
     expect(checkSelfInjuryRisk([r(RF_SELF_INJURY_Q, 'no')])).toEqual([]);
   });
 
-  it('severe feeding triggers on very picky eating', () => {
-    expect(checkSevereFeeding([r('T14', 'very_picky')])).toHaveLength(1);
-    expect(checkSevereFeeding([r('P16', 'very_picky')])).toHaveLength(1);
+  it('severe feeding triggers only on the explicit growth-worry option, not ordinary pickiness', () => {
+    expect(checkSevereFeeding([r('T14', 'so_few_worried_growth')])).toHaveLength(1);
+    expect(checkSevereFeeding([r('P16', 'so_few_worried_growth')])).toHaveLength(1);
+    expect(checkSevereFeeding([r('T14', 'very_picky')])).toEqual([]);
     expect(checkSevereFeeding([r('T14', 'wide_variety')])).toEqual([]);
   });
 
@@ -71,7 +72,7 @@ describe('red-flag rules — each independent and traceable (product plan §8.5)
     expect(checkSevereSleep([r('T15', 'sleeps_well')])).toEqual([]);
   });
 
-  it('sudden behaviour change and safety risk trigger on their placeholder questions', () => {
+  it('sudden behaviour change and safety risk trigger on their universal questions', () => {
     expect(checkSuddenBehaviourChange([r(RF_SUDDEN_CHANGE_Q, 'yes')])).toHaveLength(1);
     expect(checkSafetyRisk([r(RF_SAFETY_Q, 'yes')])).toHaveLength(1);
   });

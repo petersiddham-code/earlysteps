@@ -6,16 +6,14 @@
  * tuned in isolation. A rule returns the triggering EvidenceRefs (empty array = not
  * triggered); the trigger is always traceable to specific answers, never invented.
  *
- * CONTENT GAP: several triggers have no source question in the shipped Toddler/Preschool
- * banks (loss of acquired skills, self-injury risk, sudden behaviour change, general safety).
- * Those rules key off placeholder question ids (RF_*) that content must add under clinical
- * review — see docs/clinical-review/content-gaps.md. Until the questions ship, those rules
- * are correctly inert on real data but fully unit-tested against synthetic responses, so the
- * logic is verified and wired the moment the questions land.
+ * The RF_* question ids below are asked in the universal bank for every age band
+ * (packages/content/questions/universal.json), so these rules run live on every intake.
+ * redFlagContentWiring.test.ts asserts each rule's question ids and trigger options exist
+ * in the shipped banks, so a content rename can never silently turn a rule inert again.
  */
 import type { EvidenceRef, IntakeResponse, RedFlagType } from '@earlysteps/shared-types';
 
-/** Placeholder question ids for triggers not yet in the shipped banks. */
+/** Universal-bank red-flag question ids (shared with content — asked for every age band). */
 export const RF_LOSS_OF_SKILLS_Q = 'RF_loss_of_skills';
 export const RF_SELF_INJURY_Q = 'RF_self_injury';
 export const RF_SUDDEN_CHANGE_Q = 'RF_sudden_behaviour_change';
@@ -86,13 +84,17 @@ export function checkSelfInjuryRisk(responses: IntakeResponse[]): EvidenceRef[] 
   return answerEquals(r, 'yes') ? [evidence(r!)] : [];
 }
 
-/** Severe feeding / growth concern. */
+/**
+ * Severe feeding / growth concern. Triggers only on the explicit "so few foods I worry
+ * about their growth or health" option — ordinary picky eating ("very picky") is extremely
+ * common and stays a weighted sensory signal, not an escalation (product plan §4.8 "severe").
+ */
 export function checkSevereFeeding(responses: IntakeResponse[]): EvidenceRef[] {
   const t14 = find(responses, 'T14');
   const p16 = find(responses, 'P16');
   const refs: EvidenceRef[] = [];
-  if (answerEquals(t14, 'very_picky')) refs.push(evidence(t14!));
-  if (answerEquals(p16, 'very_picky')) refs.push(evidence(p16!));
+  if (answerEquals(t14, 'so_few_worried_growth')) refs.push(evidence(t14!));
+  if (answerEquals(p16, 'so_few_worried_growth')) refs.push(evidence(p16!));
   return refs;
 }
 

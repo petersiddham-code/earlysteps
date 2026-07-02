@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "locale": "en",
   "age_band": "primary",
   "questions": [
@@ -10,13 +10,22 @@
       "text": "How does [child] communicate day-to-day?",
       "type": "buttons",
       "options": [
-        { "id": "full_conversations", "label": "Talks in full conversations" },
+        {
+          "id": "full_conversations",
+          "label": "Talks in full conversations"
+        },
         {
           "id": "struggles_back_and_forth",
           "label": "Talks but struggles with back-and-forth"
         },
-        { "id": "mostly_short_answers", "label": "Mostly short answers" },
-        { "id": "limited_spoken", "label": "Limited spoken language" }
+        {
+          "id": "mostly_short_answers",
+          "label": "Mostly short answers"
+        },
+        {
+          "id": "limited_spoken",
+          "label": "Limited spoken language"
+        }
       ],
       "hint": "Pick what's most typical — everyone has quieter days."
     },
@@ -27,10 +36,22 @@
       "text": "Does [child] understand jokes, sarcasm, or figures of speech (like \"it's raining cats and dogs\")?",
       "type": "buttons",
       "options": [
-        { "id": "yes_usually", "label": "Yes, usually" },
-        { "id": "needs_it_explained", "label": "Sometimes, needs it explained" },
-        { "id": "very_literal", "label": "Often takes things very literally" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "needs_it_explained",
+          "label": "Sometimes, needs it explained"
+        },
+        {
+          "id": "very_literal",
+          "label": "Often takes things very literally"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Taking things literally is a communication style, not a failing."
     },
@@ -41,10 +62,22 @@
       "text": "Can [child] retell a short story or explain what happened at school?",
       "type": "buttons",
       "options": [
-        { "id": "yes_easily", "label": "Yes, easily" },
-        { "id": "with_prompting", "label": "With some prompting" },
-        { "id": "finds_it_hard", "label": "Finds this hard" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_easily",
+          "label": "Yes, easily"
+        },
+        {
+          "id": "with_prompting",
+          "label": "With some prompting"
+        },
+        {
+          "id": "finds_it_hard",
+          "label": "Finds this hard"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Think of an ordinary day, not a special occasion."
     },
@@ -55,13 +88,22 @@
       "text": "Does [child] have friends they regularly play or talk with?",
       "type": "buttons",
       "options": [
-        { "id": "close_friends", "label": "Yes, a few close friends" },
+        {
+          "id": "close_friends",
+          "label": "Yes, a few close friends"
+        },
         {
           "id": "knows_people_few_close",
           "label": "Knows people but few close friendships"
         },
-        { "id": "struggles_make_keep", "label": "Struggles to make/keep friends" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "struggles_make_keep",
+          "label": "Struggles to make/keep friends"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "One or two good friends counts just as much as a big group."
     },
@@ -72,10 +114,22 @@
       "text": "In a conversation, does [child] take turns talking and listening, or mostly talk about their own topics?",
       "type": "buttons",
       "options": [
-        { "id": "good_back_and_forth", "label": "Good back-and-forth" },
-        { "id": "own_topics", "label": "Mostly talks about their own interests" },
-        { "id": "rarely_initiates", "label": "Rarely initiates conversation" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "good_back_and_forth",
+          "label": "Good back-and-forth"
+        },
+        {
+          "id": "own_topics",
+          "label": "Mostly talks about their own interests"
+        },
+        {
+          "id": "rarely_initiates",
+          "label": "Rarely initiates conversation"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Pick what happens most of the time."
     },
@@ -86,10 +140,22 @@
       "text": "Does [child] pick up on how others are feeling without being told?",
       "type": "buttons",
       "options": [
-        { "id": "yes_usually", "label": "Yes, usually" },
-        { "id": "sometimes", "label": "Sometimes" },
-        { "id": "often_doesnt_notice", "label": "Often doesn't notice" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "often_doesnt_notice",
+          "label": "Often doesn't notice"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "This can be hard to judge — your best guess is fine."
     },
@@ -100,9 +166,18 @@
       "text": "Has [child] mentioned feeling left out, different, or having trouble with friendships?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "If yes, a short note helps but isn't required.",
       "allow_free_text": true
@@ -114,10 +189,22 @@
       "text": "Does [child] have an intense interest they talk about a lot, or want the same routine every day?",
       "type": "buttons",
       "options": [
-        { "id": "very_intense_rigid", "label": "Yes, very intense/rigid" },
-        { "id": "strong_but_flexible", "label": "Strong interest, fairly flexible" },
-        { "id": "not_particularly", "label": "Not particularly" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "very_intense_rigid",
+          "label": "Yes, very intense/rigid"
+        },
+        {
+          "id": "strong_but_flexible",
+          "label": "Strong interest, fairly flexible"
+        },
+        {
+          "id": "not_particularly",
+          "label": "Not particularly"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Deep interests are often a real strength — we ask to understand, not to judge."
     },
@@ -128,12 +215,30 @@
       "text": "Any repeated movements (hand movements, rocking) especially when excited, stressed, or focused?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "hand_movements", "label": "Hand movements" },
-        { "id": "rocking", "label": "Rocking" },
-        { "id": "fidgeting_objects", "label": "Fidgeting objects" },
-        { "id": "pacing", "label": "Pacing" },
-        { "id": "something_else", "label": "Something else" },
-        { "id": "none_noticed", "label": "None noticed" }
+        {
+          "id": "hand_movements",
+          "label": "Hand movements"
+        },
+        {
+          "id": "rocking",
+          "label": "Rocking"
+        },
+        {
+          "id": "fidgeting_objects",
+          "label": "Fidgeting objects"
+        },
+        {
+          "id": "pacing",
+          "label": "Pacing"
+        },
+        {
+          "id": "something_else",
+          "label": "Something else"
+        },
+        {
+          "id": "none_noticed",
+          "label": "None noticed"
+        }
       ],
       "hint": "Lots of kids do some of this — we're just building a picture."
     },
@@ -144,12 +249,30 @@
       "text": "Any strong reactions to sounds, lights, textures, or crowded/noisy places?",
       "type": "chip_multi_select",
       "options": [
-        { "id": "loud_sounds", "label": "Loud sounds" },
-        { "id": "bright_lights", "label": "Bright lights" },
-        { "id": "crowded_spaces", "label": "Crowded spaces" },
-        { "id": "clothing_textures", "label": "Clothing textures" },
-        { "id": "food_textures", "label": "Food textures" },
-        { "id": "none_noticed", "label": "None noticed" }
+        {
+          "id": "loud_sounds",
+          "label": "Loud sounds"
+        },
+        {
+          "id": "bright_lights",
+          "label": "Bright lights"
+        },
+        {
+          "id": "crowded_spaces",
+          "label": "Crowded spaces"
+        },
+        {
+          "id": "clothing_textures",
+          "label": "Clothing textures"
+        },
+        {
+          "id": "food_textures",
+          "label": "Food textures"
+        },
+        {
+          "id": "none_noticed",
+          "label": "None noticed"
+        }
       ],
       "hint": "Pick any that apply — or none.",
       "allow_free_text": true
@@ -161,10 +284,22 @@
       "text": "Can [child] focus on schoolwork or a task they don't love, without a lot of reminders?",
       "type": "buttons",
       "options": [
-        { "id": "yes_usually", "label": "Yes, usually" },
-        { "id": "frequent_reminders", "label": "Needs frequent reminders" },
-        { "id": "very_hard", "label": "Finds this very hard" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "frequent_reminders",
+          "label": "Needs frequent reminders"
+        },
+        {
+          "id": "very_hard",
+          "label": "Finds this very hard"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Focusing on things we love is easier for everyone — think of the less-loved tasks."
     },
@@ -175,9 +310,18 @@
       "text": "Has a teacher raised any concerns about [child]'s learning, behaviour, or social skills?",
       "type": "buttons",
       "options": [
-        { "id": "yes", "label": "Yes" },
-        { "id": "no", "label": "No" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Feel free to summarize what they said, if you'd like.",
       "allow_free_text": true
@@ -189,10 +333,22 @@
       "text": "How does [child] handle frustration or things not going their way?",
       "type": "buttons",
       "options": [
-        { "id": "copes_fairly_well", "label": "Copes fairly well" },
-        { "id": "upset_but_recovers", "label": "Gets upset but recovers" },
-        { "id": "big_reactions", "label": "Big reactions, hard to calm down" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "copes_fairly_well",
+          "label": "Copes fairly well"
+        },
+        {
+          "id": "upset_but_recovers",
+          "label": "Gets upset but recovers"
+        },
+        {
+          "id": "big_reactions",
+          "label": "Big reactions, hard to calm down"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "There's no wrong answer — big feelings are part of growing up."
     },
@@ -203,12 +359,76 @@
       "text": "Can [child] manage daily tasks for their age (dressing, packing a school bag, basic hygiene)?",
       "type": "buttons",
       "options": [
-        { "id": "mostly_independent", "label": "Mostly independent" },
-        { "id": "some_reminders_help", "label": "Needs some reminders/help" },
-        { "id": "lots_of_support", "label": "Needs a lot of support" },
-        { "id": "not_sure", "label": "Not sure" }
+        {
+          "id": "mostly_independent",
+          "label": "Mostly independent"
+        },
+        {
+          "id": "some_reminders_help",
+          "label": "Needs some reminders/help"
+        },
+        {
+          "id": "lots_of_support",
+          "label": "Needs a lot of support"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
       ],
       "hint": "Needing support here is common — it just helps us suggest useful activities."
+    },
+    {
+      "id": "PR15",
+      "domain": "repetitive_behaviour",
+      "age_band": "primary",
+      "text": "How does [child] handle unexpected changes, like a different teacher or cancelled plans?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "adjusts_ok",
+          "label": "Adjusts fairly easily"
+        },
+        {
+          "id": "uncomfortable_but_copes",
+          "label": "Gets uncomfortable but copes"
+        },
+        {
+          "id": "very_distressing",
+          "label": "Finds it very distressing"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about surprises, not changes they've been prepared for."
+    },
+    {
+      "id": "PR16",
+      "domain": "social",
+      "age_band": "primary",
+      "text": "When talking, does [child] use gestures and facial expressions — nodding, waving, showing feelings on their face?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Pick what you see most of the time."
     }
   ]
 }
