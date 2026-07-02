@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import type { IntakeResponse } from '@earlysteps/shared-types';
 import {
+  RED_FLAG_TYPES,
+  followUpQuestionId,
+  type IntakeResponse,
+} from '@earlysteps/shared-types';
+import {
+  checkFollowUpConfirmed,
   checkLossOfSkills,
   checkNoNameResponse,
   checkNoFunctionalCommunication,
@@ -88,5 +93,52 @@ describe('red-flag rules — each independent and traceable (product plan §8.5)
       'sudden_behaviour_change',
       'safety_risk',
     ]);
+  });
+});
+
+describe('confirmed free-text follow-ups (issue #26) — caregiver answer decides, never the LLM', () => {
+  const rulesByType = new Map(RED_FLAG_RULES.map((rule) => [rule.type, rule]));
+
+  it.each([...RED_FLAG_TYPES])(
+    "every type triggers on FU_%s = 'yes' with evidence pointing at the follow-up question",
+    (type) => {
+      const rule = rulesByType.get(type)!;
+      const refs = rule.check([r(followUpQuestionId(type), 'yes')]);
+      expect(refs).toEqual([{ source: 'intake', ref_id: followUpQuestionId(type) }]);
+    },
+  );
+
+  it.each([...RED_FLAG_TYPES])(
+    "FU_%s answered 'no' or 'not_sure' contributes nothing",
+    (type) => {
+      const rule = rulesByType.get(type)!;
+      expect(rule.check([r(followUpQuestionId(type), 'no')])).toEqual([]);
+      expect(rule.check([r(followUpQuestionId(type), 'not_sure')])).toEqual([]);
+    },
+  );
+
+  it('a free-text echo of a confirmation can never trigger — only the structured answer counts', () => {
+    expect(
+      checkFollowUpConfirmed('loss_of_skills', [
+        r(followUpQuestionId('loss_of_skills'), ['no', 'free_text:yes']),
+      ]),
+    ).toEqual([]);
+  });
+
+  it('a confirmed follow-up combines with (not replaces) the base rule evidence', () => {
+    const rule = rulesByType.get('loss_of_skills')!;
+    const refs = rule.check([
+      r(RF_LOSS_OF_SKILLS_Q, 'yes'),
+      r(followUpQuestionId('loss_of_skills'), 'yes'),
+    ]);
+    expect(refs.map((ref) => ref.ref_id)).toEqual([
+      RF_LOSS_OF_SKILLS_Q,
+      followUpQuestionId('loss_of_skills'),
+    ]);
+  });
+
+  it('base rules still fire without any follow-up present (stage is purely additive)', () => {
+    const rule = rulesByType.get('safety_risk')!;
+    expect(rule.check([r(RF_SAFETY_Q, 'yes')])).toHaveLength(1);
   });
 });

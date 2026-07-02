@@ -8,17 +8,26 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { allQuestions, RESULT_COPY } from '@earlysteps/content';
+import { allQuestions, getFollowUp, RESULT_COPY } from '@earlysteps/content';
 import {
   DOMAIN_DISPLAY_NAMES,
+  FOLLOW_UP_ANSWER_OPTIONS,
   isFreeTextAnswer,
   stripFreeTextPrefix,
+  type FollowUpAnswer,
+  type FollowUpSuggestion,
   type IntakeResponse,
   type ResultsView,
   type SignLevel,
   type SignLevelLabel,
 } from '@earlysteps/shared-types';
-import { getIntakeResponses, getResults } from '../../api/index.js';
+import {
+  analyzeResponses,
+  answerFollowUpSuggestion,
+  getChild,
+  getIntakeResponses,
+  getResults,
+} from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
@@ -99,12 +108,30 @@ const LABEL_TO_SIGN_LEVEL: Record<SignLevelLabel, SignLevel> = {
   'Many signs observed': 'many',
 };
 
+/**
+ * Closed-choice answers for a confirmation follow-up, labelled from the content
+ * package (single source of truth — never hardcoded here, CLAUDE.md §5). Anything
+ * off the yes/no/not_sure vocabulary is dropped defensively.
+ */
+function followUpOptions(
+  suggestion: FollowUpSuggestion,
+): { id: FollowUpAnswer; label: string }[] {
+  const options = getFollowUp(suggestion.follow_up_id)?.options ?? [];
+  return options.filter((option): option is { id: FollowUpAnswer; label: string } =>
+    (FOLLOW_UP_ANSWER_OPTIONS as readonly string[]).includes(option.id),
+  );
+}
+
 export function ResultsScreen({ navigation }: Props) {
-  const { childId, clearChildId } = useSession();
+  const { familyId, childId, clearChildId } = useSession();
   const [results, setResults] = useState<ResultsView | null>(null);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [followUps, setFollowUps] = useState<FollowUpSuggestion[]>([]);
+  const [childName, setChildName] = useState('your child');
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!childId) return;
@@ -127,10 +154,51 @@ export function ResultsScreen({ navigation }: Props) {
         }
         setError("We couldn't load your results. Please try again.");
       });
+
+    // Best-effort extras (issue #26): ask the server to analyze any typed answers and
+    // return pending confirmation follow-ups. Results NEVER wait on this — any failure
+    // (offline, no AI consent → 403, analysis unavailable) just means no follow-up
+    // card. The deterministic results above are complete without it.
+    analyzeResponses(childId)
+      .then((suggestions) => {
+        if (!cancelled) setFollowUps(suggestions);
+      })
+      .catch(() => {});
+    if (familyId) {
+      getChild(familyId, childId)
+        .then((child) => {
+          if (!cancelled) setChildName(child.nickname);
+        })
+        .catch(() => {});
+    }
     return () => {
       cancelled = true;
     };
-  }, [childId, navigation, attempt]);
+  }, [familyId, childId, navigation, attempt]);
+
+  /**
+   * The caregiver's structured answer is submitted as a NORMAL intake response — the
+   * deterministic engine recomputes and the returned view replaces what's on screen,
+   * so a confirmed serious sign surfaces immediately (as a red flag computed by the
+   * rules, never by the AI).
+   */
+  const handleFollowUpAnswer = async (
+    suggestion: FollowUpSuggestion,
+    answer: FollowUpAnswer,
+  ) => {
+    if (!childId || answeringId !== null) return;
+    setAnsweringId(suggestion.id);
+    setFollowUpError(null);
+    try {
+      const view = await answerFollowUpSuggestion(childId, suggestion.id, answer);
+      setResults(view);
+      setFollowUps((prev) => prev.filter((s) => s.id !== suggestion.id));
+    } catch {
+      setFollowUpError("We couldn't save that answer. Please try again.");
+    } finally {
+      setAnsweringId(null);
+    }
+  };
 
   if (error) {
     return (
@@ -210,6 +278,54 @@ export function ResultsScreen({ navigation }: Props) {
         )}
       </View>
 
+      {/* Issue #26: confirmation follow-ups for things the caregiver typed in their
+          own words. The AI only proposed showing these content-authored questions —
+          the caregiver's structured answer goes through the normal deterministic
+          pipeline, which alone decides scores and red flags. Purely additive: when
+          there are no suggestions (or AI consent is off), this card simply isn't. */}
+      {followUps.length > 0 && (
+        <View style={styles.card} testID="follow-up-card">
+          <Text style={styles.followUpHeading}>About something you wrote</Text>
+          <Text style={styles.followUpIntro}>
+            Your own words matter. To be sure we understood them, here's a quick question
+            — your answer is what counts, and "I'm not sure" is always fine.
+          </Text>
+          {followUps.map((suggestion) => (
+            <View
+              key={suggestion.id}
+              style={styles.followUpItem}
+              testID={`follow-up-${suggestion.follow_up_id}`}
+            >
+              <Text style={styles.followUpQuote}>"{suggestion.source_quote}"</Text>
+              <Text style={styles.followUpQuestion}>
+                {suggestion.text.replace(/\[child\]/g, childName)}
+              </Text>
+              <Text style={styles.followUpHint}>
+                {suggestion.hint.replace(/\[child\]/g, childName)}
+              </Text>
+              <View style={styles.followUpOptions}>
+                {followUpOptions(suggestion).map((option) => (
+                  <Pressable
+                    key={option.id}
+                    onPress={() => handleFollowUpAnswer(suggestion, option.id)}
+                    disabled={answeringId !== null}
+                    accessibilityRole="button"
+                    style={[
+                      styles.followUpOption,
+                      answeringId !== null && styles.followUpOptionDisabled,
+                    ]}
+                    testID={`follow-up-${suggestion.follow_up_id}-${option.id}`}
+                  >
+                    <Text style={styles.followUpOptionText}>{option.label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ))}
+          {followUpError && <Text style={styles.errorText}>{followUpError}</Text>}
+        </View>
+      )}
+
       {/* Issue #20: results must never be a dead end. Splash replace()s straight here for
           a returning session, so without these the caregiver has no path back into the
           app's flows. Starting a new set of questions forgets the child but keeps the
@@ -279,6 +395,30 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   recommendationText: { ...type.body, color: colors.inkSoft },
+  followUpHeading: { ...type.title, color: colors.ink, marginBottom: spacing.xs },
+  followUpIntro: { ...type.caption, color: colors.inkSoft, marginBottom: spacing.lg },
+  followUpItem: { marginBottom: spacing.md },
+  followUpQuote: {
+    ...type.body,
+    color: colors.inkSoft,
+    fontStyle: 'italic',
+    marginBottom: spacing.sm,
+  },
+  followUpQuestion: { ...type.bodyStrong, color: colors.ink, marginBottom: spacing.xs },
+  followUpHint: { ...type.caption, color: colors.inkSoft, marginBottom: spacing.md },
+  followUpOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  followUpOption: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  followUpOptionDisabled: { opacity: 0.5 },
+  followUpOptionText: { ...type.bodyStrong, color: colors.ink },
   actions: { marginTop: spacing.md, gap: spacing.sm },
   actionsHint: {
     ...type.caption,

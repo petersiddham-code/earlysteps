@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+  "locale": "en",
+  "needs_clinical_signoff": true,
+  "note": "Confirmation follow-ups for LLM-detected free-text signals (issue #26). One per hard-coded red-flag type. The AI only proposes showing one of these; the caregiver's own yes/no/not-sure answer is what the deterministic red-flag rules read (a confirmed 'yes' on FU_<type> triggers the matching rule). Wordings are clinical content — advisor sign-off required before release.",
+  "follow_ups": [
+    {
+      "id": "FU_loss_of_skills",
+      "red_flag_type": "loss_of_skills",
+      "text": "Thinking about what you wrote — has [child] lost words or skills they used to have?",
+      "hint": "Only choose yes if that matches what you meant. Your answer here is what counts, not our reading of it.",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_sure", "label": "I'm not sure" }
+      ]
+    },
+    {
+      "id": "FU_no_name_response",
+      "red_flag_type": "no_name_response",
+      "text": "You mentioned something about how [child] responds. When you call [child]'s name, do they usually not react, even after a few tries?",
+      "hint": "Take your time — \"I'm not sure\" is always okay.",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_sure", "label": "I'm not sure" }
+      ]
+    },
+    {
+      "id": "FU_no_functional_communication",
+      "red_flag_type": "no_functional_communication",
+      "text": "From what you wrote — does [child] currently have no way to show you what they want, with words, sounds, gestures, or pointing?",
+      "hint": "Every child communicates differently. Answer for how things are right now.",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_sure", "label": "I'm not sure" }
+      ]
+    },
+    {
+      "id": "FU_self_injury_risk",
+      "red_flag_type": "self_injury_risk",
+      "text": "You wrote something we want to be sure we understood. Does [child] do things that hurt their own body, like hitting their head or biting themselves?",
+      "hint": "This helps us point you to the right support. You know [child] best.",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_sure", "label": "I'm not sure" }
+      ]
+    },
+    {
+      "id": "FU_severe_feeding",
+      "red_flag_type": "severe_feeding",
+      "text": "About what you wrote on eating — does [child] eat so few foods that you worry about their growth or health?",
+      "hint": "Lots of children are picky eaters. Choose yes only if it truly worries you.",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_sure", "label": "I'm not sure" }
+      ]
+    },
+    {
+      "id": "FU_severe_sleep",
+      "red_flag_type": "severe_sleep",
+      "text": "About what you wrote on sleep — are [child]'s sleep struggles serious enough to affect the whole family most nights?",
+      "hint": "Answer for a typical week, not the odd hard night.",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_sure", "label": "I'm not sure" }
+      ]
+    },
+    {
+      "id": "FU_sudden_behaviour_change",
+      "red_flag_type": "sudden_behaviour_change",
+      "text": "You mentioned a change. Has [child]'s behaviour changed suddenly and noticeably in recent weeks?",
+      "hint": "A gradual shift over months is different — this asks about a sudden change.",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_sure", "label": "I'm not sure" }
+      ]
+    },
+    {
+      "id": "FU_safety_risk",
+      "red_flag_type": "safety_risk",
+      "text": "From what you wrote — are you worried about [child]'s safety, or the safety of people around them?",
+      "hint": "Sharing this helps us show you the right next steps sooner.",
+      "options": [
+        { "id": "yes", "label": "Yes" },
+        { "id": "no", "label": "No" },
+        { "id": "not_sure", "label": "I'm not sure" }
+      ]
+    }
+  ]
+}

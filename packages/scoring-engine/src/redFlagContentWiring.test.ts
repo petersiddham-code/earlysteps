@@ -8,7 +8,8 @@
  * impossible to reintroduce without a red build.
  */
 import { describe, it, expect } from 'vitest';
-import { allQuestions, getQuestionBank } from '@earlysteps/content';
+import { FOLLOW_UPS, WEIGHTS, allQuestions, getQuestionBank } from '@earlysteps/content';
+import { RED_FLAG_TYPES, followUpQuestionId } from '@earlysteps/shared-types';
 import {
   RF_LOSS_OF_SKILLS_Q,
   RF_SELF_INJURY_Q,
@@ -78,5 +79,31 @@ describe('every red-flag rule references real shipped questions and options', ()
     expectQuestionWithOptions('T14', 'so_few_worried_growth'); // severe feeding
     expectQuestionWithOptions('P16', 'so_few_worried_growth');
     expectQuestionWithOptions('T15', 'significant_struggles'); // severe sleep
+  });
+
+  it('every follow-up-confirmation id the rules read exists in shipped content with a "yes" option (issue #26)', () => {
+    const followUpsById = new Map(FOLLOW_UPS.follow_ups.map((fu) => [fu.id, fu]));
+    for (const type of RED_FLAG_TYPES) {
+      const id = followUpQuestionId(type);
+      const fu = followUpsById.get(id);
+      expect(
+        fu,
+        `follow-up ${id} must exist in packages/content/follow-ups`,
+      ).toBeDefined();
+      expect(
+        fu!.options.some((o) => o.id === 'yes'),
+        `follow-up ${id} must offer the 'yes' trigger option`,
+      ).toBe(true);
+    }
+  });
+
+  it('follow-up confirmations carry no scoring weight — a confirmation can never be averaged into a domain score', () => {
+    for (const type of RED_FLAG_TYPES) {
+      const id = followUpQuestionId(type);
+      expect(
+        WEIGHTS.indicators.some((ind) => ind.question_id === id),
+        `${id} must not appear in the weights table`,
+      ).toBe(false);
+    }
   });
 });

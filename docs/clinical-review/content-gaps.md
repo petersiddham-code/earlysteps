@@ -74,10 +74,11 @@ Still open:
 - **No auth.** Every endpoint is unauthenticated — this mirrors the screening endpoints'
   existing (already-flagged) gap, not a new one, but it means none of this is real
   account-security yet. Anyone with a `familyId`/`childId` can read or write it.
-- **Only `data_storage` consent is enforced.** `ai_analysis`, `media_capture`, and
-  `professional_sharing` are stored and independently toggleable (Consent Center has something
-  real to persist), but nothing currently gates on them — no LLM calls, media capture, or
-  report-sharing feature exists yet to enforce them against.
+- **`data_storage` and `ai_analysis` consent are enforced; the other two are not.**
+  `data_storage` gates intake persistence; since issue #26, `ai_analysis` gates the free-text
+  response-analysis stage (no LLM call is ever made without it — a 403, and results still
+  work). `media_capture` and `professional_sharing` remain stored and toggleable but ungated —
+  no media capture or report-sharing feature exists yet to enforce them against.
 
 ## 7. ~~Scoring engine does not dedupe repeated answers to the same question~~ — CLOSED 2026-07-02
 
@@ -101,3 +102,13 @@ displays something honest in the meantime, not a placeholder claim:
 This satisfies CLAUDE.md §2 rule 6 (strengths render before/alongside needs) structurally, but
 is not what §9.3 ultimately specifies. Replace once the results-summary LLM prompt (already
 drafted in `src/ai/prompts/results-summary.md`) is actually wired up.
+
+## 9. Free-text analysis: domain-only signals are detected but unused
+
+The response-analysis stage (issue #26) validates LLM-extracted signals that carry a
+`domain` but no recognized red-flag type — and then deliberately drops them. There is no
+confirmed-answer path into weighted domain scoring yet, because that would require
+clinically-authored confirmation questions with their own weights (a scoring-weights change,
+which this gate exists for). Until then, only red-flag-type signals generate confirmation
+follow-ups. Issue #22's minimum-evidence gate should count confirmed free-text-derived
+answers toward its evidence floors when both land — coordinate there, don't duplicate.

@@ -12,5 +12,8 @@ import { FamiliesModule } from '../families/families.module.js';
     ScreeningService,
     { provide: SCREENING_REPOSITORY, useClass: PrismaScreeningRepository },
   ],
+  // AnalysisModule routes confirmed follow-up answers through the same pipeline as
+  // any other intake response — the deterministic engine stays the single entry point.
+  exports: [ScreeningService],
 })
 export class ScreeningModule {}

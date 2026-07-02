@@ -11,7 +11,12 @@
  * redFlagContentWiring.test.ts asserts each rule's question ids and trigger options exist
  * in the shipped banks, so a content rename can never silently turn a rule inert again.
  */
-import type { EvidenceRef, IntakeResponse, RedFlagType } from '@earlysteps/shared-types';
+import {
+  followUpQuestionId,
+  type EvidenceRef,
+  type IntakeResponse,
+  type RedFlagType,
+} from '@earlysteps/shared-types';
 
 /** Universal-bank red-flag question ids (shared with content — asked for every age band). */
 export const RF_LOSS_OF_SKILLS_Q = 'RF_loss_of_skills';
@@ -116,14 +121,40 @@ export function checkSafetyRisk(responses: IntakeResponse[]): EvidenceRef[] {
   return answerEquals(r, 'yes') ? [evidence(r!)] : [];
 }
 
+/**
+ * Confirmed free-text follow-up (issue #26): the response-analysis stage may SUGGEST the
+ * `FU_<type>` question (packages/content/follow-ups) after a caregiver typed something in a
+ * free-text box, but only the caregiver's own structured 'yes' — a normal IntakeResponse —
+ * triggers the flag here. This keeps the rule deterministic: the LLM never fires a flag,
+ * and 'no' / 'not_sure' contribute nothing. Evaluated alongside each type's base rule, so a
+ * confirmation can never be averaged or reasoned away either.
+ */
+export function checkFollowUpConfirmed(
+  type: RedFlagType,
+  responses: IntakeResponse[],
+): EvidenceRef[] {
+  const r = find(responses, followUpQuestionId(type));
+  return answerEquals(r, 'yes') ? [evidence(r!)] : [];
+}
+
+/** Combines a type's base rule with its confirmed-follow-up check (either can trigger). */
+function withFollowUpConfirmation(
+  type: RedFlagType,
+  base: (responses: IntakeResponse[]) => EvidenceRef[],
+): (responses: IntakeResponse[]) => EvidenceRef[] {
+  return (responses) => [...base(responses), ...checkFollowUpConfirmed(type, responses)];
+}
+
 /** All rules, in evaluation order. Each is independent of the others and of domain scores. */
-export const RED_FLAG_RULES: RedFlagRule[] = [
-  { type: 'loss_of_skills', check: checkLossOfSkills },
-  { type: 'no_name_response', check: checkNoNameResponse },
-  { type: 'no_functional_communication', check: checkNoFunctionalCommunication },
-  { type: 'self_injury_risk', check: checkSelfInjuryRisk },
-  { type: 'severe_feeding', check: checkSevereFeeding },
-  { type: 'severe_sleep', check: checkSevereSleep },
-  { type: 'sudden_behaviour_change', check: checkSuddenBehaviourChange },
-  { type: 'safety_risk', check: checkSafetyRisk },
-];
+export const RED_FLAG_RULES: RedFlagRule[] = (
+  [
+    { type: 'loss_of_skills', check: checkLossOfSkills },
+    { type: 'no_name_response', check: checkNoNameResponse },
+    { type: 'no_functional_communication', check: checkNoFunctionalCommunication },
+    { type: 'self_injury_risk', check: checkSelfInjuryRisk },
+    { type: 'severe_feeding', check: checkSevereFeeding },
+    { type: 'severe_sleep', check: checkSevereSleep },
+    { type: 'sudden_behaviour_change', check: checkSuddenBehaviourChange },
+    { type: 'safety_risk', check: checkSafetyRisk },
+  ] satisfies RedFlagRule[]
+).map(({ type, check }) => ({ type, check: withFollowUpConfirmation(type, check) }));
