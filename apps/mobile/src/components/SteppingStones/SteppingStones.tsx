@@ -49,10 +49,13 @@ export function SteppingStones({ total, currentIndex }: SteppingStonesProps) {
 }
 
 const styles = StyleSheet.create({
+  // Fixed height: the current stone is larger and slots alternate a vertical offset,
+  // so without it the row's height (and everything below, like the fixed nav bar)
+  // would wobble a few pixels from question to question.
   path: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
+    height: 26,
   },
   slot: {
     flex: 1,

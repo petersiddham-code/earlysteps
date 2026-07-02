@@ -249,6 +249,52 @@ export function QuestionnaireScreen({ navigation }: Props) {
         </Text>
       </View>
 
+      {/* Fixed navigation bar — always the same spot above the question, whatever the
+          card's height: Back on the left; on the right one forward button that reads
+          "Skip" until the question is answered and becomes a filled "Next" once it is
+          (skipping stays a first-class, guilt-free option — §4.1b "never a trap").
+          Outside the card animation on purpose so it never moves. */}
+      {question && (
+        <View style={styles.topNav}>
+          <Pressable
+            onPress={goBack}
+            disabled={index === 0}
+            accessibilityRole="button"
+            accessibilityLabel="Back to the previous question"
+            style={[styles.navButton, index === 0 && styles.navButtonHidden]}
+            testID="back-button"
+          >
+            <Ionicons name="chevron-back" size={18} color={colors.ink} />
+            <Text style={styles.navButtonText}>Back</Text>
+          </Pressable>
+          {isAnswered(mergeAnswer(answers[question.id], freeTexts[question.id])) ? (
+            <Pressable
+              onPress={goForward}
+              accessibilityRole="button"
+              accessibilityLabel="Go to the next question"
+              style={[styles.navButton, styles.navButtonPrimary]}
+              testID="next-button"
+            >
+              <Text style={[styles.navButtonText, styles.navButtonPrimaryText]}>
+                Next
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.card} />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={goForward}
+              accessibilityRole="button"
+              accessibilityLabel="Skip this question"
+              style={styles.navButton}
+              testID="skip-button"
+            >
+              <Text style={styles.navButtonText}>Skip</Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.ink} />
+            </Pressable>
+          )}
+        </View>
+      )}
+
       {isHalfway && (
         <View style={styles.encouragement} testID="halfway-encouragement">
           <Ionicons name="footsteps-outline" size={18} color={colors.accent} />
@@ -284,45 +330,6 @@ export function QuestionnaireScreen({ navigation }: Props) {
               setFreeTexts((prev) => ({ ...prev, [question.id]: next }))
             }
           />
-
-          {/* Every question shows Next (disabled until answered), so the screen never
-              loses its forward affordance — before this, single-selects relied purely on
-              tap-to-advance, which left no way forward after coming Back to an answered
-              one except re-tapping the answer or a misleading "Skip". */}
-          <View style={styles.nextButton}>
-            <PrimaryButton
-              label="Next"
-              onPress={goForward}
-              disabled={
-                !isAnswered(mergeAnswer(answers[question.id], freeTexts[question.id]))
-              }
-              testID="next-button"
-            />
-          </View>
-
-          <View style={styles.footerNav}>
-            <Pressable
-              onPress={goBack}
-              disabled={index === 0}
-              accessibilityRole="button"
-              accessibilityLabel="Back to the previous question"
-              style={[styles.footerLink, index === 0 && styles.footerLinkHidden]}
-              testID="back-button"
-            >
-              <Ionicons name="chevron-back" size={16} color={colors.inkSoft} />
-              <Text style={styles.footerLinkText}>Back</Text>
-            </Pressable>
-            <Pressable
-              onPress={goForward}
-              accessibilityRole="button"
-              accessibilityLabel="Skip this question"
-              style={styles.footerLink}
-              testID="skip-button"
-            >
-              <Text style={styles.footerLinkText}>Skip</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.inkSoft} />
-            </Pressable>
-          </View>
         </Animated.View>
       )}
 
@@ -414,22 +421,31 @@ const styles = StyleSheet.create({
     color: colors.ink,
     flex: 1,
   },
-  nextButton: { marginTop: spacing.lg },
-  footerNav: {
+  topNav: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: spacing.xl,
+    marginBottom: spacing.lg,
   },
-  footerLink: {
+  navButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.xs,
+    minHeight: 44,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.xs,
-    gap: 2,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
-  footerLinkHidden: { opacity: 0 },
-  footerLinkText: { ...type.bodyStrong, color: colors.inkSoft },
+  navButtonHidden: { opacity: 0 },
+  navButtonText: { ...type.bodyStrong, color: colors.ink },
+  navButtonPrimary: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  navButtonPrimaryText: { color: colors.card },
   reviewCard: {
     backgroundColor: colors.card,
     borderRadius: radius.lg,

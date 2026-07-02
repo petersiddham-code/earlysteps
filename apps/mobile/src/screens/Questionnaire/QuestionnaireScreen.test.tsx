@@ -24,13 +24,18 @@ const CHILD = {
   languages: ['English'],
 };
 
+/** The top-right forward control: "Skip" when unanswered, "Next" once answered. */
+function forwardButton() {
+  return screen.queryByTestId('skip-button') ?? screen.queryByTestId('next-button');
+}
+
 /** Skip forward through the wizard until `matcher` is on screen (or fail loudly). */
 function skipToQuestion(matcher: string | RegExp) {
   for (let i = 0; i < 60; i++) {
     if (screen.queryByText(matcher)) return;
-    const skip = screen.queryByTestId('skip-button');
-    if (!skip) throw new Error(`Reached the review step without finding ${matcher}`);
-    fireEvent.press(skip);
+    const forward = forwardButton();
+    if (!forward) throw new Error(`Reached the review step without finding ${matcher}`);
+    fireEvent.press(forward);
   }
   throw new Error(`Question not found after 60 skips: ${matcher}`);
 }
@@ -39,7 +44,7 @@ function skipToQuestion(matcher: string | RegExp) {
 function skipToReview() {
   for (let i = 0; i < 60; i++) {
     if (screen.queryByTestId('submit-button')) return;
-    fireEvent.press(screen.getByTestId('skip-button'));
+    fireEvent.press(forwardButton()!);
   }
   throw new Error('Never reached the review step');
 }
@@ -107,15 +112,15 @@ describe('QuestionnaireScreen', () => {
     jest.useRealTimers();
   });
 
-  it('a Skip during the auto-advance pause moves one step, not two', async () => {
+  it('a manual move during the auto-advance pause moves one step, not two', async () => {
     (getChild as jest.Mock).mockResolvedValue(CHILD);
     render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
     jest.useFakeTimers();
 
     fireEvent.press(screen.getByTestId('skip-button')); // to U3
-    fireEvent.press(screen.getByText('Not sure')); // pause starts
-    fireEvent.press(screen.getByTestId('skip-button')); // manual move cancels the timer
+    fireEvent.press(screen.getByText('Not sure')); // pause starts, forward flips to Next
+    fireEvent.press(screen.getByTestId('next-button')); // manual move cancels the timer
     expect(screen.getByText(/Question 3 of \d+/)).toBeTruthy();
 
     act(() => jest.advanceTimersByTime(AUTO_ADVANCE_DELAY_MS * 2));
@@ -123,17 +128,19 @@ describe('QuestionnaireScreen', () => {
     jest.useRealTimers();
   });
 
-  it('always renders Next — disabled until the question is answered', async () => {
+  it('the fixed top-right control reads Skip until answered, then becomes Next', async () => {
     (getChild as jest.Mock).mockResolvedValue(CHILD);
     render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
-    // Q2 (U3) is a single-select: Next is present but disabled while unanswered,
-    // so pressing it goes nowhere.
-    fireEvent.press(screen.getByTestId('skip-button'));
-    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
-    fireEvent.press(screen.getByTestId('next-button'));
-    expect(screen.getByText(/Question 2 of \d+/)).toBeTruthy();
+    // Q1 (U2, multi-select) unanswered: Skip on offer, no Next.
+    expect(screen.getByTestId('skip-button')).toBeTruthy();
+    expect(screen.queryByTestId('next-button')).toBeNull();
+
+    // Answering flips the same slot to Next.
+    fireEvent.press(screen.getByText('English'));
+    expect(screen.getByTestId('next-button')).toBeTruthy();
+    expect(screen.queryByTestId('skip-button')).toBeNull();
   });
 
   it('multi-select questions collect until Next instead of auto-advancing', async () => {
@@ -141,11 +148,10 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(/Question 1 of \d+/);
 
-    // U2 (question 1) is chip_multi_select: Next starts disabled.
-    fireEvent.press(screen.getByTestId('next-button'));
-    expect(screen.getByText(/Question 1 of \d+/)).toBeTruthy();
-
+    // U2 (question 1) is chip_multi_select: picking chips does not advance.
     fireEvent.press(screen.getByText('English'));
+    expect(screen.getByText(/Question 1 of \d+/)).toBeTruthy(); // still here
+    fireEvent.press(screen.getByText('Hindi'));
     expect(screen.getByText(/Question 1 of \d+/)).toBeTruthy(); // still here
 
     fireEvent.press(screen.getByTestId('next-button'));
