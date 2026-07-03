@@ -22,7 +22,7 @@ import {
   type IntakeResponse,
   type Question,
 } from '@earlysteps/shared-types';
-import { getChild, submitIntakeResponses } from '../../api/index.js';
+import { getChild, getIntakeResponses, submitIntakeResponses } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
@@ -144,15 +144,22 @@ export function QuestionnaireScreen({ navigation }: Props) {
     if (!familyId || !childId) return;
     let cancelled = false;
     setError(null);
-    getChild(familyId, childId)
-      .then((fetchedChild) => {
+    Promise.all([
+      getChild(familyId, childId),
+      // Answered questions are never re-asked (#42): a caregiver returning from gated
+      // results walks only the gaps. Failing open to the full bank is safe — worst case
+      // a question is asked again (latest answer wins server-side), never lost.
+      getIntakeResponses(childId).catch(() => [] as IntakeResponse[]),
+    ])
+      .then(([fetchedChild, priorResponses]) => {
         if (cancelled) return;
         setChild(fetchedChild);
+        const answeredIds = new Set(priorResponses.map((r) => r.question_id));
         const universal = getQuestionBank('universal')?.questions ?? [];
         const ageBand = getQuestionBank(fetchedChild.age_band)?.questions ?? [];
         setQuestions(
           [...universal, ...ageBand].filter(
-            (q) => isAskedInQuestionnaire(q) && isAnswerable(q),
+            (q) => isAskedInQuestionnaire(q) && isAnswerable(q) && !answeredIds.has(q.id),
           ),
         );
       })
@@ -223,6 +230,33 @@ export function QuestionnaireScreen({ navigation }: Props) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  // Every askable question already has an answer (#42) — possible when a caregiver
+  // returns from gated results after answering everything (e.g. mostly "I'm not sure",
+  // which counts as answered but not as scored evidence). "Question 1 of 0" or an
+  // "All steps walked · you answered 0 of 0" review would read as broken; say what's
+  // actually true instead.
+  if (questions.length === 0) {
+    return (
+      <View style={styles.centered} testID="all-answered-state">
+        <View style={styles.reviewIcon}>
+          <Ionicons name="footsteps-outline" size={26} color={colors.primary} />
+        </View>
+        <Text style={styles.reviewHeading}>Nothing new to ask right now</Text>
+        <Text style={styles.allAnsweredBody}>
+          You've already answered every question we have about {child.nickname} for now.
+          Everything you shared is saved.
+        </Text>
+        <View style={styles.allAnsweredButton}>
+          <PrimaryButton
+            label="See what we noticed"
+            onPress={() => navigation.replace('Results')}
+            testID="all-answered-results-button"
+          />
+        </View>
       </View>
     );
   }
@@ -498,6 +532,8 @@ const styles = StyleSheet.create({
   },
   reviewHeading: { ...type.title, color: colors.ink, marginBottom: spacing.sm },
   reviewBody: { ...type.body, color: colors.inkSoft },
+  allAnsweredBody: { ...type.body, color: colors.inkSoft, textAlign: 'center' },
+  allAnsweredButton: { marginTop: spacing.xl, alignSelf: 'stretch' },
   lowEvidenceNotice: {
     ...type.caption,
     color: colors.inkSoft,

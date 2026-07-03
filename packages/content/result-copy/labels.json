@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "locale": "en",
   "needs_clinical_signoff": true,
   "note": "Result copy is clinical content (CLAUDE.md §9). Labels/tiers/support terms below are the ONLY approved strings (CLAUDE.md §2 rules 2–3). The disclaimer is verbatim from product plan §3.2 — do not paraphrase. The insufficient_evidence block (issue #22 minimum-evidence gate) is PLACEHOLDER COPY pending advisor sign-off — see docs/clinical-review/2026-07-02-minimum-evidence-gate.md.",
@@ -21,6 +21,7 @@
   },
   "insufficient_evidence": {
     "label": "Not enough information yet",
+    "explanation": "This isn't a finding about your child — it simply means there aren't enough answers yet to share something reliable. We only reflect what your answers clearly show, and we never guess from too little.",
     "domain_detail": "A few more answers about this area are needed before anything can be shared here.",
     "overall_detail": "There aren't enough answers yet to estimate support needs or suggest a next step. Answer more whenever you're ready — everything you've shared is saved."
   }
