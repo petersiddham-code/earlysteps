@@ -195,6 +195,92 @@ describe('screening pipeline — intake -> scoring -> results', () => {
     expect(await service.getIntakeResponses('never-submitted')).toEqual([]);
   });
 
+  describe('idempotent + serialized ingestion (issue #33)', () => {
+    it('an exact replay of a submission inserts no duplicate rows and no extra snapshot', async () => {
+      const batch = reassuringBatch.map((res) => ({ ...res, child_id: childId }));
+
+      const first = await service.submitIntakeResponses(childId, batch);
+      const replay = await service.submitIntakeResponses(childId, batch);
+
+      // Same response body either way — a retrying client can't tell the difference…
+      expect(replay).toEqual(first);
+      // …but the history holds each answer exactly once, and no duplicate snapshot
+      // was stamped (the replay skipped recompute entirely).
+      expect(await repository.getIntakeResponses(childId)).toHaveLength(
+        reassuringBatch.length,
+      );
+      expect(repository.snapshotCount(childId)).toBe(1);
+    });
+
+    it('five concurrent identical submissions collapse to one set of rows (issue #33 repro)', async () => {
+      const batch = reassuringBatch.map((res) => ({ ...res, child_id: childId }));
+
+      const views = await Promise.all(
+        Array.from({ length: 5 }, () => service.submitIntakeResponses(childId, batch)),
+      );
+
+      expect(await repository.getIntakeResponses(childId)).toHaveLength(
+        reassuringBatch.length,
+      );
+      // Every caller got a coherent view computed from the SAME single set of answers.
+      for (const view of views) {
+        expect(view.basedOnAnswers).toBe(reassuringBatch.length);
+      }
+    });
+
+    it('concurrent DIFFERENT submissions serialize: the final snapshot reflects every answer', async () => {
+      // Five distinct one-answer submissions racing — before the per-child lock, each
+      // could read a partial history and the "latest" snapshot could miss answers.
+      const batches = reassuringBatch
+        .slice(0, 5)
+        .map((res, i) => [
+          { ...res, child_id: childId, timestamp: `2026-07-01T00:00:0${i}.000Z` },
+        ]);
+
+      await Promise.all(
+        batches.map((batch) => service.submitIntakeResponses(childId, batch)),
+      );
+
+      expect(await repository.getIntakeResponses(childId)).toHaveLength(5);
+      // The last snapshot in the serialized sequence saw the full history.
+      const finalView = await service.getResults(childId);
+      expect(finalView.basedOnAnswers).toBe(5);
+      expect(repository.snapshotCount(childId)).toBe(5);
+    });
+
+    it('a genuine re-answer (fresh timestamp) still appends to history — never upserted away', async () => {
+      await service.submitIntakeResponses(childId, [
+        { ...r('T4', 'doesnt_notice'), child_id: childId },
+      ]);
+      await service.submitIntakeResponses(childId, [
+        {
+          ...r('T4', 'looks_right_away'),
+          child_id: childId,
+          timestamp: '2026-07-01T00:00:01.000Z',
+        },
+      ]);
+
+      // Both answer events retained (raw history)…
+      expect(await repository.getIntakeResponses(childId)).toHaveLength(2);
+      // …while results count only the caregiver's current answer per question.
+      const view = await service.getResults(childId);
+      expect(view.basedOnAnswers).toBe(1);
+    });
+
+    it('a replay when no snapshot exists yet heals it by recomputing (crash-recovery path)', async () => {
+      const batch = [{ ...r('T4', 'doesnt_notice'), child_id: childId }];
+      // Simulate a crash after rows were saved but before the snapshot landed.
+      await repository.saveIntakeResponses(childId, batch);
+      expect(repository.snapshotCount(childId)).toBe(0);
+
+      const view = await service.submitIntakeResponses(childId, batch);
+
+      expect(repository.snapshotCount(childId)).toBe(1);
+      expect(view.redFlagTypes).toContain('no_name_response');
+      expect(await repository.getIntakeResponses(childId)).toHaveLength(1);
+    });
+  });
+
   describe('minimum-evidence gate (issue #22) — fail closed at the API boundary', () => {
     it('one answered question yields "not enough information yet", never a level or recommendation', async () => {
       const view = await service.submitIntakeResponses(childId, [
@@ -231,9 +317,15 @@ describe('screening pipeline — intake -> scoring -> results', () => {
       await service.submitIntakeResponses(childId, [
         { ...r('T4', 'doesnt_notice'), child_id: childId },
       ]);
-      // Re-answering the same question must not inflate "Based on N answers".
+      // Re-answering the same question must not inflate "Based on N answers". A genuine
+      // re-answer carries a fresh timestamp (the client stamps at submit time) — an
+      // identical timestamp would be an exact replay, skipped by the #33 idempotency key.
       await service.submitIntakeResponses(childId, [
-        { ...r('T4', 'looks_right_away'), child_id: childId },
+        {
+          ...r('T4', 'looks_right_away'),
+          child_id: childId,
+          timestamp: '2026-07-01T00:00:01.000Z',
+        },
       ]);
 
       const view = await service.getResults(childId);

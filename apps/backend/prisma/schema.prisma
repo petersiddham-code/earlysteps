@@ -77,6 +77,13 @@ model IntakeResponseRecord {
   /// actually returned; scoring never depends on it.
   analyzedAt DateTime?
 
+  /// Natural idempotency key (issue #33). The mobile client stamps a whole submission
+  /// batch with one timestamp, so an exact replay (double-tap, network retry, offline
+  /// sync re-delivery) carries identical (questionId, timestamp) pairs and is skipped via
+  /// createMany({ skipDuplicates }). A genuine re-answer happens in a later submission and
+  /// gets a fresh timestamp, so answer HISTORY is still retained (scoring reads only the
+  /// latest per question — scoring-engine dedupeLatestByQuestion).
+  @@unique([childId, questionId, timestamp])
   @@index([childId])
 }
 
