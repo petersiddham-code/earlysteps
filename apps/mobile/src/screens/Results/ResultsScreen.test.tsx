@@ -123,6 +123,18 @@ describe('ResultsScreen', () => {
     expect(screen.getByText('Music')).toBeTruthy(); // reflected back from their own answer
     expect(screen.getByText(/Many signs observed/)).toBeTruthy();
     expect(screen.getByText('Formal assessment is recommended')).toBeTruthy();
+    // Whose results these are (#41): the child's name heads the screen.
+    expect(await screen.findByText('ABOUT AVA')).toBeTruthy();
+  });
+
+  it('falls back to "ABOUT YOUR CHILD" when the nickname fetch fails (#41)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    (getChild as jest.Mock).mockRejectedValue(new Error('offline'));
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(screen.getByText('ABOUT YOUR CHILD')).toBeTruthy();
   });
 
   it('shows a caregiver-typed strength verbatim (their own words, free_text: stripped)', async () => {
@@ -201,6 +213,34 @@ describe('ResultsScreen', () => {
     expect(screen.getAllByText('social interaction style')).toHaveLength(1);
     // Singular provenance for a single answer.
     expect(screen.getByTestId('provenance-line')).toHaveTextContent(/Based on 1 answer /);
+    // The state explains itself (#42): what the gate means, never a claim about the child.
+    expect(screen.getByTestId('insufficient-overall-explanation')).toHaveTextContent(
+      /isn't a finding about your child/,
+    );
+  });
+
+  it('a gated view offers "Answer more questions" — same child, no reset (#42)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(INSUFFICIENT_RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(<ResultsScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    fireEvent.press(screen.getByTestId('answer-more-button'));
+
+    // Back into the questionnaire for the SAME child — the child is never forgotten,
+    // unlike "Start a new set of questions".
+    expect(navigation.replace).toHaveBeenCalledWith('Questionnaire');
+    expect(clearChildId).not.toHaveBeenCalled();
+  });
+
+  it('a fully scored view does not offer "Answer more questions" (#42)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(screen.queryByTestId('answer-more-button')).toBeNull();
   });
 
   it('renders a clean empty state when 0 questions were answered: no bare headings, no empty cards (issue #32)', async () => {
@@ -259,6 +299,8 @@ describe('ResultsScreen', () => {
     expect(screen.getByText('Formal assessment strongly recommended soon')).toBeTruthy();
     // The tier replaces the "not enough info" next-step copy — never both, they contradict.
     expect(screen.queryByTestId('insufficient-overall-detail')).toBeNull();
+    // Domains are still gated, so the path to more answers stays offered (#42).
+    expect(screen.getByTestId('answer-more-button')).toBeTruthy();
   });
 
   it('shows the red flag banner for the returned red flag types', async () => {

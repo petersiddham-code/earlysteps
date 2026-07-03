@@ -129,6 +129,9 @@ export const resultCopySchema = z.object({
    */
   insufficient_evidence: z.object({
     label: safeCopyNonEmpty,
+    // What the gated state MEANS (issue #42): plain-language, non-judgemental, and never
+    // a claim about the child — only about how much has been shared so far.
+    explanation: safeCopyNonEmpty,
     domain_detail: safeCopyNonEmpty,
     overall_detail: safeCopyNonEmpty,
   }),

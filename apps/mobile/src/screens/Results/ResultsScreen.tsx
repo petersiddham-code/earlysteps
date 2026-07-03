@@ -220,9 +220,18 @@ export function ResultsScreen({ navigation }: Props) {
   }
 
   const needs = deriveNeeds(results);
+  // "Answer more questions" belongs on any view the minimum-evidence gate touched (#42):
+  // a withheld recommendation OR any gated domain — the copy asks for more answers, so a
+  // path to give them must exist. Red-flag views can be gated too; more answers still help.
+  const isGated =
+    results.recommendationTier === null ||
+    results.domains.some((d) => d.status === 'insufficient_evidence');
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      {/* Whose results these are (#41) — same eyebrow pattern as the questionnaire header.
+          Falls back to "ABOUT YOUR CHILD" if the nickname fetch fails. */}
+      <Text style={styles.eyebrow}>ABOUT {childName.toUpperCase()}</Text>
       <Text style={styles.heading}>Here's what we noticed</Text>
       <Text style={styles.provenance} testID="provenance-line">
         {provenanceLine(results)}
@@ -288,10 +297,31 @@ export function ResultsScreen({ navigation }: Props) {
             <Text style={styles.supportLevelText} testID="insufficient-overall-label">
               {RESULT_COPY.insufficient_evidence.label}
             </Text>
+            {/* What the gate MEANS (#42) — a caregiver reading "not enough information"
+                deserves to know it's a statement about the answer count, never about
+                their child. */}
+            <Text
+              style={styles.recommendationText}
+              testID="insufficient-overall-explanation"
+            >
+              {RESULT_COPY.insufficient_evidence.explanation}
+            </Text>
             <Text style={styles.recommendationText} testID="insufficient-overall-detail">
               {RESULT_COPY.insufficient_evidence.overall_detail}
             </Text>
           </>
+        )}
+        {/* The way OUT of the gated state (#42): back into the questionnaire for the SAME
+            child — only unanswered questions are asked. Deliberately not the destructive
+            "Start a new set of questions" below, which forgets the child. */}
+        {isGated && (
+          <View style={styles.answerMoreButton}>
+            <PrimaryButton
+              label="Answer more questions"
+              onPress={() => navigation.replace('Questionnaire')}
+              testID="answer-more-button"
+            />
+          </View>
         )}
       </View>
 
@@ -392,6 +422,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   heading: { ...type.title, color: colors.ink },
+  eyebrow: {
+    ...type.eyebrow,
+    color: colors.inkSoft,
+    marginBottom: spacing.sm,
+  },
   provenance: { ...type.caption, color: colors.inkSoft },
   insufficientDetail: {
     ...type.caption,
@@ -411,7 +446,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
     marginBottom: spacing.xs,
   },
-  recommendationText: { ...type.body, color: colors.inkSoft },
+  recommendationText: { ...type.body, color: colors.inkSoft, marginBottom: spacing.xs },
+  answerMoreButton: { marginTop: spacing.md },
   followUpHeading: { ...type.title, color: colors.ink, marginBottom: spacing.xs },
   followUpIntro: { ...type.caption, color: colors.inkSoft, marginBottom: spacing.lg },
   followUpItem: { marginBottom: spacing.md },

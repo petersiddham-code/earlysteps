@@ -1,12 +1,13 @@
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { EVIDENCE_FLOORS } from '@earlysteps/content';
+import { EVIDENCE_FLOORS, getQuestionBank } from '@earlysteps/content';
 import { AUTO_ADVANCE_DELAY_MS, QuestionnaireScreen } from './QuestionnaireScreen';
-import { getChild, submitIntakeResponses } from '../../api/index.js';
+import { getChild, getIntakeResponses, submitIntakeResponses } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 
 jest.mock('../../api/index.js', () => ({
   getChild: jest.fn(),
+  getIntakeResponses: jest.fn(),
   submitIntakeResponses: jest.fn(),
 }));
 jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
@@ -54,6 +55,8 @@ describe('QuestionnaireScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (useSession as jest.Mock).mockReturnValue({ familyId: 'f1', childId: 'c1' });
+    // Default: a first visit — nothing answered yet, the full bank is asked.
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
   });
 
   it('shows one question at a time with stepping-stone progress', async () => {
@@ -360,6 +363,61 @@ describe('QuestionnaireScreen', () => {
       fireEvent.press(screen.getByTestId('skip-button'));
     }
     expect(screen.getByTestId('submit-button')).toBeTruthy();
+  });
+
+  it('never re-asks a question that already has an answer (#42)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([
+      { question_id: 'T4', domain: 'social', answer: 'looks_right_away', timestamp: 't' },
+    ]);
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    // Walk the whole path: T4 (already answered) must never come up again.
+    for (let i = 0; i < 60 && !screen.queryByTestId('submit-button'); i++) {
+      expect(
+        screen.queryByText(
+          "When you call Alex's name from across the room, what usually happens?",
+        ),
+      ).toBeNull();
+      fireEvent.press(forwardButton()!);
+    }
+    expect(screen.getByTestId('submit-button')).toBeTruthy();
+  });
+
+  it('a failed answer-history fetch falls back to the full bank, never a blank screen (#42)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    (getIntakeResponses as jest.Mock).mockRejectedValue(new Error('offline'));
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+
+    expect(await screen.findByText(/Question 1 of \d+/)).toBeTruthy();
+    expect(screen.queryByText(/couldn't load the questions/i)).toBeNull();
+  });
+
+  it('shows a calm all-answered state (not "Question 1 of 0") when nothing is left to ask (#42)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    // Every question in both banks already has an answer — including the
+    // profile-setup-collected ones, which the filter drops anyway.
+    const everyQuestionAnswered = [
+      ...(getQuestionBank('universal')?.questions ?? []),
+      ...(getQuestionBank('toddler')?.questions ?? []),
+    ].map((q) => ({
+      question_id: q.id,
+      domain: q.domain,
+      answer: 'not_sure',
+      timestamp: 't',
+    }));
+    (getIntakeResponses as jest.Mock).mockResolvedValue(everyQuestionAnswered);
+    const navigation = navProp();
+    render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
+
+    expect(await screen.findByTestId('all-answered-state')).toBeTruthy();
+    expect(screen.getByText(/already answered every question we have about Alex/)).toBeTruthy();
+    expect(screen.queryByText(/Question \d+ of/)).toBeNull();
+    expect(screen.queryByTestId('submit-button')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('all-answered-results-button'));
+    expect(navigation.replace).toHaveBeenCalledWith('Results');
   });
 
   it('actually refetches when Try again is pressed after a load failure', async () => {
