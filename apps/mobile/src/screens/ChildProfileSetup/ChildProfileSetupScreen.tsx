@@ -12,10 +12,12 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import {
   GENDER_OPTIONS,
+  OTHER_OPTION_ID,
   deriveAgeBand,
   type AgeBand,
   type GenderOption,
 } from '@earlysteps/shared-types';
+import { getQuestionBank } from '@earlysteps/content';
 import { createChild } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
@@ -59,7 +61,19 @@ const GENDER_LABELS: Record<GenderOption, string> = {
   prefer_not_to_say: 'Prefer not to say',
 };
 
-const LANGUAGE_OPTIONS = ['English', 'Spanish', 'Mandarin', 'Hindi', 'Arabic', 'French'];
+/**
+ * Language chips come from bank question U2 — the reviewed, versioned source of truth for
+ * this question (it's `collected_at: "profile_setup"`, i.e. answered HERE instead of in
+ * the questionnaire, #24/#27). The "other" option is split out: it renders as a chip that
+ * reveals an inline input (#28) rather than a plain choice.
+ */
+const U2_OPTIONS =
+  getQuestionBank('universal')?.questions.find((q) => q.id === 'U2')?.options ?? [];
+const LANGUAGE_OPTIONS = U2_OPTIONS.filter((o) => o.id !== OTHER_OPTION_ID).map(
+  (o) => o.label,
+);
+const OTHER_LANGUAGE_LABEL =
+  U2_OPTIONS.find((o) => o.id === OTHER_OPTION_ID)?.label ?? 'Other — type it';
 
 /**
  * Product plan Screen 3 — no photo/avatar required (no media capture at this step).
@@ -78,6 +92,8 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
   const [gender, setGender] = useState<GenderOption | null>(null);
   const [genderDetail, setGenderDetail] = useState('');
   const [languages, setLanguages] = useState<string[]>([]);
+  const [otherLanguageSelected, setOtherLanguageSelected] = useState(false);
+  const [otherLanguage, setOtherLanguage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -88,13 +104,26 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
       : null;
   const birthComplete = birthMonth !== null && birthYear !== null;
 
+  // "Other" only counts as a language once something is actually typed — a checked chip
+  // with an empty box mustn't unlock Continue (#28).
+  const typedLanguage = otherLanguageSelected ? otherLanguage.trim() : '';
+  const effectiveLanguages = typedLanguage ? [...languages, typedLanguage] : languages;
+
   const canContinue =
-    nickname.trim().length > 0 && derivedBand !== null && languages.length > 0;
+    nickname.trim().length > 0 && derivedBand !== null && effectiveLanguages.length > 0;
 
   const toggleLanguage = (lang: string) => {
     setLanguages((prev) =>
       prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang],
     );
+  };
+
+  // Unchecking "Other" clears what was typed — no invisible language may ride along.
+  const toggleOtherLanguage = () => {
+    setOtherLanguageSelected((prev) => {
+      if (prev) setOtherLanguage('');
+      return !prev;
+    });
   };
 
   // Tapping the selected option again clears it — gender stays genuinely optional, never
@@ -115,7 +144,7 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
         birth_year: birthYear,
         ...(gender ? { gender } : {}),
         ...(gender === 'self_describe' && detail ? { gender_detail: detail } : {}),
-        languages,
+        languages: effectiveLanguages,
       });
       await setChildId(child.id);
       navigation.replace('Questionnaire');
@@ -137,6 +166,7 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
         onChangeText={setNickname}
         placeholder="Nickname"
         placeholderTextColor={colors.inkSoft}
+        maxLength={100}
         accessibilityLabel="Child's nickname"
       />
 
@@ -243,7 +273,33 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
             </Text>
           </Pressable>
         ))}
+        <Pressable
+          onPress={toggleOtherLanguage}
+          style={[styles.chip, otherLanguageSelected && styles.chipSelected]}
+          accessibilityRole="button"
+          accessibilityState={{ selected: otherLanguageSelected }}
+          testID="other-language-chip"
+        >
+          <Text
+            style={[styles.chipText, otherLanguageSelected && styles.chipTextSelected]}
+          >
+            {OTHER_LANGUAGE_LABEL}
+          </Text>
+        </Pressable>
       </View>
+      {otherLanguageSelected && (
+        <TextInput
+          style={styles.input}
+          value={otherLanguage}
+          onChangeText={setOtherLanguage}
+          placeholder="Type your language here"
+          placeholderTextColor={colors.inkSoft}
+          maxLength={100}
+          accessibilityLabel="Type your language here"
+          testID="other-language-input"
+          autoFocus
+        />
+      )}
 
       {error && <Text style={styles.errorText}>{error}</Text>}
 

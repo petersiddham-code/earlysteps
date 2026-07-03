@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { CONSENT_SCOPES, type ConsentScope } from '@earlysteps/shared-types';
 import { CONSENT_COPY } from '@earlysteps/content';
+import { personalizeText } from '../PersonalizedText/PersonalizedText';
 import { ConsentToggle } from './ConsentToggle';
 
 describe('ConsentToggle', () => {
@@ -8,6 +9,33 @@ describe('ConsentToggle', () => {
     render(<ConsentToggle scope="media_capture" value={false} onChange={() => {}} />);
     expect(screen.getByText(CONSENT_COPY.scopes.media_capture.label)).toBeTruthy();
     expect(screen.getByText(CONSENT_COPY.scopes.media_capture.explanation)).toBeTruthy();
+  });
+
+  it("resolves [child] to the child's name in the explanation (issue #36)", () => {
+    render(
+      <ConsentToggle
+        scope="data_storage"
+        value={false}
+        onChange={() => {}}
+        childName="Sam"
+      />,
+    );
+    expect(
+      screen.getByText(
+        personalizeText(CONSENT_COPY.scopes.data_storage.explanation, 'Sam'),
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/\[child\]/)).toBeNull();
+  });
+
+  it('falls back to "your child" before a child profile exists (onboarding order)', () => {
+    render(<ConsentToggle scope="data_storage" value={false} onChange={() => {}} />);
+    expect(
+      screen.getByText(
+        personalizeText(CONSENT_COPY.scopes.data_storage.explanation, 'your child'),
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/\[child\]/)).toBeNull();
   });
 
   it('is a controlled component: reflects the value prop, not internal state', () => {

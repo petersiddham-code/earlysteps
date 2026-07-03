@@ -18,6 +18,7 @@ import {
 } from '@earlysteps/content';
 import {
   makeFreeTextAnswer,
+  OTHER_OPTION_ID,
   type Child,
   type IntakeResponse,
   type Question,
@@ -70,15 +71,20 @@ function isAnswered(answer: Answer | undefined): answer is Answer {
 function mergeAnswer(
   selected: Answer | undefined,
   freeText: string | undefined,
+  otherText?: string,
 ): Answer | undefined {
-  const note = freeText?.trim();
-  if (!note) return isAnswered(selected) ? selected : undefined;
+  // "Other — type it" text (#28) rides the same free_text channel as the note box — the
+  // typed language/answer belongs with the 'other' option id it elaborates.
+  const notes = [otherText?.trim(), freeText?.trim()].filter(
+    (note): note is string => !!note,
+  );
+  if (notes.length === 0) return isAnswered(selected) ? selected : undefined;
   const base = !isAnswered(selected)
     ? []
     : Array.isArray(selected)
       ? selected
       : [selected];
-  return [...base, makeFreeTextAnswer(note)];
+  return [...base, ...notes.map(makeFreeTextAnswer)];
 }
 
 /**
@@ -100,6 +106,7 @@ export function QuestionnaireScreen({ navigation }: Props) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [freeTexts, setFreeTexts] = useState<Record<string, string>>({});
+  const [otherTexts, setOtherTexts] = useState<Record<string, string>>({});
   const [index, setIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [consentDenied, setConsentDenied] = useState(false);
@@ -178,7 +185,10 @@ export function QuestionnaireScreen({ navigation }: Props) {
     setConsentDenied(false);
     const now = new Date().toISOString();
     const responses: Omit<IntakeResponse, 'child_id'>[] = questions
-      .map((q) => ({ q, merged: mergeAnswer(answers[q.id], freeTexts[q.id]) }))
+      .map((q) => ({
+        q,
+        merged: mergeAnswer(answers[q.id], freeTexts[q.id], otherTexts[q.id]),
+      }))
       .filter((entry): entry is { q: Question; merged: Answer } =>
         isAnswered(entry.merged),
       )
@@ -267,7 +277,7 @@ export function QuestionnaireScreen({ navigation }: Props) {
   // One per-question truth drives both the counter and the stones, so they can never
   // disagree the way "You answered 0 of 33" under a fully green path did (#37).
   const answeredSteps = questions.map((q) =>
-    isAnswered(mergeAnswer(answers[q.id], freeTexts[q.id])),
+    isAnswered(mergeAnswer(answers[q.id], freeTexts[q.id], otherTexts[q.id])),
   );
   const answeredCount = answeredSteps.filter(Boolean).length;
   // A gentle lift at the path's midpoint — only worth marking on a longer walk.
@@ -286,6 +296,16 @@ export function QuestionnaireScreen({ navigation }: Props) {
 
   const handleAnswer = (q: Question, next: Answer) => {
     setAnswers((prev) => ({ ...prev, [q.id]: next }));
+    // Unchecking "Other — type it" discards what was typed for it — stale text must
+    // never ride into the submission after the option it belonged to is gone (#28).
+    if (Array.isArray(next) && !next.includes(OTHER_OPTION_ID)) {
+      setOtherTexts((prev) => {
+        if (!(q.id in prev)) return prev;
+        const rest = { ...prev };
+        delete rest[q.id];
+        return rest;
+      });
+    }
     // One tap = one step forward: single-select answers advance on their own — after a
     // short pause so the selection is seen to register. Multi-select and free text keep
     // collecting until "Next", and so do questions offering an "add anything else" box,
@@ -325,7 +345,13 @@ export function QuestionnaireScreen({ navigation }: Props) {
             <Ionicons name="chevron-back" size={18} color={colors.ink} />
             <Text style={styles.navButtonText}>Back</Text>
           </Pressable>
-          {isAnswered(mergeAnswer(answers[question.id], freeTexts[question.id])) ? (
+          {isAnswered(
+            mergeAnswer(
+              answers[question.id],
+              freeTexts[question.id],
+              otherTexts[question.id],
+            ),
+          ) ? (
             <Pressable
               onPress={goForward}
               accessibilityRole="button"
@@ -379,13 +405,18 @@ export function QuestionnaireScreen({ navigation }: Props) {
           <QuestionRenderer
             key={question.id}
             question={question}
-            text={question.text.replace(/\[child\]/g, child.nickname)}
-            hint={question.hint.replace(/\[child\]/g, child.nickname)}
+            text={question.text}
+            hint={question.hint}
+            childName={child.nickname}
             value={answers[question.id]}
             onChange={(next) => handleAnswer(question, next)}
             freeText={freeTexts[question.id]}
             onFreeTextChange={(next) =>
               setFreeTexts((prev) => ({ ...prev, [question.id]: next }))
+            }
+            otherText={otherTexts[question.id]}
+            onOtherTextChange={(next) =>
+              setOtherTexts((prev) => ({ ...prev, [question.id]: next }))
             }
           />
         </Animated.View>

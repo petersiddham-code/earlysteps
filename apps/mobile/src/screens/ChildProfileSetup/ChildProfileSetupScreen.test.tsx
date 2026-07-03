@@ -202,6 +202,79 @@ describe('ChildProfileSetupScreen', () => {
     );
   });
 
+  it('caps the nickname input at 100 characters (issue #38)', () => {
+    render(<ChildProfileSetupScreen navigation={navProp()} route={{} as never} />);
+    expect(screen.getByPlaceholderText('Nickname').props.maxLength).toBe(100);
+  });
+
+  describe('"Other — type it" language (issue #28)', () => {
+    it('reveals an inline input only once the Other chip is selected', () => {
+      render(<ChildProfileSetupScreen navigation={navProp()} route={{} as never} />);
+      expect(screen.queryByTestId('other-language-input')).toBeNull();
+
+      fireEvent.press(screen.getByTestId('other-language-chip'));
+      expect(screen.getByTestId('other-language-input')).toBeTruthy();
+    });
+
+    it('submits the typed language alongside chip selections', async () => {
+      (createChild as jest.Mock).mockResolvedValue(CHILD);
+      render(<ChildProfileSetupScreen navigation={navProp()} route={{} as never} />);
+
+      fireEvent.changeText(screen.getByPlaceholderText('Nickname'), 'Alex');
+      enterBirthDate(24);
+      fireEvent.press(screen.getByText('English'));
+      fireEvent.press(screen.getByTestId('other-language-chip'));
+      fireEvent.changeText(screen.getByTestId('other-language-input'), ' Portuguese ');
+      fireEvent.press(screen.getByTestId('continue-button'));
+
+      await waitFor(() => expect(createChild).toHaveBeenCalled());
+      const [, payload] = (createChild as jest.Mock).mock.calls[0];
+      expect(payload.languages).toEqual(['English', 'Portuguese']);
+    });
+
+    it('a typed language alone satisfies the language requirement', async () => {
+      (createChild as jest.Mock).mockResolvedValue(CHILD);
+      render(<ChildProfileSetupScreen navigation={navProp()} route={{} as never} />);
+      const disabled = () =>
+        screen.getByTestId('continue-button').props.accessibilityState.disabled;
+
+      fireEvent.changeText(screen.getByPlaceholderText('Nickname'), 'Alex');
+      enterBirthDate(24);
+      fireEvent.press(screen.getByTestId('other-language-chip'));
+      // Checked but empty: not a language yet.
+      expect(disabled()).toBe(true);
+      fireEvent.changeText(screen.getByTestId('other-language-input'), 'Turkish');
+      expect(disabled()).toBe(false);
+
+      fireEvent.press(screen.getByTestId('continue-button'));
+      await waitFor(() => expect(createChild).toHaveBeenCalled());
+      const [, payload] = (createChild as jest.Mock).mock.calls[0];
+      expect(payload.languages).toEqual(['Turkish']);
+    });
+
+    it('unchecking Other discards what was typed — nothing rides along invisibly', async () => {
+      (createChild as jest.Mock).mockResolvedValue(CHILD);
+      render(<ChildProfileSetupScreen navigation={navProp()} route={{} as never} />);
+
+      fireEvent.changeText(screen.getByPlaceholderText('Nickname'), 'Alex');
+      enterBirthDate(24);
+      fireEvent.press(screen.getByText('English'));
+      fireEvent.press(screen.getByTestId('other-language-chip'));
+      fireEvent.changeText(screen.getByTestId('other-language-input'), 'Portuguese');
+      fireEvent.press(screen.getByTestId('other-language-chip')); // uncheck
+      expect(screen.queryByTestId('other-language-input')).toBeNull();
+
+      fireEvent.press(screen.getByTestId('continue-button'));
+      await waitFor(() => expect(createChild).toHaveBeenCalled());
+      const [, payload] = (createChild as jest.Mock).mock.calls[0];
+      expect(payload.languages).toEqual(['English']);
+
+      // Re-checking starts blank, not with the discarded text.
+      fireEvent.press(screen.getByTestId('other-language-chip'));
+      expect(screen.getByTestId('other-language-input').props.value).toBe('');
+    });
+  });
+
   it('shows a retryable error state when child creation fails', async () => {
     (createChild as jest.Mock).mockRejectedValue(new Error('network down'));
     render(<ChildProfileSetupScreen navigation={navProp()} route={{} as never} />);

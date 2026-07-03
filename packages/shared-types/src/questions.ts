@@ -26,6 +26,13 @@ export interface QuestionOption {
   label: string;
 }
 
+/**
+ * Bank-wide convention id for an "Other — type it" option (#28). Selecting it reveals an
+ * inline text input; what the caregiver types travels as a `free_text:` entry alongside
+ * this id, so the scoring engine and red-flag rules see only stable option ids.
+ */
+export const OTHER_OPTION_ID = 'other';
+
 export interface Question {
   /** Stable id, e.g. "U1", "T4", "P12". */
   id: string;
