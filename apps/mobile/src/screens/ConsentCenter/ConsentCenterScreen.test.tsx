@@ -1,11 +1,12 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react-native';
 import { ConsentCenterScreen } from './ConsentCenterScreen';
-import { createFamily, getFamily, updateConsent } from '../../api/index.js';
+import { createFamily, getChild, getFamily, updateConsent } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import { CONSENT_COPY } from '@earlysteps/content';
 
 jest.mock('../../api/index.js', () => ({
   createFamily: jest.fn(),
+  getChild: jest.fn(),
   getFamily: jest.fn(),
   updateConsent: jest.fn(),
 }));
@@ -21,6 +22,15 @@ function navProp(canGoBack = false) {
 
 const FAMILY = { id: 'f1', locale: 'en', low_bandwidth_mode: false, consent_flags: {} };
 const CONSENTED_FAMILY = { ...FAMILY, consent_flags: { data_storage: true } };
+const CHILD = {
+  id: 'c1',
+  family_id: 'f1',
+  nickname: 'Sam',
+  birth_month: 6,
+  birth_year: 2022,
+  age_band: 'toddler',
+  languages: ['English'],
+};
 
 describe('ConsentCenterScreen', () => {
   beforeEach(() => {
@@ -30,6 +40,7 @@ describe('ConsentCenterScreen', () => {
       childId: null,
       setFamilyId: jest.fn(),
     });
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
   });
 
   it('creates a family on mount when there is no familyId yet', async () => {
@@ -52,6 +63,29 @@ describe('ConsentCenterScreen', () => {
     expect(await screen.findByText(CONSENT_COPY.scopes.data_storage.label)).toBeTruthy();
     expect(getFamily).toHaveBeenCalledWith('f1');
     expect(createFamily).not.toHaveBeenCalled();
+  });
+
+  it('names the child in the consent copy on a revisit — no raw [child] placeholder (#36)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      setFamilyId: jest.fn(),
+    });
+    (getFamily as jest.Mock).mockResolvedValue(FAMILY);
+    render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+
+    expect(await screen.findByText(/Sam's profile/)).toBeTruthy();
+    expect(screen.queryByText(/\[child\]/)).toBeNull();
+    expect(getChild).toHaveBeenCalledWith('f1', 'c1');
+  });
+
+  it('reads "your child" during onboarding, before any child profile exists (#36)', async () => {
+    (createFamily as jest.Mock).mockResolvedValue(FAMILY);
+    render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+
+    expect(await screen.findByText(/your child's profile/)).toBeTruthy();
+    expect(screen.queryByText(/\[child\]/)).toBeNull();
+    expect(getChild).not.toHaveBeenCalled();
   });
 
   it('renders all four consent scopes once the family is created', async () => {

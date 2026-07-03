@@ -214,6 +214,54 @@ describe('QuestionnaireScreen', () => {
     );
   });
 
+  it('"Other — type it": typed text is submitted as a free_text entry with the other id (#28)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    (submitIntakeResponses as jest.Mock).mockResolvedValue({});
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    // U9 (strengths) is a real shipped multi-select with an "Other — type it" option.
+    skipToQuestion('What does Alex love doing most?');
+    expect(screen.queryByTestId('other-input-U9')).toBeNull();
+    fireEvent.press(screen.getByText('Other — type it'));
+    fireEvent.changeText(screen.getByTestId('other-input-U9'), 'trains');
+    fireEvent.press(screen.getByTestId('next-button'));
+
+    skipToReview();
+    fireEvent.press(screen.getByTestId('submit-button'));
+    await waitFor(() => expect(submitIntakeResponses).toHaveBeenCalled());
+    const [, responses] = (submitIntakeResponses as jest.Mock).mock.calls[0];
+    expect(responses).toContainEqual(
+      expect.objectContaining({
+        question_id: 'U9',
+        answer: ['other', 'free_text:trains'],
+      }),
+    );
+  });
+
+  it('unchecking "Other" discards its typed text — it never rides into the submission (#28)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    (submitIntakeResponses as jest.Mock).mockResolvedValue({});
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    skipToQuestion('What does Alex love doing most?');
+    fireEvent.press(screen.getByText('Other — type it'));
+    fireEvent.changeText(screen.getByTestId('other-input-U9'), 'trains');
+    fireEvent.press(screen.getByText('Other — type it')); // uncheck
+    expect(screen.queryByTestId('other-input-U9')).toBeNull();
+    fireEvent.press(screen.getByText('Music')); // keep the question answered
+    fireEvent.press(screen.getByTestId('next-button'));
+
+    skipToReview();
+    fireEvent.press(screen.getByTestId('submit-button'));
+    await waitFor(() => expect(submitIntakeResponses).toHaveBeenCalled());
+    const [, responses] = (submitIntakeResponses as jest.Mock).mock.calls[0];
+    expect(responses).toContainEqual(
+      expect.objectContaining({ question_id: 'U9', answer: ['music'] }),
+    );
+  });
+
   it('a typed note alone (no option picked) counts as an answer and is submitted', async () => {
     (getChild as jest.Mock).mockResolvedValue(CHILD);
     (submitIntakeResponses as jest.Mock).mockResolvedValue({});

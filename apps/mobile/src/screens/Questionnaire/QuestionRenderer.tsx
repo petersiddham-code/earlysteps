@@ -1,20 +1,30 @@
+import { Fragment } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import type { Question } from '@earlysteps/shared-types';
+import { OTHER_OPTION_ID, type Question } from '@earlysteps/shared-types';
 import { DomainIcon } from '../../components/DomainIcon/DomainIcon.js';
+import {
+  PersonalizedText,
+  personalizeText,
+} from '../../components/PersonalizedText/PersonalizedText.js';
 import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
 
 export interface QuestionRendererProps {
   question: Question;
-  /** Caregiver-facing text with `[child]` already replaced by the child's name. */
+  /** Caregiver-facing text template; `[child]` is replaced (and emphasized, #45) here. */
   text: string;
-  /** The question's hint, also with `[child]` already replaced. */
+  /** The question's hint template, personalized the same way. */
   hint: string;
+  /** The child's name substituted for `[child]` in text and hint. */
+  childName: string;
   value: string | string[] | undefined;
   onChange: (value: string | string[]) => void;
   /** Caregiver-typed add-on for `allow_free_text` questions (product plan §4.1b). */
   freeText?: string;
   onFreeTextChange?: (value: string) => void;
+  /** What the caregiver typed for a selected "Other — type it" option (#28). */
+  otherText?: string;
+  onOtherTextChange?: (value: string) => void;
 }
 
 /**
@@ -33,13 +43,18 @@ export function QuestionRenderer({
   question,
   text,
   hint,
+  childName,
   value,
   onChange,
   freeText,
   onFreeTextChange,
+  otherText,
+  onOtherTextChange,
 }: QuestionRendererProps) {
   const isMultiSelect = question.type === 'chip_multi_select';
   const selectedIds = isMultiSelect ? ((value as string[]) ?? []) : undefined;
+  // Accessibility labels stay plain strings — the same interpolation, unstyled.
+  const plainText = personalizeText(text, childName);
   // The "add anything else" box (§4.1b: free text is always optional, never the primary
   // input) — only for option questions the content flags, never for plain text questions
   // which already ARE a text box.
@@ -51,14 +66,14 @@ export function QuestionRenderer({
   return (
     <View style={styles.card}>
       <DomainIcon domain={question.domain} />
-      <Text style={styles.questionText}>{text}</Text>
-      <Text style={styles.hint}>{hint}</Text>
+      <PersonalizedText template={text} name={childName} style={styles.questionText} />
+      <PersonalizedText template={hint} name={childName} style={styles.hint} />
       {question.type === 'text' ? (
         <TextInput
           style={styles.input}
           value={(value as string) ?? ''}
           onChangeText={(next) => onChange(next)}
-          accessibilityLabel={text}
+          accessibilityLabel={plainText}
           multiline
         />
       ) : (
@@ -67,45 +82,72 @@ export function QuestionRenderer({
             const selected = isMultiSelect
               ? (selectedIds?.includes(option.id) ?? false)
               : value === option.id;
+            // "Other — type it" earns its label (#28): checking it reveals an input right
+            // inside the row, not the generic note box at the bottom of the card. Only on
+            // multi-selects — single-selects auto-advance, which would yank the keyboard
+            // away mid-word (and no single-select in the bank carries an "other" today).
+            const showOtherInput =
+              option.id === OTHER_OPTION_ID &&
+              isMultiSelect &&
+              selected &&
+              onOtherTextChange !== undefined;
             return (
-              <Pressable
-                key={option.id}
-                onPress={() => {
-                  if (isMultiSelect) {
-                    const current = selectedIds ?? [];
-                    onChange(
-                      current.includes(option.id)
-                        ? current.filter((id) => id !== option.id)
-                        : [...current, option.id],
-                    );
-                  } else {
-                    onChange(option.id);
+              <Fragment key={option.id}>
+                <Pressable
+                  onPress={() => {
+                    if (isMultiSelect) {
+                      const current = selectedIds ?? [];
+                      onChange(
+                        current.includes(option.id)
+                          ? current.filter((id) => id !== option.id)
+                          : [...current, option.id],
+                      );
+                    } else {
+                      onChange(option.id);
+                    }
+                  }}
+                  style={[styles.option, selected && styles.optionSelected]}
+                  accessibilityRole={isMultiSelect ? 'checkbox' : 'button'}
+                  accessibilityState={
+                    isMultiSelect ? { checked: selected } : { selected }
                   }
-                }}
-                style={[styles.option, selected && styles.optionSelected]}
-                accessibilityRole={isMultiSelect ? 'checkbox' : 'button'}
-                accessibilityState={isMultiSelect ? { checked: selected } : { selected }}
-              >
-                {/* Square checkbox for "pick all that apply", round radio for pick-one —
+                >
+                  {/* Square checkbox for "pick all that apply", round radio for pick-one —
                     the shape signals the behaviour difference (multi-selects wait for
                     Next; single-selects advance on tap). */}
-                {isMultiSelect ? (
-                  <View
-                    style={[styles.checkbox, selected && styles.checkboxSelected]}
-                    testID={`option-checkbox-${option.id}`}
+                  {isMultiSelect ? (
+                    <View
+                      style={[styles.checkbox, selected && styles.checkboxSelected]}
+                      testID={`option-checkbox-${option.id}`}
+                    >
+                      {selected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                    </View>
+                  ) : (
+                    <View
+                      style={[styles.radio, selected && styles.radioSelected]}
+                      testID={`option-radio-${option.id}`}
+                    />
+                  )}
+                  <Text
+                    style={[styles.optionText, selected && styles.optionTextSelected]}
                   >
-                    {selected && <Ionicons name="checkmark" size={14} color="#fff" />}
-                  </View>
-                ) : (
-                  <View
-                    style={[styles.radio, selected && styles.radioSelected]}
-                    testID={`option-radio-${option.id}`}
+                    {option.label}
+                  </Text>
+                </Pressable>
+                {showOtherInput && (
+                  <TextInput
+                    style={[styles.input, styles.otherInput]}
+                    value={otherText ?? ''}
+                    onChangeText={onOtherTextChange}
+                    placeholder="Type it here"
+                    placeholderTextColor={colors.inkSoft}
+                    maxLength={100}
+                    accessibilityLabel={`${option.label} — your answer`}
+                    testID={`other-input-${question.id}`}
+                    autoFocus
                   />
                 )}
-                <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-                  {option.label}
-                </Text>
-              </Pressable>
+              </Fragment>
             );
           })}
         </View>
@@ -214,6 +256,10 @@ const styles = StyleSheet.create({
   },
   freeTextBlock: {
     marginTop: spacing.lg,
+  },
+  otherInput: {
+    minHeight: 44,
+    textAlignVertical: 'center',
   },
   freeTextLabel: {
     ...type.caption,

@@ -5,4 +5,5 @@ export * from './RedFlagBanner/RedFlagBanner';
 export * from './ConsentToggle/ConsentToggle';
 export * from './SteppingStones/SteppingStones';
 export * from './PrimaryButton/PrimaryButton';
+export * from './PersonalizedText/PersonalizedText';
 export * from './DomainIcon/DomainIcon';

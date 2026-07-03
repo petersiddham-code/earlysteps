@@ -12,7 +12,7 @@ import { CONSENT_SCOPES, type ConsentScope, type Family } from '@earlysteps/shar
 import { CONSENT_COPY } from '@earlysteps/content';
 import { ConsentToggle } from '../../components/ConsentToggle/ConsentToggle.js';
 import { PrimaryButton } from '../../components/PrimaryButton/PrimaryButton.js';
-import { createFamily, getFamily, updateConsent } from '../../api/index.js';
+import { createFamily, getChild, getFamily, updateConsent } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { colors, spacing, type } from '../../theme/index.js';
@@ -34,6 +34,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ConsentCenter'>;
 export function ConsentCenterScreen({ navigation }: Props) {
   const { familyId, childId, setFamilyId } = useSession();
   const [family, setFamily] = useState<Family | null>(null);
+  const [childName, setChildName] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [pendingScope, setPendingScope] = useState<ConsentScope | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -58,6 +59,22 @@ export function ConsentCenterScreen({ navigation }: Props) {
       cancelled = true;
     };
   }, [familyId, setFamilyId, attempt]);
+
+  // On a revisit (child already set up — e.g. "Review my permissions" from Results) the
+  // consent copy names the child instead of "your child" (#36). Best-effort: a failed
+  // fetch just keeps the generic wording — never worth blocking the consent screen over.
+  useEffect(() => {
+    if (!familyId || !childId) return;
+    let cancelled = false;
+    getChild(familyId, childId)
+      .then((child) => {
+        if (!cancelled) setChildName(child.nickname);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [familyId, childId]);
 
   const handleToggle = async (scope: ConsentScope, granted: boolean) => {
     if (!family) return;
@@ -103,6 +120,7 @@ export function ConsentCenterScreen({ navigation }: Props) {
           scope={scope}
           value={family.consent_flags[scope] === true}
           onChange={(next) => handleToggle(scope, next)}
+          childName={childName}
         />
       ))}
       {pendingScope && (

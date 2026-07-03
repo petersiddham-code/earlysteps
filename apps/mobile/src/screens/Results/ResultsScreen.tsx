@@ -32,6 +32,7 @@ import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import {
+  PersonalizedText,
   PrimaryButton,
   ScreeningDisclaimer,
   StrengthsFirstList,
@@ -344,12 +345,16 @@ export function ResultsScreen({ navigation }: Props) {
               testID={`follow-up-${suggestion.follow_up_id}`}
             >
               <Text style={styles.followUpQuote}>"{suggestion.source_quote}"</Text>
-              <Text style={styles.followUpQuestion}>
-                {suggestion.text.replace(/\[child\]/g, childName)}
-              </Text>
-              <Text style={styles.followUpHint}>
-                {suggestion.hint.replace(/\[child\]/g, childName)}
-              </Text>
+              <PersonalizedText
+                template={suggestion.text}
+                name={childName}
+                style={styles.followUpQuestion}
+              />
+              <PersonalizedText
+                template={suggestion.hint}
+                name={childName}
+                style={styles.followUpHint}
+              />
               <View style={styles.followUpOptions}>
                 {followUpOptions(suggestion).map((option) => (
                   <Pressable

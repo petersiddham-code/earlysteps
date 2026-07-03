@@ -3,11 +3,18 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ConsentScope } from '@earlysteps/shared-types';
 import { CONSENT_COPY } from '@earlysteps/content';
 import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
+import { PersonalizedText } from '../PersonalizedText/PersonalizedText.js';
 
 export interface ConsentToggleProps {
   scope: ConsentScope;
   value: boolean;
   onChange: (next: boolean) => void;
+  /**
+   * Child's nickname for `[child]` placeholders in the consent copy (#36). Optional
+   * because the Consent Center is first visited during onboarding, before a child
+   * profile exists — the copy then reads "your child" instead.
+   */
+  childName?: string;
 }
 
 /** Decorative per-scope icon so each consent card is recognisable at a glance. */
@@ -26,7 +33,7 @@ const SCOPE_ICON: Record<ConsentScope, keyof typeof Ionicons.glyphMap> = {
  * @earlysteps/content, not hardcoded, so a consent-copy change routes through clinical review
  * like any other result/report copy.
  */
-export function ConsentToggle({ scope, value, onChange }: ConsentToggleProps) {
+export function ConsentToggle({ scope, value, onChange, childName }: ConsentToggleProps) {
   const copy = CONSENT_COPY.scopes[scope];
 
   return (
@@ -40,7 +47,11 @@ export function ConsentToggle({ scope, value, onChange }: ConsentToggleProps) {
       </View>
       <View style={styles.textColumn}>
         <Text style={styles.label}>{copy.label}</Text>
-        <Text style={styles.explanation}>{copy.explanation}</Text>
+        <PersonalizedText
+          template={copy.explanation}
+          name={childName ?? 'your child'}
+          style={styles.explanation}
+        />
       </View>
       <Switch
         value={value}
