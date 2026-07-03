@@ -159,8 +159,7 @@ export function QuestionnaireScreen({ navigation }: Props) {
         const ageBand = getQuestionBank(fetchedChild.age_band)?.questions ?? [];
         setQuestions(
           [...universal, ...ageBand].filter(
-            (q) =>
-              isAskedInQuestionnaire(q) && isAnswerable(q) && !answeredIds.has(q.id),
+            (q) => isAskedInQuestionnaire(q) && isAnswerable(q) && !answeredIds.has(q.id),
           ),
         );
       })

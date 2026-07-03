@@ -412,7 +412,9 @@ describe('QuestionnaireScreen', () => {
     render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
 
     expect(await screen.findByTestId('all-answered-state')).toBeTruthy();
-    expect(screen.getByText(/already answered every question we have about Alex/)).toBeTruthy();
+    expect(
+      screen.getByText(/already answered every question we have about Alex/),
+    ).toBeTruthy();
     expect(screen.queryByText(/Question \d+ of/)).toBeNull();
     expect(screen.queryByTestId('submit-button')).toBeNull();
 
