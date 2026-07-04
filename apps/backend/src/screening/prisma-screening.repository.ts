@@ -19,8 +19,14 @@ import type { ComputedSnapshot, ScreeningRepository } from './screening.reposito
 export class PrismaScreeningRepository implements ScreeningRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async saveIntakeResponses(childId: string, responses: IntakeResponse[]): Promise<void> {
-    await this.prisma.intakeResponseRecord.createMany({
+  async saveIntakeResponses(
+    childId: string,
+    responses: IntakeResponse[],
+  ): Promise<number> {
+    // skipDuplicates + the (childId, questionId, timestamp) unique constraint make exact
+    // replays a no-op at the database level (issue #33) — safe even across multiple
+    // backend instances, where an in-process check couldn't be.
+    const result = await this.prisma.intakeResponseRecord.createMany({
       data: responses.map((r) => ({
         childId,
         questionId: r.question_id,
@@ -28,7 +34,28 @@ export class PrismaScreeningRepository implements ScreeningRepository {
         answer: r.answer,
         timestamp: new Date(r.timestamp),
       })),
+      skipDuplicates: true,
     });
+    return result.count;
+  }
+
+  /**
+   * Postgres advisory lock keyed on the child id, held via a transaction used purely as
+   * the lock scope (the work in `fn` runs on the normal client — it doesn't need to be
+   * atomic with the lock, just mutually excluded per child). pg_advisory_xact_lock blocks
+   * until acquired and releases automatically on commit/rollback, so a crash mid-cycle
+   * can never leave the child locked. Works across multiple backend instances.
+   */
+  async withChildLock<T>(childId: string, fn: () => Promise<T>): Promise<T> {
+    return this.prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('intake_submit'), hashtext(${childId}))`;
+        return fn();
+      },
+      // Generous ceilings: a waiter queued behind several concurrent submissions must not
+      // time out while holding its place in line (recompute itself is in-memory and fast).
+      { maxWait: 10_000, timeout: 30_000 },
+    );
   }
 
   async getIntakeResponses(childId: string): Promise<IntakeResponse[]> {

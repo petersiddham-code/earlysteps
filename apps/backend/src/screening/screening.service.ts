@@ -32,6 +32,12 @@ export class ScreeningService {
    * anything — fail-safe: no recorded grant means no write. The other three consent scopes
    * (ai_analysis, media_capture, professional_sharing) aren't enforced here since no feature
    * that needs them exists yet (no LLM calls, no media capture, no report sharing).
+   *
+   * Concurrency & idempotency (issue #33): the save -> read-history -> recompute -> snapshot
+   * cycle runs under a per-child lock, so concurrent submissions serialize and the latest
+   * snapshot always reflects every committed answer. Exact replays (double-tap, network
+   * retry, offline-sync re-delivery) insert zero new rows and return the current results
+   * without recomputing — same response body, no duplicate history, no snapshot churn.
    */
   async submitIntakeResponses(
     childId: string,
@@ -52,30 +58,52 @@ export class ScreeningService {
       throw new NotFoundException(`No child found with id ${childId}`);
     }
 
-    await this.repository.saveIntakeResponses(childId, newResponses);
-    const allResponses = await this.repository.getIntakeResponses(childId);
+    return this.repository.withChildLock(childId, async () => {
+      const insertedCount = await this.repository.saveIntakeResponses(
+        childId,
+        newResponses,
+      );
 
-    const computedAt = new Date().toISOString();
-    const { profile, supportEstimate, redFlags, answeredTotal } = recompute(
-      allResponses,
-      { computedAt },
-    );
+      // Pure replay: every row already existed, so the latest snapshot already accounts
+      // for all of them — return it as-is instead of stamping a duplicate snapshot.
+      // (No snapshot can only mean a crash between save and snapshot on the original
+      // attempt; fall through and recompute — the retry then heals the missing snapshot.)
+      if (insertedCount === 0) {
+        const existingView = await this.viewOfLatestSnapshot(childId);
+        if (existingView) return existingView;
+      }
 
-    await this.repository.saveComputedSnapshot(childId, {
-      ageBand: child.age_band,
-      profile,
-      supportEstimate,
-      redFlags,
+      const allResponses = await this.repository.getIntakeResponses(childId);
+
+      const computedAt = new Date().toISOString();
+      const { profile, supportEstimate, redFlags, answeredTotal } = recompute(
+        allResponses,
+        { computedAt },
+      );
+
+      await this.repository.saveComputedSnapshot(childId, {
+        ageBand: child.age_band,
+        profile,
+        supportEstimate,
+        redFlags,
+      });
+
+      return toResultsView(profile, supportEstimate, redFlags, answeredTotal);
     });
-
-    return toResultsView(profile, supportEstimate, redFlags, answeredTotal);
   }
 
   async getResults(childId: string): Promise<ResultsView> {
-    const snapshot = await this.repository.getLatestSnapshot(childId);
-    if (!snapshot) {
+    const view = await this.viewOfLatestSnapshot(childId);
+    if (!view) {
       throw new NotFoundException(`No computed results yet for child ${childId}`);
     }
+    return view;
+  }
+
+  /** The latest computed snapshot as a results view, or null if none exists yet. */
+  private async viewOfLatestSnapshot(childId: string): Promise<ResultsView | null> {
+    const snapshot = await this.repository.getLatestSnapshot(childId);
+    if (!snapshot) return null;
     // Provenance (issue #22): "Based on N answers" counts the caregiver's current answers
     // (latest per question) — recomputed from the raw history because snapshots don't
     // store it. Responses only ever change via submitIntakeResponses, which always
