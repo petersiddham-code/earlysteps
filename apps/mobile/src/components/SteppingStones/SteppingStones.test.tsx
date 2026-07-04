@@ -14,6 +14,20 @@ describe('SteppingStones', () => {
     expect(screen.getByLabelText('Step 13 of 26')).toBeTruthy();
   });
 
+  it('exposes aria-valuenow/min/max so progress percentage is announced (#35)', () => {
+    render(<SteppingStones total={26} currentIndex={12} />);
+    const bar = screen.getByTestId('stepping-stones');
+    expect(bar.props['aria-valuemin']).toBe(0);
+    expect(bar.props['aria-valuemax']).toBe(26);
+    expect(bar.props['aria-valuenow']).toBe(12);
+  });
+
+  it('clamps aria-valuenow to the total on the review step (never over 100%)', () => {
+    render(<SteppingStones total={5} currentIndex={7} />);
+    const bar = screen.getByTestId('stepping-stones');
+    expect(bar.props['aria-valuenow']).toBe(5);
+  });
+
   it('clamps a past-the-end index (review step) to a fully-filled path', () => {
     render(<SteppingStones total={5} currentIndex={5} />);
     expect(screen.getAllByTestId('stone-done')).toHaveLength(5);

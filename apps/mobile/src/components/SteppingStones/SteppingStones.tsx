@@ -33,7 +33,13 @@ export function SteppingStones({ total, currentIndex, answered }: SteppingStones
       style={styles.path}
       accessibilityRole="progressbar"
       accessibilityLabel={`Step ${Math.min(clamped + 1, total)} of ${total}`}
-      accessibilityValue={{ min: 0, max: total, now: clamped }}
+      // aria-value* (not the legacy accessibilityValue prop): react-native-web 0.21 no
+      // longer maps accessibilityValue to aria-valuenow/min/max, leaving screen readers
+      // unable to announce progress (#35). RN maps these to accessibilityValue on native,
+      // so both platforms get the same announcement from one source of truth.
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={clamped}
       testID="stepping-stones"
     >
       {Array.from({ length: total }, (_, i) => {

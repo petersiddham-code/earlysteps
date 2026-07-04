@@ -120,6 +120,77 @@ describe('QuestionRenderer', () => {
     expect(onChange).toHaveBeenCalledWith(['rocking']);
   });
 
+  describe('keyboard + screen-reader access to checkboxes (issues #34, #35)', () => {
+    it('Space toggles an unchecked checkbox on and consumes the key (no page scroll)', () => {
+      const onChange = jest.fn();
+      const preventDefault = jest.fn();
+      renderQuestion(multiSelectQuestion, { value: ['rocking'], onChange });
+
+      fireEvent(screen.getByRole('checkbox', { name: 'Hand-flapping' }), 'keyDown', {
+        key: ' ',
+        preventDefault,
+      });
+
+      expect(onChange).toHaveBeenCalledWith(['rocking', 'hand_flapping']);
+      expect(preventDefault).toHaveBeenCalled();
+    });
+
+    it('Space toggles a checked checkbox off', () => {
+      const onChange = jest.fn();
+      renderQuestion(multiSelectQuestion, {
+        value: ['rocking', 'hand_flapping'],
+        onChange,
+      });
+
+      fireEvent(screen.getByRole('checkbox', { name: 'Rocking' }), 'keyDown', {
+        key: ' ',
+        preventDefault: () => {},
+      });
+
+      expect(onChange).toHaveBeenCalledWith(['hand_flapping']);
+    });
+
+    it('other keys do not toggle a checkbox', () => {
+      const onChange = jest.fn();
+      renderQuestion(multiSelectQuestion, { value: [], onChange });
+
+      fireEvent(screen.getByRole('checkbox', { name: 'Rocking' }), 'keyDown', {
+        key: 'a',
+        preventDefault: () => {},
+      });
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('every checkbox exposes its name and checked state (aria-checked + label)', () => {
+      renderQuestion(multiSelectQuestion, { value: ['hand_flapping'] });
+
+      // getByRole resolves name from accessibilityLabel and state from aria-checked —
+      // a nameless or stateless checkbox fails these queries.
+      expect(
+        screen.getByRole('checkbox', { name: 'Hand-flapping', checked: true }),
+      ).toBeTruthy();
+      expect(
+        screen.getByRole('checkbox', { name: 'Rocking', checked: false }),
+      ).toBeTruthy();
+      expect(
+        screen.getByRole('checkbox', { name: 'None of these', checked: false }),
+      ).toBeTruthy();
+    });
+
+    it('single-select options stay role=button (Space already handled natively there)', () => {
+      const onChange = jest.fn();
+      renderQuestion(buttonsQuestion, { onChange });
+
+      const button = screen.getByRole('button', { name: 'Looks or comes right away' });
+      // No custom keydown wiring on buttons — react-native-web maps Space to press for
+      // role="button" on its own, so a duplicate handler would double-toggle.
+      fireEvent(button, 'keyDown', { key: ' ', preventDefault: () => {} });
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
   describe('"Other — type it" inline input (issue #28)', () => {
     it('shows no inline input while "Other" is unchecked', () => {
       renderQuestion(otherQuestion, { value: ['music'], onOtherTextChange: () => {} });

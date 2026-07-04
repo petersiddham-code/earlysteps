@@ -91,26 +91,47 @@ export function QuestionRenderer({
               isMultiSelect &&
               selected &&
               onOtherTextChange !== undefined;
+            const toggleOption = () => {
+              if (isMultiSelect) {
+                const current = selectedIds ?? [];
+                onChange(
+                  current.includes(option.id)
+                    ? current.filter((id) => id !== option.id)
+                    : [...current, option.id],
+                );
+              } else {
+                onChange(option.id);
+              }
+            };
+            // Space must toggle a checkbox (WCAG 2.1.1 / ARIA checkbox pattern, #34):
+            // react-native-web only maps Space-to-press for role="button", so a
+            // role="checkbox" Pressable gets Enter (click) but not Space. Web wires this
+            // to DOM keydown; native Pressable ignores the prop entirely.
+            const checkboxKeyProps = isMultiSelect
+              ? {
+                  onKeyDown: (event: { key: string; preventDefault: () => void }) => {
+                    if (event.key === ' ' || event.key === 'Spacebar') {
+                      // A focused checkbox must consume Space, not scroll the page.
+                      event.preventDefault();
+                      toggleOption();
+                    }
+                  },
+                }
+              : {};
             return (
               <Fragment key={option.id}>
                 <Pressable
-                  onPress={() => {
-                    if (isMultiSelect) {
-                      const current = selectedIds ?? [];
-                      onChange(
-                        current.includes(option.id)
-                          ? current.filter((id) => id !== option.id)
-                          : [...current, option.id],
-                      );
-                    } else {
-                      onChange(option.id);
-                    }
-                  }}
+                  onPress={toggleOption}
                   style={[styles.option, selected && styles.optionSelected]}
                   accessibilityRole={isMultiSelect ? 'checkbox' : 'button'}
-                  accessibilityState={
-                    isMultiSelect ? { checked: selected } : { selected }
-                  }
+                  // aria-checked (not the legacy accessibilityState prop): react-native-web
+                  // 0.21 no longer maps accessibilityState.checked to aria-checked, so
+                  // screen readers announced a stateless, nameless "checkbox" (#35). RN
+                  // maps aria-checked back to accessibilityState.checked on native.
+                  aria-checked={isMultiSelect ? selected : undefined}
+                  accessibilityState={isMultiSelect ? undefined : { selected }}
+                  accessibilityLabel={option.label}
+                  {...checkboxKeyProps}
                 >
                   {/* Square checkbox for "pick all that apply", round radio for pick-one —
                     the shape signals the behaviour difference (multi-selects wait for
