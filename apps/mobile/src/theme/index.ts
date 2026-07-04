@@ -72,11 +72,15 @@ export const type = {
   eyebrow: { fontSize: 12, lineHeight: 16, fontWeight: '600', letterSpacing: 0.8 },
 } as const;
 
-/** Soft card shadow — barely-there lift, not a hard material edge. */
+/**
+ * Soft card shadow — barely-there lift, not a hard material edge.
+ *
+ * boxShadow (not the legacy shadowColor/Offset/Opacity/Radius quartet): react-native-web
+ * 0.21 deprecates the shadow* props and warns on every app load (#29), and React Native
+ * itself renders boxShadow natively on Android/iOS since 0.76 (New Architecture), so one
+ * cross-platform declaration replaces the old shadow* + elevation pair. Same visual:
+ * 0 2 offset / 8 blur of #24403B at 6% opacity.
+ */
 export const cardShadow = {
-  shadowColor: '#24403B',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.06,
-  shadowRadius: 8,
-  elevation: 2,
+  boxShadow: '0px 2px 8px rgba(36, 64, 59, 0.06)',
 } as const;
