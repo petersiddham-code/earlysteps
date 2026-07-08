@@ -1,11 +1,18 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react-native';
 import { ConsentCenterScreen } from './ConsentCenterScreen';
-import { createFamily, getChild, getFamily, updateConsent } from '../../api/index.js';
+import {
+  createFamily,
+  deleteFamily,
+  getChild,
+  getFamily,
+  updateConsent,
+} from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import { CONSENT_COPY } from '@earlysteps/content';
 
 jest.mock('../../api/index.js', () => ({
   createFamily: jest.fn(),
+  deleteFamily: jest.fn(),
   getChild: jest.fn(),
   getFamily: jest.fn(),
   updateConsent: jest.fn(),
@@ -16,6 +23,7 @@ function navProp(canGoBack = false) {
   return {
     replace: jest.fn(),
     goBack: jest.fn(),
+    reset: jest.fn(),
     canGoBack: jest.fn(() => canGoBack),
   } as unknown as Parameters<typeof ConsentCenterScreen>[0]['navigation'];
 }
@@ -183,5 +191,74 @@ describe('ConsentCenterScreen', () => {
 
     expect(await screen.findByText(CONSENT_COPY.scopes.data_storage.label)).toBeTruthy();
     expect(createFamily).toHaveBeenCalledTimes(2);
+  });
+  describe('delete everything (issue #55)', () => {
+    function sessionWithReset() {
+      const reset = jest.fn().mockResolvedValue(undefined);
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        reset,
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+      return reset;
+    }
+
+    it('first tap only reveals the confirmation — nothing is deleted yet', async () => {
+      sessionWithReset();
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('delete-everything-button');
+
+      fireEvent.press(screen.getByTestId('delete-everything-button'));
+
+      expect(screen.getByTestId('delete-confirm-block')).toBeTruthy();
+      expect(deleteFamily).not.toHaveBeenCalled();
+    });
+
+    it('confirming deletes server-side, forgets the session, and restarts at Splash', async () => {
+      const reset = sessionWithReset();
+      (deleteFamily as jest.Mock).mockResolvedValue(undefined);
+      const navigation = navProp();
+      render(<ConsentCenterScreen navigation={navigation} route={{} as never} />);
+      await screen.findByTestId('delete-everything-button');
+
+      fireEvent.press(screen.getByTestId('delete-everything-button'));
+      fireEvent.press(screen.getByTestId('confirm-delete-button'));
+
+      await waitFor(() => expect(deleteFamily).toHaveBeenCalledWith('f1'));
+      await waitFor(() => expect(reset).toHaveBeenCalled());
+      expect(navigation.reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [{ name: 'Splash' }],
+      });
+    });
+
+    it('"Keep my data" backs out without deleting anything', async () => {
+      sessionWithReset();
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('delete-everything-button');
+
+      fireEvent.press(screen.getByTestId('delete-everything-button'));
+      fireEvent.press(screen.getByTestId('cancel-delete-button'));
+
+      expect(screen.queryByTestId('delete-confirm-block')).toBeNull();
+      expect(deleteFamily).not.toHaveBeenCalled();
+    });
+
+    it('a failed delete shows a retryable error and keeps the local session', async () => {
+      const reset = sessionWithReset();
+      (deleteFamily as jest.Mock).mockRejectedValue(new Error('network down'));
+      const navigation = navProp();
+      render(<ConsentCenterScreen navigation={navigation} route={{} as never} />);
+      await screen.findByTestId('delete-everything-button');
+
+      fireEvent.press(screen.getByTestId('delete-everything-button'));
+      fireEvent.press(screen.getByTestId('confirm-delete-button'));
+
+      expect(await screen.findByText(/couldn't delete your data/i)).toBeTruthy();
+      expect(reset).not.toHaveBeenCalled();
+      expect(navigation.reset).not.toHaveBeenCalled();
+    });
   });
 });

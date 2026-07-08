@@ -35,4 +35,11 @@ export interface FamiliesRepository {
   getChild(childId: string): Promise<Child | null>;
   /** Fail-safe default: a child/family with no recorded grant has NOT consented. */
   hasConsent(childId: string, scope: ConsentScope): Promise<boolean>;
+  /**
+   * Right-to-erasure (issue #55, product plan Screen 13): permanently removes the family,
+   * its children, and every record stored under them (answers, computed profiles,
+   * estimates, red flags, follow-up suggestions, plans, logs, media refs, reports).
+   * Returns false when no such family exists. Irreversible by design.
+   */
+  deleteFamily(familyId: string): Promise<boolean>;
 }

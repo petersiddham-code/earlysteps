@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Patch,
+} from '@nestjs/common';
 import type { Child, Family } from '@earlysteps/shared-types';
 import { FamiliesService } from './families.service.js';
 import { CreateFamilyDto } from './dto/create-family.dto.js';
@@ -43,6 +52,13 @@ export class FamiliesController {
       genderDetail: dto.gender_detail,
       languages: dto.languages,
     });
+  }
+
+  /** Right-to-erasure (issue #55): deletes the family and everything under it. 204 on success. */
+  @Delete(':familyId')
+  @HttpCode(204)
+  async deleteFamily(@Param('familyId') familyId: string): Promise<void> {
+    await this.familiesService.deleteFamily(familyId);
   }
 
   @Get(':familyId/children/:childId')

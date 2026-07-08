@@ -40,3 +40,12 @@ export function createChild(familyId: string, input: CreateChildInput): Promise<
 export function getChild(familyId: string, childId: string): Promise<Child> {
   return apiClient.get<Child>(`/families/${familyId}/children/${childId}`);
 }
+
+/**
+ * Right-to-erasure (issue #55): permanently deletes the family and everything stored
+ * under it — child details, answers, results. Irreversible; callers must show their own
+ * confirmation step first.
+ */
+export function deleteFamily(familyId: string): Promise<void> {
+  return apiClient.delete(`/families/${familyId}`);
+}

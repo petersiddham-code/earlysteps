@@ -210,3 +210,71 @@ describe('families — layered consent (product plan §4.7)', () => {
     }
   });
 });
+
+describe('families — delete everything (issue #55, right to erasure)', () => {
+  let service: FamiliesService;
+  let repository: InMemoryFamiliesRepository;
+
+  beforeEach(async () => {
+    ({ service, repository } = await buildService());
+  });
+
+  it('deletes the family and its children; both 404 afterwards', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+    const child = await service.createChild(family.id, {
+      nickname: 'Alex',
+      ...bornMonthsAgo(24),
+      languages: ['English'],
+    });
+
+    await service.deleteFamily(family.id);
+
+    await expect(service.getFamily(family.id)).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getChild(family.id, child.id)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    // Fail-safe: a deleted child has no consent for anything.
+    expect(await repository.hasConsent(child.id, 'data_storage')).toBe(false);
+  });
+
+  it('purges the screening data stored under every child of the family', async () => {
+    // The production purge happens in one Prisma transaction; the in-memory double
+    // mirrors it through the onDeleteChildren hook — this pins that the hook receives
+    // every child of the family being deleted, and only those.
+    const family = await service.createFamily({ locale: 'en' });
+    const keepFamily = await service.createFamily({ locale: 'en' });
+    const a = await service.createChild(family.id, {
+      nickname: 'A',
+      ...bornMonthsAgo(24),
+      languages: ['English'],
+    });
+    const b = await service.createChild(family.id, {
+      nickname: 'B',
+      ...bornMonthsAgo(50),
+      languages: ['English'],
+    });
+    const kept = await service.createChild(keepFamily.id, {
+      nickname: 'Kept',
+      ...bornMonthsAgo(24),
+      languages: ['English'],
+    });
+
+    const purged: string[] = [];
+    repository.onDeleteChildren = async (ids) => {
+      purged.push(...ids);
+    };
+    await service.deleteFamily(family.id);
+
+    expect(purged.sort()).toEqual([a.id, b.id].sort());
+    expect(purged).not.toContain(kept.id);
+    // The other family is untouched.
+    expect((await service.getFamily(keepFamily.id)).id).toBe(keepFamily.id);
+    expect((await service.getChild(keepFamily.id, kept.id)).id).toBe(kept.id);
+  });
+
+  it('deleting an unknown family is a clear 404', async () => {
+    await expect(service.deleteFamily('unknown-family')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+});
