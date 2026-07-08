@@ -123,7 +123,7 @@ function followUpOptions(
   );
 }
 
-export function ResultsScreen({ navigation }: Props) {
+export function ResultsScreen({ navigation, route }: Props) {
   const { familyId, childId, clearChildId } = useSession();
   const [results, setResults] = useState<ResultsView | null>(null);
   const [strengths, setStrengths] = useState<string[]>([]);
@@ -133,11 +133,13 @@ export function ResultsScreen({ navigation }: Props) {
   const [childName, setChildName] = useState('your child');
   const [answeringId, setAnsweringId] = useState<string | null>(null);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
+  const [noResultsYet, setNoResultsYet] = useState(false);
 
   useEffect(() => {
     if (!childId) return;
     let cancelled = false;
     setError(null);
+    setNoResultsYet(false);
     Promise.all([getResults(childId), getIntakeResponses(childId)])
       .then(([resultsView, responses]) => {
         if (cancelled) return;
@@ -147,9 +149,16 @@ export function ResultsScreen({ navigation }: Props) {
       .catch((err) => {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 404) {
-          // No computed results for this child yet — the questionnaire was never
-          // submitted (e.g. the app was closed partway through onboarding). Send them
-          // there instead of stranding them on an error that can never resolve.
+          // No computed results for this child yet. Two very different reasons (#53):
+          // the caregiver just finished the questionnaire having skipped everything
+          // (emptySubmit) — bouncing them to Question 1 reads as a silent session
+          // reset, so show the honest "not enough information yet" state instead —
+          // versus a cold resume where the questionnaire was never submitted (app
+          // closed mid-onboarding), where going straight there is the right move.
+          if (route.params?.emptySubmit) {
+            setNoResultsYet(true);
+            return;
+          }
           navigation.replace('Questionnaire');
           return;
         }
@@ -175,7 +184,7 @@ export function ResultsScreen({ navigation }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [familyId, childId, navigation, attempt]);
+  }, [familyId, childId, navigation, route.params, attempt]);
 
   /**
    * The caregiver's structured answer is submitted as a NORMAL intake response — the
@@ -209,6 +218,59 @@ export function ResultsScreen({ navigation }: Props) {
           <Text style={styles.retryText}>Try again</Text>
         </Pressable>
       </View>
+    );
+  }
+
+  // Answered nothing, no prior results (#53): the same honest "not enough information
+  // yet" state the 1-answer case gets — with the disclaimer (§2 rule 5) and every path
+  // forward — instead of the silent bounce back to Question 1. Reuses the approved
+  // insufficient-evidence copy verbatim; no new clinical content.
+  if (noResultsYet) {
+    return (
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <Text style={styles.eyebrow}>ABOUT {childName.toUpperCase()}</Text>
+        <Text style={styles.heading}>Here's what we noticed</Text>
+        <ScreeningDisclaimer />
+        <View style={styles.card} testID="empty-results-state">
+          <Text style={styles.supportLevelText} testID="insufficient-overall-label">
+            {RESULT_COPY.insufficient_evidence.label}
+          </Text>
+          <Text style={styles.recommendationText}>
+            {RESULT_COPY.insufficient_evidence.explanation}
+          </Text>
+          <Text style={styles.recommendationText}>
+            {RESULT_COPY.insufficient_evidence.overall_detail}
+          </Text>
+          <View style={styles.answerMoreButton}>
+            <PrimaryButton
+              label="Answer more questions"
+              onPress={() => navigation.replace('Questionnaire')}
+              testID="answer-more-button"
+            />
+          </View>
+        </View>
+        <View style={styles.actions}>
+          <Text style={styles.actionsHint}>
+            Starting a new set of questions begins fresh with a child's details. These
+            results won't be shown in the app afterwards, so note down anything you want
+            to keep.
+          </Text>
+          <PrimaryButton
+            label="Start a new set of questions"
+            onPress={async () => {
+              await clearChildId();
+              navigation.replace('ChildProfileSetup');
+            }}
+            testID="new-questions-button"
+          />
+          <PrimaryButton
+            label="Review my permissions"
+            variant="quiet"
+            onPress={() => navigation.navigate('ConsentCenter')}
+            testID="permissions-button"
+          />
+        </View>
+      </ScrollView>
     );
   }
 

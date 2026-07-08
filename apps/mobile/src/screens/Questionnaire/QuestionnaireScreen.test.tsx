@@ -374,8 +374,12 @@ describe('QuestionnaireScreen', () => {
     fireEvent.press(screen.getByTestId('submit-button'));
 
     // An empty batch is a backend validation error — never send one. Skipping all
-    // questions must not dead-end in "we couldn't save your answers".
-    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Results'));
+    // questions must not dead-end in "we couldn't save your answers". The emptySubmit
+    // param tells Results a 404 means "answered nothing yet" so it renders the honest
+    // empty state instead of bouncing back here like a silent reset (#53).
+    await waitFor(() =>
+      expect(navigation.replace).toHaveBeenCalledWith('Results', { emptySubmit: true }),
+    );
     expect(submitIntakeResponses).not.toHaveBeenCalled();
     expect(screen.queryByText(/couldn't save your answers/i)).toBeNull();
   });
