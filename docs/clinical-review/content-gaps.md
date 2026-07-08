@@ -112,3 +112,14 @@ clinically-authored confirmation questions with their own weights (a scoring-wei
 which this gate exists for). Until then, only red-flag-type signals generate confirmation
 follow-ups. Issue #22's minimum-evidence gate should count confirmed free-text-derived
 answers toward its evidence floors when both land — coordinate there, don't duplicate.
+
+## 10. Sparse per-band domain coverage (issue #52)
+
+Several band/domain pairs offer fewer scored questions than the per-domain evidence floor
+of 3 — full matrix in `2026-07-08-per-band-evidence-totals.md`. Worst: teen and
+young_adult (most domains at 1–2 items), sensory outside toddler (1–2), attention (1
+everywhere it exists). Since 2026-07-08 the gate caps its floor at the band's real
+availability so these domains can surface (at low confidence) once fully answered — but
+the honest remedy is authoring more questions per sparse domain per band (product-plan
+requirement #5), which needs advisor input. TE13 (issue #54) added one teen repetitive
+item; the rest remain open.

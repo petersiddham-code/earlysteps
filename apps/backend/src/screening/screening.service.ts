@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import type { IntakeResponse } from '@earlysteps/shared-types';
+import { domainQuestionTotalsForBand } from '@earlysteps/content';
 import { dedupeLatestByQuestion, recompute } from '@earlysteps/scoring-engine';
 import {
   SCREENING_REPOSITORY,
@@ -78,7 +79,15 @@ export class ScreeningService {
       const computedAt = new Date().toISOString();
       const { profile, supportEstimate, redFlags, answeredTotal } = recompute(
         allResponses,
-        { computedAt },
+        {
+          computedAt,
+          // Per-band availability (issue #52): the evidence gate's floor caps at how many
+          // scored questions this child's band can actually be asked per domain, and
+          // confidence completeness is measured against the same denominator. Without
+          // this, recompute defaults to all-bank totals no child can reach — leaving
+          // sparse band/domain pairs gated forever and confidence unevenly deflated.
+          domainQuestionTotals: domainQuestionTotalsForBand(child.age_band),
+        },
       );
 
       await this.repository.saveComputedSnapshot(childId, {
