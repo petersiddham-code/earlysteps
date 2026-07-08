@@ -38,6 +38,7 @@ import {
   StrengthsFirstList,
   TrafficLightBar,
   RedFlagBanner,
+  CrisisSupportCard,
 } from '../../components/index.js';
 import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
 
@@ -238,6 +239,13 @@ export function ResultsScreen({ navigation }: Props) {
         {provenanceLine(results)}
       </Text>
       <ScreeningDisclaimer />
+
+      {/* One-tap crisis resources (issue #50, product plan §10 rule 10): when a
+          self-injury or safety flag is present this must be immediately visible — above
+          the fold, before anything the caregiver has to scroll for. Non-urgent flags
+          (e.g. loss of skills) don't render this; they keep the calmer RedFlagBanner
+          below, so the two urgency levels are visually distinct. */}
+      <CrisisSupportCard redFlagTypes={results.redFlagTypes} />
 
       {/* Strengths stay first — enforced by the component, honoured by the layout.
           With nothing on either side (everything skipped, #32) the card disappears —

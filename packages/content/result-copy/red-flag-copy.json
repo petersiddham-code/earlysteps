@@ -1,10 +1,18 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "locale": "en",
   "needs_clinical_signoff": true,
-  "note": "Escalation copy is clinical content (CLAUDE.md §9). base_message is drawn from product plan §4.8 verbatim; the urgent block covers the additional 'calm resource block with local emergency guidance' required for self_injury_risk/safety_risk. 'local resource finder' text is a placeholder until a real resource-finder feature exists.",
+  "note": "Escalation copy is clinical content (CLAUDE.md §9). base_message is drawn from product plan §4.8 verbatim; the urgent block covers the additional 'calm resource block with local emergency guidance' required for self_injury_risk/safety_risk. urgent_resources are the one-tap crisis paths required by product plan §10 rule 10 — the shipped default is a global helpline directory because locale is not yet regionalized; each localized deployment MUST add its regional crisis/emergency numbers (kind 'tel') with clinical sign-off before launch there.",
   "base_message": "Some of what you've shared suggests your child may benefit from being seen soon by a doctor. This doesn't mean something is seriously wrong — it means a professional should take a closer look.",
-  "next_steps_heading": "Here's what to do next",
   "urgent_resource_heading": "If you need support right now",
-  "urgent_resource_message": "If you're worried about your child's immediate safety, please contact a doctor, local emergency services, or a crisis helpline today. You are not alone, and reaching out is the right step."
+  "urgent_resource_message": "If you're worried about your child's immediate safety, please contact a doctor, local emergency services, or a crisis helpline today. You are not alone, and reaching out is the right step.",
+  "urgent_resources": [
+    {
+      "id": "find_helpline",
+      "kind": "url",
+      "value": "https://findahelpline.com",
+      "label": "Find a free crisis helpline near you",
+      "description": "Opens a directory of free, confidential helplines by country — you can call, text, or chat."
+    }
+  ]
 }
