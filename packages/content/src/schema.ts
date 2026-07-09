@@ -135,6 +135,14 @@ export const resultCopySchema = z.object({
     domain_detail: safeCopyNonEmpty,
     overall_detail: safeCopyNonEmpty,
   }),
+  /**
+   * Issue #70: shown next to the recommendation confidence ONLY when a red flag forced
+   * it — the one case where it can read next to a lower per-domain confidence as a
+   * contradiction. Explains the two numbers measure different things; does not change
+   * either. PLACEHOLDER pending advisor sign-off, same status as recommendation_confidence
+   * itself (docs/clinical-review/2026-07-09-recommendation-confidence.md).
+   */
+  red_flag_confidence_note: safeCopyNonEmpty,
 });
 
 /**
