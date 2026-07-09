@@ -1,10 +1,16 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ChildProfileSetupScreen } from './ChildProfileSetupScreen';
-import { createChild } from '../../api/index.js';
+import { createChild, getFamily } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 
-jest.mock('../../api/index.js', () => ({ createChild: jest.fn() }));
+jest.mock('../../api/index.js', () => ({ createChild: jest.fn(), getFamily: jest.fn() }));
 jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
+
+const CONNECTED_FAMILY = {
+  id: 'f1',
+  consent_flags: { data_storage: true },
+  locale: 'en',
+};
 
 function navProp() {
   return { replace: jest.fn() } as unknown as Parameters<
@@ -55,10 +61,20 @@ const CHILD = {
 describe('ChildProfileSetupScreen', () => {
   let setChildId: jest.Mock;
 
+  let setGuestChildId: jest.Mock;
+
   beforeEach(() => {
     jest.clearAllMocks();
     setChildId = jest.fn().mockResolvedValue(undefined);
-    (useSession as jest.Mock).mockReturnValue({ familyId: 'f1', setChildId });
+    setGuestChildId = jest.fn();
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      setChildId,
+      setGuestChildId,
+    });
+    // Default: data_storage granted, so existing tests exercise the connected (createChild)
+    // path unchanged. The guest-mode describe block below overrides this per test.
+    (getFamily as jest.Mock).mockResolvedValue(CONNECTED_FAMILY);
   });
 
   it('offers no manual age-band picker — the band is derived from the birth date (#25)', () => {
@@ -285,5 +301,32 @@ describe('ChildProfileSetupScreen', () => {
     fireEvent.press(screen.getByTestId('continue-button'));
 
     expect(await screen.findByText(/couldn't save that/i)).toBeTruthy();
+  });
+
+  describe('data_storage consent is off — guest/ephemeral child (issue #63)', () => {
+    beforeEach(() => {
+      (getFamily as jest.Mock).mockResolvedValue({
+        id: 'f1',
+        consent_flags: { data_storage: false },
+        locale: 'en',
+      });
+    });
+
+    it('builds the child on-device instead of calling createChild, and never blocks Continue', async () => {
+      const navigation = navProp();
+      render(<ChildProfileSetupScreen navigation={navigation} route={{} as never} />);
+
+      fireEvent.changeText(screen.getByPlaceholderText('Nickname'), 'Alex');
+      enterBirthDate(24);
+      fireEvent.press(screen.getByText('English'));
+      fireEvent.press(screen.getByTestId('continue-button'));
+
+      await waitFor(() => expect(setGuestChildId).toHaveBeenCalled());
+      expect(createChild).not.toHaveBeenCalled();
+      expect(setChildId).not.toHaveBeenCalled();
+      const [guestChildId] = setGuestChildId.mock.calls[0];
+      expect(guestChildId).toEqual(expect.stringContaining('guest:'));
+      expect(navigation.replace).toHaveBeenCalledWith('Questionnaire');
+    });
   });
 });

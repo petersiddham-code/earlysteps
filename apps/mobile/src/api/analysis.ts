@@ -4,6 +4,7 @@ import type {
   ResultsView,
 } from '@earlysteps/shared-types';
 import { apiClient } from './client.js';
+import { isGuestChildId } from '../guest/guestStore.js';
 
 /**
  * Free-text response-analysis endpoints (issue #26). All best-effort extras on top of
@@ -13,6 +14,11 @@ import { apiClient } from './client.js';
 
 /** Analyzes any new typed answers server-side and returns all pending follow-ups. */
 export function analyzeResponses(childId: string): Promise<FollowUpSuggestion[]> {
+  // Guest/ephemeral child (issue #63): free-text analysis is an LLM call keyed by a
+  // server-side child record, which a guest session deliberately never creates — no
+  // follow-ups, same as ai_analysis consent being off. The deterministic results this
+  // sits on top of are complete without it.
+  if (isGuestChildId(childId)) return Promise.resolve([]);
   return apiClient.post<FollowUpSuggestion[]>(`/children/${childId}/response-analysis`);
 }
 

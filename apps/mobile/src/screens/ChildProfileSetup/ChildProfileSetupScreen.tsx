@@ -18,8 +18,9 @@ import {
   type GenderOption,
 } from '@earlysteps/shared-types';
 import { getQuestionBank } from '@earlysteps/content';
-import { createChild } from '../../api/index.js';
+import { createChild, getFamily } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
+import { createGuestChild } from '../../guest/guestStore.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { PrimaryButton } from '../../components/index.js';
 import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
@@ -83,9 +84,14 @@ const OTHER_LANGUAGE_LABEL =
  * data) and the age band is DERIVED, not picked. The derived band is shown back as
  * reassurance, and the backend re-derives it at read time, so the questionnaire always
  * serves the right bank even as the child ages between sessions.
+ *
+ * Issue #63: without data_storage consent, the child profile is never sent to the backend
+ * at all — "Save my answers" explicitly covers "your answers AND [child]'s profile"
+ * (packages/content/consent/copy.json), so a guest child is built and held on-device via
+ * createGuestChild() instead, exactly mirroring the connected path from here on.
  */
 export function ChildProfileSetupScreen({ navigation }: Props) {
-  const { familyId, setChildId } = useSession();
+  const { familyId, setChildId, setGuestChildId } = useSession();
   const [nickname, setNickname] = useState('');
   const [birthMonth, setBirthMonth] = useState<number | null>(null);
   const [birthYearText, setBirthYearText] = useState('');
@@ -133,20 +139,33 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
   };
 
   const handleContinue = async () => {
-    if (!familyId || birthMonth === null || birthYear === null) return;
+    if (!familyId || birthMonth === null || birthYear === null || derivedBand === null) {
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
       const detail = genderDetail.trim();
-      const child = await createChild(familyId, {
+      const childInput = {
         nickname: nickname.trim(),
         birth_month: birthMonth,
         birth_year: birthYear,
         ...(gender ? { gender } : {}),
         ...(gender === 'self_describe' && detail ? { gender_detail: detail } : {}),
         languages: effectiveLanguages,
-      });
-      await setChildId(child.id);
+      };
+      const family = await getFamily(familyId);
+      if (family.consent_flags.data_storage === true) {
+        const child = await createChild(familyId, childInput);
+        await setChildId(child.id);
+      } else {
+        const child = createGuestChild({
+          family_id: familyId,
+          age_band: derivedBand,
+          ...childInput,
+        });
+        setGuestChildId(child.id);
+      }
       navigation.replace('Questionnaire');
     } catch {
       setError("We couldn't save that. Please try again.");

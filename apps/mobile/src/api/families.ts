@@ -1,5 +1,6 @@
 import type { Child, ConsentScope, Family, GenderOption } from '@earlysteps/shared-types';
 import { apiClient } from './client.js';
+import { getGuestChild, isGuestChildId } from '../guest/guestStore.js';
 
 export interface CreateFamilyInput {
   locale: string;
@@ -38,6 +39,10 @@ export function createChild(familyId: string, input: CreateChildInput): Promise<
 }
 
 export function getChild(familyId: string, childId: string): Promise<Child> {
+  // Guest/ephemeral child (issue #63): never persisted server-side, so this reads the
+  // in-memory guest store instead of the backend — same signature, transparent to callers.
+  if (isGuestChildId(childId))
+    return Promise.resolve().then(() => getGuestChild(childId));
   return apiClient.get<Child>(`/families/${familyId}/children/${childId}`);
 }
 

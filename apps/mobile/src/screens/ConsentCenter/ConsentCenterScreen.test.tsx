@@ -121,15 +121,17 @@ describe('ConsentCenterScreen', () => {
     );
   });
 
-  it('disables Continue (with an explanation) until data_storage is granted', async () => {
+  it('never blocks Continue on data_storage — declining it means guest mode, not a dead end (#63)', async () => {
     (createFamily as jest.Mock).mockResolvedValue(FAMILY);
     const navigation = navProp();
     render(<ConsentCenterScreen navigation={navigation} route={{} as never} />);
     await screen.findByText(CONSENT_COPY.scopes.data_storage.label);
 
-    expect(screen.getByText(/nowhere to keep your answers/i)).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Continue' }).props.accessibilityState.disabled,
+    ).toBe(false);
     fireEvent.press(screen.getByText('Continue'));
-    expect(navigation.replace).not.toHaveBeenCalled();
+    expect(navigation.replace).toHaveBeenCalledWith('ChildProfileSetup');
   });
 
   it('navigates to ChildProfileSetup on Continue once data_storage is granted', async () => {

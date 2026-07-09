@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { CONSENT_SCOPES, type ConsentScope, type Family } from '@earlysteps/shared-types';
-import { CONSENT_COPY } from '@earlysteps/content';
 import { ConsentToggle } from '../../components/ConsentToggle/ConsentToggle.js';
 import { PrimaryButton } from '../../components/PrimaryButton/PrimaryButton.js';
 import {
@@ -30,12 +29,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ConsentCenter'>;
  * plain explanation (rendered by <ConsentToggle/>, copy sourced from @earlysteps/content).
  * Creates the Family record on first visit — consent itself is granted via separate,
  * per-scope calls after, never bundled into account creation (CLAUDE.md §2 rule 9). On a
- * revisit (session already has a family — e.g. routed back here because saving answers was
- * declined for missing data_storage consent) it loads the existing family instead.
+ * revisit (session already has a family — e.g. routed back here from "Review my
+ * permissions") it loads the existing family instead.
  *
- * Continue requires data_storage: without it the backend (correctly) refuses to save any
- * answers, so letting the caregiver walk into the questionnaire would dead-end them at a
- * refusal. The other three scopes stay genuinely optional.
+ * data_storage is genuinely optional, same as the other three scopes (issue #63): declining
+ * it means the questionnaire and results run fully on-device instead of being saved — never
+ * a dead end. See apps/mobile/src/guest/guestStore.ts for that path.
  */
 export function ConsentCenterScreen({ navigation }: Props) {
   const { familyId, childId, setFamilyId, reset } = useSession();
@@ -136,8 +135,6 @@ export function ConsentCenterScreen({ navigation }: Props) {
     );
   }
 
-  const hasDataStorage = family.consent_flags.data_storage === true;
-
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.heading}>Before we start</Text>
@@ -156,16 +153,9 @@ export function ConsentCenterScreen({ navigation }: Props) {
       {pendingScope && (
         <ActivityIndicator style={styles.pendingIndicator} color={colors.primary} />
       )}
-      {!hasDataStorage && (
-        <Text style={styles.requiredNote}>
-          To continue, please turn on "{CONSENT_COPY.scopes.data_storage.label}" — without
-          it we have nowhere to keep your answers. Everything else is optional.
-        </Text>
-      )}
       <View style={styles.continueButton}>
         <PrimaryButton
           label="Continue"
-          disabled={!hasDataStorage}
           onPress={() => {
             // Pushed on top of another screen (Questionnaire when consent was missing at
             // submit — in-progress answers still there — or Results via "Review my
@@ -260,11 +250,6 @@ const styles = StyleSheet.create({
   },
   pendingIndicator: {
     marginTop: spacing.sm,
-  },
-  requiredNote: {
-    marginTop: spacing.lg,
-    ...type.caption,
-    color: colors.inkSoft,
   },
   continueButton: {
     marginTop: spacing.xxl,

@@ -6,6 +6,7 @@ import {
   saveChildId,
   saveFamilyId,
 } from './storage.js';
+import { forgetGuestChild, isGuestChildId } from '../guest/guestStore.js';
 
 export interface SessionValue {
   isLoading: boolean;
@@ -13,6 +14,11 @@ export interface SessionValue {
   childId: string | null;
   setFamilyId: (familyId: string) => Promise<void>;
   setChildId: (childId: string) => Promise<void>;
+  /**
+   * Guest/ephemeral child (issue #63): held in state only, never written to on-device
+   * storage — an app restart forgets it, matching "we have nowhere to keep your answers."
+   */
+  setGuestChildId: (childId: string) => void;
   /** Forget the child, keep the family + consent — start a fresh screening (#20). */
   clearChildId: () => Promise<void>;
   reset: () => Promise<void>;
@@ -43,12 +49,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setChildIdState(id);
   };
 
+  const setGuestChildId = (id: string) => {
+    setChildIdState(id);
+  };
+
   const clearChildId = async () => {
+    if (childId && isGuestChildId(childId)) forgetGuestChild(childId);
     await clearStoredChildId();
     setChildIdState(null);
   };
 
   const reset = async () => {
+    if (childId && isGuestChildId(childId)) forgetGuestChild(childId);
     await clearSession();
     setFamilyIdState(null);
     setChildIdState(null);
@@ -62,6 +74,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         childId,
         setFamilyId,
         setChildId,
+        setGuestChildId,
         clearChildId,
         reset,
       }}

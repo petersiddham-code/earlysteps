@@ -11,3 +11,4 @@ export * from './supportLevel.js';
 export * from './redFlags.js';
 export * from './recompute.js';
 export * from './recommendationTier.js';
+export * from './resultsView.js';
