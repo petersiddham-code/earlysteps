@@ -188,6 +188,35 @@ describe('recompute — end-to-end pipeline (uses shipped content weights)', () 
     expect(domains).toEqual({ repetitive_behaviour: 'many', social: 'low' });
   });
 
+  it('passes the domain gate once every question the band offers is answered (issue #52)', () => {
+    // The issue #52 repro: a toddler answers BOTH repetitive-behaviour questions their
+    // band has (T10 + T11) with clearly concerning answers. The floor (3) exceeds what
+    // the band can ever provide (2) — with the band totals supplied, the gate caps at 2
+    // and the finding surfaces instead of staying "not enough information yet" forever.
+    const answers = [r('T10', ['hand_flapping', 'rocking']), r('T11', 'yes_a_lot')];
+    const withBandTotals = recompute(answers, {
+      computedAt: AT,
+      domainQuestionTotals: { repetitive_behaviour: 2 },
+    });
+    const finding = withBandTotals.profile.findings.find(
+      (f) => f.domain === 'repetitive_behaviour',
+    );
+    expect(finding?.sufficient_evidence).toBe(true);
+    expect(finding?.level).toBe('some');
+    // Only 2 answers → confidence stays capped at low (MIN_ANSWERS_FOR_MEDIUM) — the
+    // gate opening must not fake certainty.
+    expect(finding?.confidence).toBe('low');
+
+    // Control — without the band totals the engine falls back to all-bank counts no
+    // toddler can reach, and the same fully-answered domain stays gated: the exact
+    // defect this option exists to fix.
+    const withoutTotals = recompute(answers, { computedAt: AT });
+    expect(
+      withoutTotals.profile.findings.find((f) => f.domain === 'repetitive_behaviour')
+        ?.sufficient_evidence,
+    ).toBe(false);
+  });
+
   it('scores young-adult-band answers through the shipped weights', () => {
     const { profile, supportEstimate } = recompute(
       [

@@ -5,6 +5,7 @@
 export * from './schema.js';
 export * from './questions.js';
 export * from './weights.js';
+export * from './questionTotals.js';
 export * from './evidenceFloors.js';
 export * from './followUps.js';
 export * from './resultCopy.js';

@@ -302,6 +302,32 @@ describe('screening pipeline — intake -> scoring -> results', () => {
       expect(view.disclaimer).toBe(SCREENING_DISCLAIMER);
     });
 
+    it('a sparse domain surfaces once every question its band offers is answered (issue #52)', async () => {
+      // The toddler band has only TWO repetitive-behaviour questions (T10, T11) against a
+      // per-domain floor of 3. The service passes the band's real availability into the
+      // engine, so answering both — with clearly concerning answers — must surface the
+      // domain instead of leaving it "Not enough information yet" forever while a
+      // similarly-answered richer domain (sensory, 4 questions) reports a level.
+      const view = await service.submitIntakeResponses(childId, [
+        ...reassuringBatch.map((response) => ({ ...response, child_id: childId })),
+        { ...r('T10', ['hand_flapping', 'rocking']), child_id: childId },
+        { ...r('T11', 'yes_a_lot'), child_id: childId },
+      ]);
+
+      const repetitive = view.domains.find((d) => d.domain === 'repetitive_behaviour');
+      expect(repetitive).toMatchObject({
+        status: 'scored',
+        label: 'Some signs observed',
+        // 2 answers can open the gate (it's all the band offers) but never raise
+        // confidence past low — honesty about thin evidence stays intact.
+        confidence: 'low',
+      });
+      // The richer sensory domain from the same batch also reports — no more
+      // one-domain-gated / one-domain-scored inconsistency for equally-answered domains.
+      const sensory = view.domains.find((d) => d.domain === 'sensory');
+      expect(sensory?.status).toBe('scored');
+    });
+
     it('a gated domain entry carries NO sign-level label or confidence key at all', async () => {
       const view = await service.submitIntakeResponses(childId, [
         { ...r('T4', 'doesnt_notice'), child_id: childId },
