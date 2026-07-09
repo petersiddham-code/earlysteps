@@ -40,6 +40,15 @@ option, mirroring T10/P12's pattern; low-registration and recovery-from-overload
 `yes_often: 8` / `sometimes: 4`, mirroring T20/TE10/YA11) — same NOT-CLINICALLY-VALIDATED
 status as every other weight in `domain-weights.json`.
 
+**Post-QA fix (same day, PR #84 review):** P22 and PR18 shipped without a "Not sure" chip —
+every other question in the bank offers an uncertainty option (`not_sure`), but the two new
+`chip_multi_select` sensation-seeking questions only had "None of these". Caregivers who
+aren't sure would have had to guess between "no" and a real answer. Added `not_sure` to
+both, unweighted (the scoring engine already strips uncertainty selections from multi-select
+answers — no engine change needed). This is a bank-wide gap in every pre-existing
+`chip_multi_select` question (T10, P12, P15, PR9, PR10, TE6, TE13, YA7 all lack a "not sure"
+chip too) — out of scope here since those predate #78, but worth its own follow-up issue.
+
 ## Result
 
 Sensory now reaches the 3-item evidence floor in every band (pinned in

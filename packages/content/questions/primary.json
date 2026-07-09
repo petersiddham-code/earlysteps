@@ -486,6 +486,10 @@
         {
           "id": "none_noticed",
           "label": "None noticed"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
         }
       ],
       "hint": "Seeking out movement or pressure is common — we're just building a picture.",
