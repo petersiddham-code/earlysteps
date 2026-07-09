@@ -44,6 +44,7 @@ describe('toResultsView with zero answered questions (issue #32)', () => {
     expect(view.domains).toEqual([]);
     expect(view.supportLevel).toBeNull();
     expect(view.recommendationTier).toBeNull();
+    expect(view.recommendationConfidence).toBeNull();
     expect(view.insufficientEvidenceOverall).toBe(true);
     expect(view.basedOnAnswers).toBe(0);
   });
@@ -59,6 +60,7 @@ describe('toResultsView with zero answered questions (issue #32)', () => {
 
     expect(view.supportLevel).toBeNull();
     expect(view.recommendationTier).toBeNull();
+    expect(view.recommendationConfidence).toBeNull();
   });
 
   it('red flags stay exempt: a flag forces its recommendation even with no scored domains', () => {
@@ -67,6 +69,9 @@ describe('toResultsView with zero answered questions (issue #32)', () => {
     expect(view.domains).toEqual([]);
     expect(view.redFlagTypes).toEqual(['loss_of_skills']);
     expect(view.recommendationTier).toBe('Formal assessment is recommended');
+    // Issue #64: a red-flag-forced recommendation always reports high confidence — a
+    // direct rule match on an explicit answer, never diluted by thin domain evidence.
+    expect(view.recommendationConfidence).toBe('high');
   });
 });
 
@@ -87,5 +92,8 @@ describe('toResultsView above the evidence floor', () => {
       confidence: 'medium',
     });
     expect(view.recommendationTier).toBe('Support activities can begin now');
+    // Issue #64: with no red flags, the recommendation's confidence matches the
+    // support estimate's own confidence — the same number shown next to supportLevel.
+    expect(view.recommendationConfidence).toBe('medium');
   });
 });

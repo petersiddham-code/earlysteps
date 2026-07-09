@@ -48,6 +48,9 @@ const RESULTS = {
   insufficientEvidenceOverall: false,
   redFlagTypes: ['no_name_response' as const],
   recommendationTier: 'Formal assessment is recommended' as const,
+  // Issue #64: a red-flag-forced recommendation reports high confidence even though the
+  // support estimate above it is only low confidence — deliberately different numbers.
+  recommendationConfidence: 'high' as const,
 };
 
 /** The minimum-evidence gate output (issue #22): one answer, nothing to show but honesty. */
@@ -66,6 +69,7 @@ const INSUFFICIENT_RESULTS = {
   insufficientEvidenceOverall: true,
   redFlagTypes: [] as never[],
   recommendationTier: null,
+  recommendationConfidence: null,
 };
 
 /** Zero questions answered (all skipped, issue #32): nothing scored, nothing gated. */
@@ -78,6 +82,7 @@ const EMPTY_RESULTS = {
   insufficientEvidenceOverall: true,
   redFlagTypes: [] as never[],
   recommendationTier: null,
+  recommendationConfidence: null,
 };
 
 const FOLLOW_UP_SUGGESTION = {
@@ -123,6 +128,12 @@ describe('ResultsScreen', () => {
     expect(screen.getByText('Music')).toBeTruthy(); // reflected back from their own answer
     expect(screen.getByText(/Many signs observed/)).toBeTruthy();
     expect(screen.getByText('Formal assessment is recommended')).toBeTruthy();
+    // Issue #64: the recommendation carries its own confidence — HIGH here because a
+    // red flag forced the tier, deliberately different from the LOW confidence shown
+    // next to the support level just above it (thin domain evidence vs. a direct flag).
+    expect(screen.getByTestId('recommendation-confidence')).toHaveTextContent(
+      'Confidence: high',
+    );
     // Whose results these are (#41): the child's name heads the screen.
     expect(await screen.findByText('ABOUT AVA')).toBeTruthy();
   });
@@ -217,6 +228,11 @@ describe('ResultsScreen', () => {
     expect(screen.getByTestId('insufficient-overall-explanation')).toHaveTextContent(
       /isn't a finding about your child/,
     );
+    // Issue #64: explicit rather than implied — too little evidence to recommend
+    // anything IS a low-confidence state, said plainly.
+    expect(screen.getByTestId('insufficient-overall-confidence')).toHaveTextContent(
+      'Confidence: low',
+    );
   });
 
   it('a gated view offers "Answer more questions" — same child, no reset (#42)', async () => {
@@ -261,6 +277,10 @@ describe('ResultsScreen', () => {
     // Never a tier off zero evidence — "Support activities can begin now" was the bug.
     expect(screen.queryByText(/Formal assessment|Support activities/i)).toBeNull();
     expect(screen.getByTestId('provenance-line')).toHaveTextContent(/Based on 0 answers/);
+    // Issue #64: still explicit about confidence even with literally nothing answered.
+    expect(screen.getByTestId('insufficient-overall-confidence')).toHaveTextContent(
+      'Confidence: low',
+    );
   });
 
   it('still surfaces a red flag and its recommendation when 0 domains scored (issues #32 + #22)', async () => {
@@ -269,6 +289,7 @@ describe('ResultsScreen', () => {
       basedOnAnswers: 1,
       redFlagTypes: ['loss_of_skills' as const],
       recommendationTier: 'Formal assessment is recommended' as const,
+      recommendationConfidence: 'high' as const,
     });
     (getIntakeResponses as jest.Mock).mockResolvedValue([]);
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
@@ -278,6 +299,10 @@ describe('ResultsScreen', () => {
       screen.getByText(/may benefit from being seen soon by a doctor/i),
     ).toBeTruthy();
     expect(screen.getByText('Formal assessment is recommended')).toBeTruthy();
+    // Issue #64: the recommendation never shows with no confidence beside it.
+    expect(screen.getByTestId('recommendation-confidence')).toHaveTextContent(
+      'Confidence: high',
+    );
     // Still no bare strengths/needs headings around the banner.
     expect(screen.queryByText('Strengths')).toBeNull();
     expect(screen.queryByText('Support needs')).toBeNull();
@@ -288,6 +313,7 @@ describe('ResultsScreen', () => {
       ...INSUFFICIENT_RESULTS,
       redFlagTypes: ['self_injury_risk' as const],
       recommendationTier: 'Formal assessment strongly recommended soon' as const,
+      recommendationConfidence: 'high' as const,
     });
     (getIntakeResponses as jest.Mock).mockResolvedValue([]);
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
@@ -297,6 +323,11 @@ describe('ResultsScreen', () => {
       screen.getByText(/may benefit from being seen soon by a doctor/i),
     ).toBeTruthy();
     expect(screen.getByText('Formal assessment strongly recommended soon')).toBeTruthy();
+    // Issue #64: high confidence even though the rest of the intake is gated —
+    // the red flag alone earns it.
+    expect(screen.getByTestId('recommendation-confidence')).toHaveTextContent(
+      'Confidence: high',
+    );
     // The tier replaces the "not enough info" next-step copy — never both, they contradict.
     expect(screen.queryByTestId('insufficient-overall-detail')).toBeNull();
     // Domains are still gated, so the path to more answers stays offered (#42).

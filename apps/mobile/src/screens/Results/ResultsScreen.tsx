@@ -362,11 +362,32 @@ export function ResultsScreen({ navigation, route }: Props) {
             approved gate label heads the card so the empty state reads as a state, not a
             glitch (#32). */}
         {results.recommendationTier ? (
-          <Text style={styles.recommendationText}>{results.recommendationTier}</Text>
+          <>
+            <Text style={styles.recommendationText}>{results.recommendationTier}</Text>
+            {/* Issue #64: a recommendation with no confidence beside it can overstate
+                certainty — this always travels 1:1 with recommendationTier (never
+                rendered without it). */}
+            {results.recommendationConfidence && (
+              <Text
+                style={styles.recommendationConfidenceText}
+                testID="recommendation-confidence"
+              >
+                Confidence: {results.recommendationConfidence}
+              </Text>
+            )}
+          </>
         ) : (
           <>
             <Text style={styles.supportLevelText} testID="insufficient-overall-label">
               {RESULT_COPY.insufficient_evidence.label}
+            </Text>
+            {/* Issue #64: explicit rather than implied — too little evidence to
+                recommend anything IS a low-confidence state, said plainly. */}
+            <Text
+              style={styles.recommendationConfidenceText}
+              testID="insufficient-overall-confidence"
+            >
+              Confidence: low
             </Text>
             {/* What the gate MEANS (#42) — a caregiver reading "not enough information"
                 deserves to know it's a statement about the answer count, never about
@@ -522,6 +543,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   recommendationText: { ...type.body, color: colors.inkSoft, marginBottom: spacing.xs },
+  recommendationConfidenceText: {
+    ...type.caption,
+    color: colors.inkSoft,
+    marginBottom: spacing.xs,
+  },
   answerMoreButton: { marginTop: spacing.md },
   followUpHeading: { ...type.title, color: colors.ink, marginBottom: spacing.xs },
   followUpIntro: { ...type.caption, color: colors.inkSoft, marginBottom: spacing.lg },

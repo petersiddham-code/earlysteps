@@ -63,4 +63,10 @@ export interface ResultsView {
    * "Support activities can begin now" is a claim too strong for near-zero evidence.
    */
   recommendationTier: RecommendationTier | null;
+  /**
+   * Confidence for `recommendationTier` (issue #64: a recommendation shown with no
+   * confidence label can overstate certainty). Travels 1:1 with `recommendationTier` —
+   * null exactly when the tier is null, never present without it and vice versa.
+   */
+  recommendationConfidence: Confidence | null;
 }

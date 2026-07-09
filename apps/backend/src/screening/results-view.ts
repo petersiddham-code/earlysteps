@@ -31,6 +31,7 @@ import {
   type SupportLevelEstimate,
 } from '@earlysteps/shared-types';
 import {
+  deriveRecommendationConfidence,
   deriveRecommendationTier,
   hasSufficientOverallEvidence,
 } from '@earlysteps/scoring-engine';
@@ -90,5 +91,6 @@ export function toResultsView(
       gatedEstimate,
       sufficientOverall,
     ),
+    recommendationConfidence: deriveRecommendationConfidence(redFlags, gatedEstimate),
   };
 }

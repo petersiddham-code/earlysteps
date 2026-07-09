@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { RedFlag, SupportLevelEstimate } from '@earlysteps/shared-types';
-import { deriveRecommendationTier } from './recommendationTier.js';
+import {
+  deriveRecommendationConfidence,
+  deriveRecommendationTier,
+} from './recommendationTier.js';
 
 const AT = '2026-07-01T00:00:00.000Z';
 
@@ -79,5 +82,28 @@ describe('deriveRecommendationTier', () => {
         'Formal assessment strongly recommended soon',
       );
     });
+  });
+});
+
+describe('deriveRecommendationConfidence (issue #64)', () => {
+  it('is high for a red flag alone, with no estimate at all', () => {
+    expect(deriveRecommendationConfidence([flag('no_name_response')], null)).toBe('high');
+  });
+
+  it('is high for a red flag even when the estimate confidence is only medium — a hard rule match beats an averaged estimate', () => {
+    expect(
+      deriveRecommendationConfidence([flag('self_injury_risk')], estimate('mild')),
+    ).toBe('high');
+  });
+
+  it('matches the estimate confidence with no red flags, for every confidence level', () => {
+    for (const confidence of ['low', 'medium', 'high'] as const) {
+      const est: SupportLevelEstimate = { ...estimate('mild'), confidence };
+      expect(deriveRecommendationConfidence([], est)).toBe(confidence);
+    }
+  });
+
+  it('is null with no red flags and no estimate — matches deriveRecommendationTier returning null', () => {
+    expect(deriveRecommendationConfidence([], null)).toBeNull();
   });
 });
