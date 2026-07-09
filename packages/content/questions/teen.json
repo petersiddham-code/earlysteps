@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "locale": "en",
   "age_band": "teen",
   "questions": [
@@ -132,6 +132,41 @@
         }
       ],
       "hint": "Think about unexpected changes, not planned ones."
+    },
+    {
+      "id": "TE13",
+      "domain": "repetitive_behaviour",
+      "age_band": "teen",
+      "text": "Does [child] have movements or sounds they repeat — like rocking, pacing, hand or finger movements, or repeating words and phrases from shows or conversations?",
+      "type": "chip_multi_select",
+      "options": [
+        {
+          "id": "rocking_pacing",
+          "label": "Rocking or pacing"
+        },
+        {
+          "id": "hand_finger_movements",
+          "label": "Hand or finger movements"
+        },
+        {
+          "id": "repeating_phrases",
+          "label": "Repeating words, phrases, or scripts"
+        },
+        {
+          "id": "humming_sounds",
+          "label": "Humming or other repeated sounds"
+        },
+        {
+          "id": "something_else",
+          "label": "Something else"
+        },
+        {
+          "id": "none_noticed",
+          "label": "None I've noticed"
+        }
+      ],
+      "hint": "Many teens keep these private and relax into them at home — what you notice at home counts too.",
+      "allow_free_text": true
     },
     {
       "id": "TE6",
