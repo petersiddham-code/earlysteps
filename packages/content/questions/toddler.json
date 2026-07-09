@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "locale": "en",
   "age_band": "toddler",
   "questions": [
@@ -283,6 +283,10 @@
         {
           "id": "none",
           "label": "None of these"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
         }
       ],
       "hint": "Lots of toddlers do some of this sometimes — we're just building a picture."

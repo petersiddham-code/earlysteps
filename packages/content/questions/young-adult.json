@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -197,6 +197,10 @@
         {
           "id": "none_noticed",
           "label": "None noticed"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
         }
       ],
       "hint": "Pick any that apply — or none.",
