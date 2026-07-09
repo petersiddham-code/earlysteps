@@ -1,11 +1,12 @@
 /**
- * Unit tests for toResultsView — the single mapper every results consumer goes through.
+ * Unit tests for toResultsView — the single mapper every results consumer goes through
+ * (both the backend's persisted pipeline and mobile's guest/ephemeral pipeline, #63).
  * Pins the 0-answers wire shape reported in issue #32: a profile with no findings must
  * never reach a caregiver as "Support activities can begin now".
  */
 import { describe, it, expect } from 'vitest';
 import type { DomainProfile, RedFlag } from '@earlysteps/shared-types';
-import { toResultsView } from '../src/screening/results-view.js';
+import { toResultsView } from './resultsView.js';
 
 const COMPUTED_AT = '2026-07-02T00:00:00.000Z';
 
@@ -13,12 +14,14 @@ function emptyProfile(): DomainProfile {
   return { child_id: 'c1', computed_at: COMPUTED_AT, findings: [] };
 }
 
+const DOMAIN_CYCLE = ['social', 'communication', 'sensory', 'attention'] as const;
+
 function scoredProfile(answeredPerDomain: number, domains = 4): DomainProfile {
   return {
     child_id: 'c1',
     computed_at: COMPUTED_AT,
     findings: Array.from({ length: domains }, (_, i) => ({
-      domain: (['social', 'communication', 'sensory', 'attention'] as const)[i % 4],
+      domain: DOMAIN_CYCLE[i % DOMAIN_CYCLE.length]!,
       level: 'low' as const,
       score: 10,
       confidence: 'medium' as const,

@@ -92,6 +92,9 @@ importers:
       '@earlysteps/content':
         specifier: workspace:*
         version: link:../../packages/content
+      '@earlysteps/scoring-engine':
+        specifier: workspace:*
+        version: link:../../packages/scoring-engine
       '@earlysteps/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types

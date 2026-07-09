@@ -6,6 +6,7 @@ import {
   getFamily,
   updateConsent,
 } from './families';
+import { createGuestChild } from '../guest/guestStore';
 
 jest.mock('./client', () => ({
   apiClient: { get: jest.fn(), post: jest.fn(), patch: jest.fn() },
@@ -50,5 +51,21 @@ describe('families API wrappers', () => {
   it('getChild gets the nested child route', async () => {
     await getChild('f1', 'c1');
     expect(apiClient.get).toHaveBeenCalledWith('/families/f1/children/c1');
+  });
+
+  it('getChild reads the in-memory guest store instead of the network for a guest child (#63)', async () => {
+    const guestChild = createGuestChild({
+      family_id: 'f1',
+      nickname: 'Alex',
+      birth_month: 6,
+      birth_year: 2024,
+      age_band: 'toddler',
+      languages: ['English'],
+    });
+
+    const result = await getChild('f1', guestChild.id);
+
+    expect(result).toEqual(guestChild);
+    expect(apiClient.get).not.toHaveBeenCalled();
   });
 });

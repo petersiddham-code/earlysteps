@@ -2,20 +2,45 @@ import { Text, Pressable } from 'react-native';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SessionProvider, useSession } from './SessionContext';
+import { createGuestChild, getGuestChild } from '../guest/guestStore';
 
 function Probe() {
-  const { isLoading, familyId, childId, setFamilyId, setChildId, clearChildId, reset } =
-    useSession();
+  const {
+    isLoading,
+    familyId,
+    childId,
+    setFamilyId,
+    setChildId,
+    setGuestChildId,
+    clearChildId,
+    reset,
+  } = useSession();
   if (isLoading) return <Text>loading</Text>;
   return (
     <>
       <Text>familyId:{familyId ?? 'none'}</Text>
       <Text>childId:{childId ?? 'none'}</Text>
+      <Text testID="child-id">{childId ?? ''}</Text>
       <Pressable onPress={() => setFamilyId('f1')}>
         <Text>set family</Text>
       </Pressable>
       <Pressable onPress={() => setChildId('c1')}>
         <Text>set child</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => {
+          const guestChild = createGuestChild({
+            family_id: 'f1',
+            nickname: 'Alex',
+            birth_month: 6,
+            birth_year: 2024,
+            age_band: 'toddler',
+            languages: ['English'],
+          });
+          setGuestChildId(guestChild.id);
+        }}
+      >
+        <Text>set guest child</Text>
       </Pressable>
       <Pressable onPress={() => clearChildId()}>
         <Text>clear child</Text>
@@ -104,6 +129,54 @@ describe('SessionProvider / useSession', () => {
     await waitFor(() => expect(screen.getByText('familyId:none')).toBeTruthy());
     expect(screen.getByText('childId:none')).toBeTruthy();
     expect(await AsyncStorage.getItem('earlysteps.familyId')).toBeNull();
+  });
+
+  it('setGuestChildId updates state but never persists to on-device storage (issue #63)', async () => {
+    render(
+      <SessionProvider>
+        <Probe />
+      </SessionProvider>,
+    );
+    await screen.findByText('familyId:none');
+    fireEvent.press(screen.getByText('set guest child'));
+
+    await waitFor(() => expect(screen.getByText(/childId:guest:/)).toBeTruthy());
+    expect(await AsyncStorage.getItem('earlysteps.childId')).toBeNull();
+  });
+
+  it('clearChildId also forgets a guest child from the in-memory guest store (#63)', async () => {
+    render(
+      <SessionProvider>
+        <Probe />
+      </SessionProvider>,
+    );
+    await screen.findByText('familyId:none');
+    fireEvent.press(screen.getByText('set guest child'));
+    await waitFor(() => expect(screen.getByText(/childId:guest:/)).toBeTruthy());
+    const guestId = screen.getByTestId('child-id').props.children as string;
+
+    fireEvent.press(screen.getByText('clear child'));
+
+    await waitFor(() => expect(screen.getByText('childId:none')).toBeTruthy());
+    expect(() => getGuestChild(guestId)).toThrow();
+  });
+
+  it('reset also forgets a guest child from the in-memory guest store (#63)', async () => {
+    render(
+      <SessionProvider>
+        <Probe />
+      </SessionProvider>,
+    );
+    await screen.findByText('familyId:none');
+    fireEvent.press(screen.getByText('set family'));
+    fireEvent.press(screen.getByText('set guest child'));
+    await waitFor(() => expect(screen.getByText(/childId:guest:/)).toBeTruthy());
+    const guestId = screen.getByTestId('child-id').props.children as string;
+
+    fireEvent.press(screen.getByText('reset'));
+
+    await waitFor(() => expect(screen.getByText('childId:none')).toBeTruthy());
+    expect(() => getGuestChild(guestId)).toThrow();
   });
 
   it('throws if useSession is called outside a SessionProvider', () => {

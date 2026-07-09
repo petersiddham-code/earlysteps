@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@earlysteps/content": "workspace:*",
+    "@earlysteps/scoring-engine": "workspace:*",
     "@earlysteps/shared-types": "workspace:*",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "2.2.0",
