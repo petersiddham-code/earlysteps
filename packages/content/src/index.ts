@@ -11,4 +11,5 @@ export * from './followUps.js';
 export * from './resultCopy.js';
 export * from './redFlagCopy.js';
 export * from './consentCopy.js';
+export * from './domainResources.js';
 export * from './validateContent.js';

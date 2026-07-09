@@ -209,11 +209,27 @@ describe('ResultsScreen', () => {
     (getIntakeResponses as jest.Mock).mockResolvedValue([]);
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
 
-    // Appears twice: once in the derived "needs" list, once in the domain's TrafficLightBar.
-    expect(await screen.findAllByText('social interaction style')).toHaveLength(2);
+    // Appears three times: the derived "needs" list, the domain's TrafficLightBar, and its
+    // DomainResourcesCard section heading (issue #71).
+    expect(await screen.findAllByText('social interaction style')).toHaveLength(3);
     // "Low signs observed" domain (communication) should NOT show up as a need — only once,
     // in its own TrafficLightBar.
     expect(screen.getAllByText('communication differences')).toHaveLength(1);
+  });
+
+  it('shows trusted resource links for needs domains only, not the low-signs domain (issue #71)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByTestId('domain-resources-card');
+    const { resourcesForDomain } = jest.requireActual('@earlysteps/content');
+    for (const resource of resourcesForDomain('social')) {
+      expect(screen.getByTestId(`domain-resource-${resource.id}`)).toBeTruthy();
+    }
+    for (const resource of resourcesForDomain('communication')) {
+      expect(screen.queryByTestId(`domain-resource-${resource.id}`)).toBeNull();
+    }
   });
 
   it('shows the provenance line — what the results rest on and when (issue #22)', async () => {

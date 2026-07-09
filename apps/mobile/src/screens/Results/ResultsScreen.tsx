@@ -14,6 +14,7 @@ import {
   FOLLOW_UP_ANSWER_OPTIONS,
   isFreeTextAnswer,
   stripFreeTextPrefix,
+  type Domain,
   type FollowUpAnswer,
   type FollowUpSuggestion,
   type IntakeResponse,
@@ -39,6 +40,7 @@ import {
   TrafficLightBar,
   RedFlagBanner,
   CrisisSupportCard,
+  DomainResourcesCard,
 } from '../../components/index.js';
 import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
 
@@ -75,17 +77,24 @@ function deriveStrengths(responses: IntakeResponse[]): string[] {
 }
 
 /**
- * Deterministic placeholder for "top support needs" (product plan §9.3 eventually generates
- * this narrative via LLM — out of scope here): any domain that scored above "Low signs
- * observed", named with the approved respectful domain vocabulary. Not narrative, just a
- * direct, data-grounded list — never invents a claim beyond what was computed.
+ * Domains with a real (evidence-sufficient) level above "Low signs observed" — a "not enough
+ * information yet" domain is a gap, not a need (issue #22). Shared by the support-needs list
+ * and the resource links (issue #71), which are both keyed off the same set.
  */
-function deriveNeeds(results: ResultsView): string[] {
-  // Only domains with a real (evidence-sufficient) level can be named as support needs —
-  // a "not enough information yet" domain is a gap, not a need (issue #22).
+function needsDomains(results: ResultsView): Domain[] {
   return results.domains
     .filter((d) => d.status === 'scored' && d.label !== 'Low signs observed')
-    .map((d) => DOMAIN_DISPLAY_NAMES[d.domain]);
+    .map((d) => d.domain);
+}
+
+/**
+ * Deterministic placeholder for "top support needs" (product plan §9.3 eventually generates
+ * this narrative via LLM — out of scope here): named with the approved respectful domain
+ * vocabulary. Not narrative, just a direct, data-grounded list — never invents a claim beyond
+ * what was computed.
+ */
+function deriveNeeds(results: ResultsView): string[] {
+  return needsDomains(results).map((domain) => DOMAIN_DISPLAY_NAMES[domain]);
 }
 
 /**
@@ -317,6 +326,12 @@ export function ResultsScreen({ navigation, route }: Props) {
           <StrengthsFirstList strengths={strengths} needs={needs} />
         </View>
       )}
+
+      {/* Trusted resource links alongside support needs (issue #71): curated, static content
+          keyed off the same needs domains as the list above — never LLM-selected (that's a
+          deliberate future paid-tier feature per the issue, out of scope here). Renders
+          nothing on its own if there are no needs domains or none ship a resource yet. */}
+      <DomainResourcesCard domains={needsDomains(results)} />
 
       {/* No domains at all (0 scored answers, #32): drop the card rather than render an
           empty white box — the recommendation card below says "not enough information". */}
