@@ -195,6 +195,34 @@ export const redFlagCopySchema = z.object({
   urgent_resources: z.array(urgentResourceSchema).min(1),
 });
 
+/**
+ * A curated external resource link shown alongside a domain's support needs on Results
+ * (issue #71). Static and versioned, like every other content file — never LLM-selected or
+ * personalized (product plan §9 scope note on the issue: AI-matched resources are a future
+ * paid-tier feature, out of scope here). Reuses the same https-only shape as
+ * `urgentResourceSchema` rather than `kind`-branching on 'tel', since these are informational
+ * reading/viewing links, not one-tap crisis contacts.
+ */
+export const domainResourceSchema = z.object({
+  id: z.string().min(1),
+  domain: z.enum(DOMAINS),
+  value: z.string().refine((v) => /^https:\/\//.test(v), {
+    message: 'value must be an https:// URL',
+  }),
+  label: safeCopyNonEmpty,
+  description: safeCopyNonEmpty.optional(),
+  /** Publisher attribution shown to the caregiver (e.g. "CDC", "ASHA") — never anonymous. */
+  source: safeCopyNonEmpty,
+});
+
+export const domainResourcesFileSchema = z.object({
+  version: z.string(),
+  locale: z.string(),
+  needs_clinical_signoff: z.boolean(),
+  note: z.string(),
+  resources: z.array(domainResourceSchema).min(1),
+});
+
 const consentScopeCopySchema = z.object({
   label: safeCopyNonEmpty,
   explanation: safeCopyNonEmpty,
@@ -225,3 +253,5 @@ export type EvidenceFloors = z.infer<typeof evidenceFloorsSchema>;
 export type RedFlagCopy = z.infer<typeof redFlagCopySchema>;
 export type UrgentResource = z.infer<typeof urgentResourceSchema>;
 export type ConsentCopy = z.infer<typeof consentCopySchema>;
+export type DomainResource = z.infer<typeof domainResourceSchema>;
+export type DomainResourcesFile = z.infer<typeof domainResourcesFileSchema>;

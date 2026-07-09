@@ -1,0 +1,80 @@
+{
+  "version": "1.0.0",
+  "locale": "en",
+  "needs_clinical_signoff": true,
+  "note": "Additional resources on the Results page (issue #71). One general-audience external link per domain, from an established public-health, professional, or nonprofit body publishing free developmental guidance for families — never a single clinician, blog, or product vendor, and never autism-specific branding (this app never states or implies a diagnosis, and the linked orgs are chosen to match, covering the domain generally rather than any one condition). Every URL was live-checked at authoring time (2026-07-09) but needs advisor sign-off on source appropriateness before a release branch, plus a periodic live-link check thereafter (links can move). AI-matched, personalized resources are a deliberate future paid-tier feature per the issue text — this is a static, versioned list only, same as every other content file (CLAUDE.md §5).",
+  "resources": [
+    {
+      "id": "communication_asha_milestones",
+      "domain": "communication",
+      "value": "https://www.asha.org/public/developmental-milestones/communication-milestones/",
+      "label": "Communication milestones by age",
+      "description": "Free guidance from speech-language professionals on typical communication development and when to ask for an evaluation.",
+      "source": "American Speech-Language-Hearing Association (ASHA)"
+    },
+    {
+      "id": "social_cdc_milestones",
+      "domain": "social",
+      "value": "https://www.cdc.gov/act-early/milestones/index.html",
+      "label": "Social and emotional milestones by age",
+      "description": "A free, printable checklist of milestones from 2 months through 5 years, including social interaction.",
+      "source": "CDC — Learn the Signs. Act Early."
+    },
+    {
+      "id": "repetitive_behaviour_zerotothree_selfcontrol",
+      "domain": "repetitive_behaviour",
+      "value": "https://www.zerotothree.org/resource/developing-self-control-from-24-36-months/",
+      "label": "Helping young children build self-control",
+      "description": "Practical, non-judgemental tips on repeating/self-soothing behaviours and building self-control at home.",
+      "source": "Zero to Three"
+    },
+    {
+      "id": "sensory_star_institute_overview",
+      "domain": "sensory",
+      "value": "https://sensoryhealth.org/",
+      "label": "Understanding sensory processing",
+      "description": "An introduction to how children process sensory input and practical everyday support ideas.",
+      "source": "STAR Institute for Sensory Processing"
+    },
+    {
+      "id": "learning_understood_overview",
+      "domain": "learning",
+      "value": "https://www.understood.org/en/articles/what-are-learning-thinking-differences",
+      "label": "Understanding learning and thinking differences",
+      "description": "A plain-language explainer on learning differences and how families can support a child's own learning style.",
+      "source": "Understood.org"
+    },
+    {
+      "id": "attention_chadd_parents",
+      "domain": "attention",
+      "value": "https://chadd.org/for-parents/overview/",
+      "label": "Supporting a child's attention at home",
+      "description": "Parent-facing guidance and free training on attention and focus from a national nonprofit.",
+      "source": "CHADD"
+    },
+    {
+      "id": "motor_healthychildren_tool",
+      "domain": "motor",
+      "value": "https://www.healthychildren.org/English/MotorDelay/Pages/default.aspx",
+      "label": "Motor development tool",
+      "description": "A free tool from pediatricians to check in on gross and fine motor development.",
+      "source": "HealthyChildren.org (American Academy of Pediatrics)"
+    },
+    {
+      "id": "emotional_regulation_zerotothree_coregulation",
+      "domain": "emotional_regulation",
+      "value": "https://www.zerotothree.org/resource/it-takes-two-the-role-of-co-regulation-in-building-self-regulation-skills/",
+      "label": "Building emotional regulation skills together",
+      "description": "How caregivers can co-regulate with a child to build lasting self-regulation skills.",
+      "source": "Zero to Three"
+    },
+    {
+      "id": "daily_living_understood_toolkit",
+      "domain": "daily_living",
+      "value": "https://www.understood.org/en/articles/building-your-childs-life-skills-toolkit",
+      "label": "Free life-skills toolkit for families",
+      "description": "Downloadable tools for building everyday life and self-help skills at a child's own pace.",
+      "source": "Understood.org"
+    }
+  ]
+}

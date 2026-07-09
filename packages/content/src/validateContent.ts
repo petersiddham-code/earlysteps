@@ -8,6 +8,7 @@
  */
 import {
   CONSENT_SCOPES,
+  DOMAINS,
   FOLLOW_UP_ANSWER_OPTIONS,
   INSUFFICIENT_EVIDENCE_LABEL,
   RED_FLAG_TYPES,
@@ -26,6 +27,7 @@ import { EVIDENCE_FLOORS } from './evidenceFloors.js';
 import { RESULT_COPY } from './resultCopy.js';
 import { CONSENT_COPY } from './consentCopy.js';
 import { FOLLOW_UPS } from './followUps.js';
+import { DOMAIN_RESOURCES } from './domainResources.js';
 
 export interface ValidationResult {
   ok: boolean;
@@ -173,6 +175,26 @@ export function validateContent(): ValidationResult {
     }
     if (WEIGHTS.indicators.some((ind) => ind.question_id === fu.id)) {
       errors.push(`follow-ups: '${fu.id}' must not carry a scoring weight`);
+    }
+  }
+
+  // 7. Domain resources (issue #71): every domain has at least one curated resource link, no
+  //    duplicate ids, and no resource points a domain at a link filed under a different domain.
+  const resourcesByDomain = new Map<string, number>();
+  const resourceIds = new Set<string>();
+  for (const resource of DOMAIN_RESOURCES.resources) {
+    if (resourceIds.has(resource.id)) {
+      errors.push(`domain-resources: duplicate resource id '${resource.id}'`);
+    }
+    resourceIds.add(resource.id);
+    resourcesByDomain.set(
+      resource.domain,
+      (resourcesByDomain.get(resource.domain) ?? 0) + 1,
+    );
+  }
+  for (const domain of DOMAINS) {
+    if (!resourcesByDomain.get(domain)) {
+      errors.push(`domain-resources: missing resource link for domain '${domain}'`);
     }
   }
 

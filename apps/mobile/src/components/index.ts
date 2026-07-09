@@ -3,6 +3,7 @@ export * from './TrafficLightBar/TrafficLightBar';
 export * from './StrengthsFirstList/StrengthsFirstList';
 export * from './RedFlagBanner/RedFlagBanner';
 export * from './CrisisSupportCard/CrisisSupportCard';
+export * from './DomainResourcesCard/DomainResourcesCard';
 export * from './ConsentToggle/ConsentToggle';
 export * from './SteppingStones/SteppingStones';
 export * from './PrimaryButton/PrimaryButton';
