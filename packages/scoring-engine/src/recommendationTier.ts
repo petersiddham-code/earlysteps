@@ -20,6 +20,7 @@
  */
 import {
   URGENT_RED_FLAG_TYPES,
+  type Confidence,
   type RedFlag,
   type SupportLevelEstimate,
 } from '@earlysteps/shared-types';
@@ -44,4 +45,26 @@ export function deriveRecommendationTier(
   if (supportEstimate?.level === 'high') return 'Formal assessment is recommended';
 
   return 'Support activities can begin now';
+}
+
+/**
+ * The confidence a caregiver should read next to whatever `deriveRecommendationTier`
+ * returned (issue #64: a recommendation with no confidence beside it can overstate
+ * certainty). Deliberately mirrors that function's branching — pass the SAME
+ * (already gate-checked) `supportEstimate` used there — so a null tier and a null
+ * confidence always travel together and never contradict each other.
+ *
+ * PLACEHOLDER HEURISTIC pending clinical review (same status as the tier crosswalk
+ * above, see docs/clinical-review/2026-07-09-recommendation-confidence.md): a red flag
+ * is a hard rule match on one explicit answer, not a weighted average, so the tier it
+ * forces is reported at HIGH confidence regardless of how thin the rest of the intake
+ * is — the alternative (borrowing the domain estimate's confidence) would let a sparse
+ * questionnaire understate a serious sign the caregiver stated plainly.
+ */
+export function deriveRecommendationConfidence(
+  redFlags: RedFlag[],
+  supportEstimate: SupportLevelEstimate | null,
+): Confidence | null {
+  if (redFlags.length > 0) return 'high';
+  return supportEstimate?.confidence ?? null;
 }

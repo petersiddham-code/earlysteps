@@ -82,6 +82,9 @@ describe('screening pipeline — intake -> scoring -> results', () => {
     ).toBe(true);
     expect(view.redFlagTypes).toEqual([]);
     expect(view.recommendationTier).toBe('Support activities can begin now');
+    // Issue #64: no red flags, so the recommendation's confidence is the support
+    // estimate's own confidence — never left blank.
+    expect(view.recommendationConfidence).not.toBeNull();
     expect(view.insufficientEvidenceOverall).toBe(false);
     // Provenance (issue #22): the view says what it rests on.
     expect(view.basedOnAnswers).toBe(reassuringBatch.length);
@@ -98,6 +101,8 @@ describe('screening pipeline — intake -> scoring -> results', () => {
 
     expect(view.redFlagTypes).toContain('no_name_response');
     expect(view.recommendationTier).toBe('Formal assessment is recommended');
+    // Issue #64: a red-flag-forced recommendation is always high confidence.
+    expect(view.recommendationConfidence).toBe('high');
     const social = view.domains.find((d) => d.domain === 'social');
     // 3 answers in the social domain — at the per-domain floor, so the level shows.
     expect(social).toMatchObject({ status: 'scored', label: 'Many signs observed' });
@@ -114,6 +119,9 @@ describe('screening pipeline — intake -> scoring -> results', () => {
     // …but red flags are EXEMPT (CLAUDE.md §2 rule 8): the flag surfaces and forces a tier.
     expect(view.redFlagTypes).toContain('self_injury_risk');
     expect(view.recommendationTier).toBe('Formal assessment strongly recommended soon');
+    // Issue #64: still high confidence even though the overall evidence floor was
+    // never met — the red flag alone earns it, not diluted by thin domain evidence.
+    expect(view.recommendationConfidence).toBe('high');
   });
 
   it('never leaks a raw numeric score on any domain entry (product plan §4.4)', async () => {
@@ -296,6 +304,7 @@ describe('screening pipeline — intake -> scoring -> results', () => {
       ]);
       expect(view.supportLevel).toBeNull();
       expect(view.recommendationTier).toBeNull();
+      expect(view.recommendationConfidence).toBeNull();
       expect(view.insufficientEvidenceOverall).toBe(true);
       expect(view.basedOnAnswers).toBe(1);
       // The disclaimer still ships with the gated view (CLAUDE.md §2 rule 5).
@@ -358,6 +367,7 @@ describe('screening pipeline — intake -> scoring -> results', () => {
       expect(view.basedOnAnswers).toBe(1);
       expect(view.insufficientEvidenceOverall).toBe(true);
       expect(view.recommendationTier).toBeNull();
+      expect(view.recommendationConfidence).toBeNull();
     });
 
     it('fails closed for snapshots computed before the gate existed (no sufficiency markers)', async () => {
@@ -391,6 +401,7 @@ describe('screening pipeline — intake -> scoring -> results', () => {
       // The pre-gate estimate must never reach a caregiver.
       expect(view.supportLevel).toBeNull();
       expect(view.recommendationTier).toBeNull();
+      expect(view.recommendationConfidence).toBeNull();
       expect(view.insufficientEvidenceOverall).toBe(true);
     });
   });
