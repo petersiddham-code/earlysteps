@@ -334,6 +334,47 @@ describe('ResultsScreen', () => {
     expect(screen.queryByText(/couldn't load your results/i)).toBeNull();
   });
 
+  it('shows the not-enough-information state after an all-skipped submit instead of bouncing to Question 1 (#53)', async () => {
+    (getResults as jest.Mock).mockRejectedValue(
+      new ApiError(404, { message: 'No computed results yet for child c1' }),
+    );
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(
+      <ResultsScreen
+        navigation={navigation}
+        route={{ params: { emptySubmit: true } } as never}
+      />,
+    );
+
+    expect(await screen.findByTestId('empty-results-state')).toBeTruthy();
+    // The honest gate state, with the disclaimer (§2 rule 5) — not a silent reset.
+    expect(screen.getByText(SCREENING_DISCLAIMER)).toBeTruthy();
+    expect(screen.getByTestId('insufficient-overall-label')).toBeTruthy();
+    expect(navigation.replace).not.toHaveBeenCalled();
+    expect(screen.queryByText(/couldn't load your results/i)).toBeNull();
+  });
+
+  it('offers every path forward from the empty state: answer more, new questions, permissions (#53)', async () => {
+    (getResults as jest.Mock).mockRejectedValue(
+      new ApiError(404, { message: 'No computed results yet for child c1' }),
+    );
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(
+      <ResultsScreen
+        navigation={navigation}
+        route={{ params: { emptySubmit: true } } as never}
+      />,
+    );
+    await screen.findByTestId('empty-results-state');
+
+    fireEvent.press(screen.getByTestId('answer-more-button'));
+    expect(navigation.replace).toHaveBeenCalledWith('Questionnaire');
+    expect(screen.getByTestId('new-questions-button')).toBeTruthy();
+    expect(screen.getByTestId('permissions-button')).toBeTruthy();
+  });
+
   it('starts a new set of questions: forgets the child, then child details (#20)', async () => {
     (getResults as jest.Mock).mockResolvedValue(RESULTS);
     (getIntakeResponses as jest.Mock).mockResolvedValue([]);
