@@ -1,6 +1,7 @@
 # 2026-07-10 — Red-flag confidence note on Results (issue #70)
 
-**Content version:** result-copy 1.3.0 (one new field, no existing wording changed)
+**Content version:** result-copy 1.3.1 (one new field, wording corrected once post-QA; no
+other existing wording changed)
 **Status:** ⛔ awaiting advisor sign-off (same open question as
 `2026-07-09-recommendation-confidence.md`, which this builds on)
 
@@ -28,7 +29,7 @@ line, shown only in the one case that can read as contradictory:
 
 - New `red_flag_confidence_note` field in `packages/content/result-copy/labels.json`
   (schema in `packages/content/src/schema.ts`), a single sentence: *"This confidence comes
-  from a clear, direct answer you gave — not from the area scores above, which is why the
+  from a clear, direct answer you gave — not from the area details above, which is why the
   two can look different on this screen."*
 - Rendered on `ResultsScreen` immediately below the recommendation confidence line,
   gated on `results.redFlagTypes.length > 0` — the exact condition under which
@@ -49,6 +50,22 @@ separate clinical call (already tracked and unresolved in `2026-07-09-...md`). A
 short explanation is the smallest change that resolves the "looks contradictory" complaint
 without pre-empting the advisor's answer on the heuristic itself — if the advisor instead
 wants the heuristic changed, this note is simply removed or reworded alongside that change.
+
+## Post-QA wording fix (1.3.0 → 1.3.1)
+
+QA on PR #72 reproduced a case the first draft's wording didn't fit: a Teen-band child
+with only the severe-sleep question answered (`TE14 = significant_struggles`) triggers
+the `severe_sleep` red flag, but the `emotional_regulation` domain it maps to has only one
+answered question — below the per-domain evidence floor — so it renders as **"Not enough
+information yet"**, not a scored level with its own confidence. The 1.3.0 wording said
+"not from the area **scores** above," which reads oddly (arguably worse than the original
+contradiction) when there is no score above at all, only a gated "not enough information"
+state.
+
+Fix: reworded "area scores" → "area details" — accurate whether the domain above shows a
+scored confidence or the gated state, without adding a second sentence or a conditional
+branch in the component. No other wording changed; `red-flag-confidence-note` still gates
+on `redFlagTypes.length > 0` only, unconditional on domain status.
 
 ## What advisor sign-off should confirm
 

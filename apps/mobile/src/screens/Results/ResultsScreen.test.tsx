@@ -350,6 +350,10 @@ describe('ResultsScreen', () => {
     expect(screen.getByTestId('recommendation-confidence')).toHaveTextContent(
       'Confidence: high',
     );
+    // Issue #70 (found in QA on PR #72): the domain above is gated to "Not enough
+    // information yet" — no score at all, let alone a lower one — so the note must still
+    // show and must not claim there's a "score" to contrast against.
+    expect(screen.getByTestId('red-flag-confidence-note')).toBeTruthy();
     // The tier replaces the "not enough info" next-step copy — never both, they contradict.
     expect(screen.queryByTestId('insufficient-overall-detail')).toBeNull();
     // Domains are still gated, so the path to more answers stays offered (#42).
