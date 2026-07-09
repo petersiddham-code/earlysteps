@@ -1,7 +1,7 @@
 # 2026-07-09 — Recommendation confidence surfaced end-to-end (issue #64)
 
 **Content version:** none (no wording, floor, or weight changed — new field + new heuristic only)
-**Status:** ⛔ awaiting advisor sign-off (the red-flag-implies-high-confidence heuristic below)
+**Status:** ✅ signed off — Peter Siddham, 2026-07-09 (see "Advisor sign-off" below)
 
 ## What issue #64 found
 
@@ -61,3 +61,10 @@ entirely for flag-driven tiers.
 No result-copy wording, no evidence floor, no scoring weight, no red-flag trigger
 definition. `Confidence: low/medium/high` uses the existing approved `Confidence`
 vocabulary (CLAUDE.md §2 rule 3) — no new label was invented.
+
+## Advisor sign-off (2026-07-09, Peter Siddham)
+
+Confirmed: **high confidence is the right framing** for a red-flag-forced recommendation.
+A red flag is a direct rule match on one explicit answer, not a weighted average, so it
+should not be diluted by thin domain evidence — matches CLAUDE.md §2 rule 8. Keep the
+heuristic as implemented; no change requested to `deriveRecommendationConfidence`.
