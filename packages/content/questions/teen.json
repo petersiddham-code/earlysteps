@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "locale": "en",
   "age_band": "teen",
   "questions": [
@@ -163,6 +163,10 @@
         {
           "id": "none_noticed",
           "label": "None I've noticed"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
         }
       ],
       "hint": "Many teens keep these private and relax into them at home — what you notice at home counts too.",
@@ -194,6 +198,10 @@
         {
           "id": "none_noticed",
           "label": "None noticed"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
         }
       ],
       "hint": "Pick any that apply — or none.",
