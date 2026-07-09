@@ -150,6 +150,29 @@ export const evidenceFloorsSchema = z.object({
   min_scored_answers_overall: z.number().int().positive(),
 });
 
+/**
+ * A one-tap crisis resource (product plan §10 rule 10): something the caregiver can act on
+ * with a single tap — a phone number to dial or a page to open — never bare prose. The value
+ * shape is tied to the kind so a typo can't ship a dead tap target.
+ */
+export const urgentResourceSchema = z
+  .object({
+    id: z.string().min(1),
+    kind: z.enum(['tel', 'url']),
+    /** Phone number (digits, +, spaces) for 'tel'; https URL for 'url'. */
+    value: z.string().min(1),
+    label: safeCopyNonEmpty,
+    description: safeCopyNonEmpty.optional(),
+  })
+  .refine(
+    (r) =>
+      r.kind === 'url' ? /^https:\/\//.test(r.value) : /^[+\d][\d\s-]*$/.test(r.value),
+    {
+      message:
+        "value must be an https:// URL for kind 'url' or a phone number for kind 'tel'",
+    },
+  );
+
 /** Red-flag escalation copy (product plan §4.8): calm, non-alarmist, never diagnostic. */
 export const redFlagCopySchema = z.object({
   version: z.string(),
@@ -157,9 +180,11 @@ export const redFlagCopySchema = z.object({
   needs_clinical_signoff: z.boolean(),
   note: z.string(),
   base_message: safeCopyNonEmpty,
-  next_steps_heading: safeCopyNonEmpty,
   urgent_resource_heading: safeCopyNonEmpty,
   urgent_resource_message: safeCopyNonEmpty,
+  // At least one one-tap resource must always ship (product plan §10 rule 10) — an urgent
+  // block with nothing tappable under it is exactly the gap issue #50 flagged.
+  urgent_resources: z.array(urgentResourceSchema).min(1),
 });
 
 const consentScopeCopySchema = z.object({
@@ -190,4 +215,5 @@ export type Indicator = z.infer<typeof indicatorSchema>;
 export type ResultCopy = z.infer<typeof resultCopySchema>;
 export type EvidenceFloors = z.infer<typeof evidenceFloorsSchema>;
 export type RedFlagCopy = z.infer<typeof redFlagCopySchema>;
+export type UrgentResource = z.infer<typeof urgentResourceSchema>;
 export type ConsentCopy = z.infer<typeof consentCopySchema>;
