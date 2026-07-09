@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "locale": "en",
   "age_band": "primary",
   "questions": [
@@ -429,6 +429,32 @@
         }
       ],
       "hint": "Pick what you see most of the time."
+    },
+    {
+      "id": "PR17",
+      "domain": "emotional_regulation",
+      "age_band": "primary",
+      "text": "How is [child] sleeping most nights?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "sleeps_well",
+          "label": "Sleeps well"
+        },
+        {
+          "id": "some_difficulty",
+          "label": "Some difficulty falling/staying asleep"
+        },
+        {
+          "id": "significant_struggles",
+          "label": "Significant sleep struggles"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Pick what happens most nights — there's no wrong answer here."
     }
   ]
 }

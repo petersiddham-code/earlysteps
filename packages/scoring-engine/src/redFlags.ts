@@ -103,10 +103,17 @@ export function checkSevereFeeding(responses: IntakeResponse[]): EvidenceRef[] {
   return refs;
 }
 
+/** Universal sleep question ids, one per age band (issue #65 — was toddler-only). */
+const SEVERE_SLEEP_QS = ['T15', 'P21', 'PR17', 'TE14', 'YA12'];
+
 /** Severe sleep disruption. */
 export function checkSevereSleep(responses: IntakeResponse[]): EvidenceRef[] {
-  const t15 = find(responses, 'T15');
-  return answerEquals(t15, 'significant_struggles') ? [evidence(t15!)] : [];
+  const refs: EvidenceRef[] = [];
+  for (const questionId of SEVERE_SLEEP_QS) {
+    const r = find(responses, questionId);
+    if (answerEquals(r, 'significant_struggles')) refs.push(evidence(r!));
+  }
+  return refs;
 }
 
 /** Sudden significant behaviour change. */

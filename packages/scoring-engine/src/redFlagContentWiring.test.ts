@@ -78,7 +78,12 @@ describe('every red-flag rule references real shipped questions and options', ()
     expectQuestionWithOptions('P1', 'not_yet_talking'); // no functional communication (preschool)
     expectQuestionWithOptions('T14', 'so_few_worried_growth'); // severe feeding
     expectQuestionWithOptions('P16', 'so_few_worried_growth');
-    expectQuestionWithOptions('T15', 'significant_struggles'); // severe sleep
+    // severe sleep — one question per age band (issue #65)
+    expectQuestionWithOptions('T15', 'significant_struggles');
+    expectQuestionWithOptions('P21', 'significant_struggles');
+    expectQuestionWithOptions('PR17', 'significant_struggles');
+    expectQuestionWithOptions('TE14', 'significant_struggles');
+    expectQuestionWithOptions('YA12', 'significant_struggles');
   });
 
   it('every follow-up-confirmation id the rules read exists in shipped content with a "yes" option (issue #26)', () => {

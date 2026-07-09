@@ -43,11 +43,14 @@ Weighted (scoring-eligible) questions per domain each band can be asked, as of w
 | sensory | 4 | 2 • | 1 • | 1 • | 1 • |
 | repetitive_behaviour | 2 • | 3 | 3 | 2 • (3 after TE13, PR #60) | 2 • |
 | attention | 1 • | 1 • | 1 • | — | — |
-| emotional_regulation | 1 • | — | 1 • | 2 • | 2 • |
+| emotional_regulation | 1 • | 1 • (0 before P21, #65) | 2 • (1 • before PR17, #65) | 3 (2 • before TE14, #65) | 3 (2 • before YA12, #65) |
 | learning | — | 1 • | 1 • | 1 • | — |
 | daily_living | — | — | 1 • | 1 • | 1 • |
 
 With the fix these sparse pairs surface (at low confidence) once fully answered — but the
 real remedy is **more questions per sparse domain per band**, especially teen/young-adult,
 per product-plan requirement #5. That is content authoring needing advisor input; tracked
-in `content-gaps.md`. TE13 (issue #54, PR #60) already adds one teen repetitive item.
+in `content-gaps.md`. TE13 (issue #54, PR #60) already adds one teen repetitive item. The
+sleep questions added for issue #65 (P21/PR17/TE14/YA12) were authored to close the
+`severe_sleep` red-flag coverage gap, not primarily to fix this table — but they land in
+`emotional_regulation` and happen to bring teen and young_adult up to the floor there.
