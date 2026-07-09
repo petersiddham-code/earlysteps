@@ -57,6 +57,10 @@ what a red-flag-free `SupportLevelEstimate` of `high` should map to. The current
 support estimate alone also recommends formal assessment — is a reasonable interpretation, not
 a validated clinical threshold. Needs advisor sign-off before this drives real backend results.
 
+Same file, same status (issue #64, 2026-07-09): `deriveRecommendationConfidence` reports
+**high** confidence for any red-flag-forced tier, regardless of the rest of the intake's
+evidence — see `2026-07-09-recommendation-confidence.md`. Also pending sign-off.
+
 ## 6. Family/child onboarding + consent — partially closed
 
 `apps/backend` now has a `FamiliesModule`: `POST /families`, `GET /families/:familyId`,
@@ -123,3 +127,16 @@ availability so these domains can surface (at low confidence) once fully answere
 the honest remedy is authoring more questions per sparse domain per band (product-plan
 requirement #5), which needs advisor input. TE13 (issue #54) added one teen repetitive
 item; the rest remain open.
+
+## 11. Recommendation confidence only exists on the mobile Results screen (issue #64)
+
+A PR reviewer asked whether the web results page, generated clinician reports, and the
+coaching chatbot also render confidence beside every finding. Checked: none of those
+surfaces are built yet — `apps/admin` is an explicit placeholder (README + package.json
+only, "Not implemented in the foundation phase"), the PDF clinician-report service doesn't
+exist (only the prompt spec at `src/ai/prompts/clinician-report.md`), and the coaching
+chatbot is likewise prompt-only (`src/ai/prompts/coaching-chatbot.md`). `ResultsView.
+recommendationConfidence` (added in #64) is the only place this data currently reaches a
+caregiver, via `apps/mobile`'s Results screen. Whoever builds any of those surfaces next
+must carry the same convention forward — confidence beside every finding/recommendation,
+never a bare label.
