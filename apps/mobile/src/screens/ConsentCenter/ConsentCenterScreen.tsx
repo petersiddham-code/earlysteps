@@ -12,7 +12,13 @@ import { CONSENT_SCOPES, type ConsentScope, type Family } from '@earlysteps/shar
 import { CONSENT_COPY } from '@earlysteps/content';
 import { ConsentToggle } from '../../components/ConsentToggle/ConsentToggle.js';
 import { PrimaryButton } from '../../components/PrimaryButton/PrimaryButton.js';
-import { createFamily, getChild, getFamily, updateConsent } from '../../api/index.js';
+import {
+  createFamily,
+  deleteFamily,
+  getChild,
+  getFamily,
+  updateConsent,
+} from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { colors, spacing, type } from '../../theme/index.js';
@@ -32,12 +38,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ConsentCenter'>;
  * refusal. The other three scopes stay genuinely optional.
  */
 export function ConsentCenterScreen({ navigation }: Props) {
-  const { familyId, childId, setFamilyId } = useSession();
+  const { familyId, childId, setFamilyId, reset } = useSession();
   const [family, setFamily] = useState<Family | null>(null);
   const [childName, setChildName] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [pendingScope, setPendingScope] = useState<ConsentScope | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +84,27 @@ export function ConsentCenterScreen({ navigation }: Props) {
       cancelled = true;
     };
   }, [familyId, childId]);
+
+  /**
+   * Right-to-erasure (issue #55, product plan Screen 13): permanently deletes the family
+   * and everything under it server-side, then forgets the local session and returns to a
+   * fresh start. Reached only through the explicit confirmation step below.
+   */
+  const handleDeleteEverything = async () => {
+    if (!family || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteFamily(family.id);
+      await reset();
+      navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
+    } catch {
+      setDeleteError(
+        "We couldn't delete your data. Please check your connection and try again.",
+      );
+      setDeleting(false);
+    }
+  };
 
   const handleToggle = async (scope: ConsentScope, granted: boolean) => {
     if (!family) return;
@@ -148,6 +178,49 @@ export function ConsentCenterScreen({ navigation }: Props) {
           }}
         />
       </View>
+
+      {/* Right-to-erasure (issue #55, product plan Screen 13). Two deliberate taps: the
+          first only reveals the confirmation, and the confirmation spells out exactly
+          what disappears before anything is sent. Copy avoids alarm styling but is
+          unambiguous about permanence. */}
+      <View style={styles.deleteSection}>
+        <Text style={styles.deleteHeading}>Delete everything</Text>
+        <Text style={styles.deleteBody}>
+          Permanently removes everything saved here — the child details, all answers, and
+          all results. This cannot be undone.
+        </Text>
+        {!confirmingDelete ? (
+          <PrimaryButton
+            label="Delete everything"
+            variant="quiet"
+            onPress={() => setConfirmingDelete(true)}
+            testID="delete-everything-button"
+          />
+        ) : (
+          <View testID="delete-confirm-block">
+            <Text style={styles.deleteConfirmText}>
+              Are you sure? Everything will be gone for good, and we can't bring it back.
+            </Text>
+            <PrimaryButton
+              label="Yes, delete everything"
+              loading={deleting}
+              onPress={handleDeleteEverything}
+              testID="confirm-delete-button"
+            />
+            <PrimaryButton
+              label="Keep my data"
+              variant="quiet"
+              disabled={deleting}
+              onPress={() => {
+                setConfirmingDelete(false);
+                setDeleteError(null);
+              }}
+              testID="cancel-delete-button"
+            />
+          </View>
+        )}
+        {deleteError && <Text style={styles.deleteErrorText}>{deleteError}</Text>}
+      </View>
     </ScrollView>
   );
 }
@@ -195,5 +268,31 @@ const styles = StyleSheet.create({
   },
   continueButton: {
     marginTop: spacing.xxl,
+  },
+  deleteSection: {
+    marginTop: spacing.xxxl,
+    paddingTop: spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: colors.disabled,
+  },
+  deleteHeading: {
+    ...type.bodyStrong,
+    color: colors.ink,
+    marginBottom: spacing.xs,
+  },
+  deleteBody: {
+    ...type.caption,
+    color: colors.inkSoft,
+    marginBottom: spacing.md,
+  },
+  deleteConfirmText: {
+    ...type.body,
+    color: colors.ink,
+    marginBottom: spacing.md,
+  },
+  deleteErrorText: {
+    marginTop: spacing.sm,
+    ...type.caption,
+    color: colors.inkSoft,
   },
 });

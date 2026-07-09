@@ -121,4 +121,29 @@ export class PrismaFamiliesRepository implements FamiliesRepository {
     const flags = child.family.consentFlags as ConsentFlags;
     return flags[scope] === true;
   }
+
+  async deleteFamily(familyId: string): Promise<boolean> {
+    const existing = await this.prisma.family.findUnique({ where: { id: familyId } });
+    if (!existing) return false;
+    // One atomic transaction: either everything under the family is gone, or nothing is.
+    // Every child-linked table is listed explicitly (no ON DELETE CASCADE in the schema)
+    // so adding a new child-linked model without updating this purge fails loudly on the
+    // FK constraint instead of silently orphaning data.
+    const ofFamily = { child: { familyId } };
+    await this.prisma.$transaction([
+      this.prisma.intakeResponseRecord.deleteMany({ where: ofFamily }),
+      this.prisma.activityResultRecord.deleteMany({ where: ofFamily }),
+      this.prisma.domainProfileRecord.deleteMany({ where: ofFamily }),
+      this.prisma.supportLevelEstimateRecord.deleteMany({ where: ofFamily }),
+      this.prisma.redFlagRecord.deleteMany({ where: ofFamily }),
+      this.prisma.followUpSuggestionRecord.deleteMany({ where: ofFamily }),
+      this.prisma.supportPlanRecord.deleteMany({ where: ofFamily }),
+      this.prisma.progressLogRecord.deleteMany({ where: ofFamily }),
+      this.prisma.mediaAssetRecord.deleteMany({ where: ofFamily }),
+      this.prisma.reportRecord.deleteMany({ where: ofFamily }),
+      this.prisma.child.deleteMany({ where: { familyId } }),
+      this.prisma.family.delete({ where: { id: familyId } }),
+    ]);
+    return true;
+  }
 }

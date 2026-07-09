@@ -73,4 +73,15 @@ export class FamiliesService {
     }
     return child;
   }
+
+  /**
+   * Right-to-erasure (issue #55, product plan Screen 13): permanently removes the family
+   * and everything stored under it — children, answers, computed profiles, red flags,
+   * follow-ups. Irreversible; the client is expected to have shown its own confirmation
+   * step before calling.
+   */
+  async deleteFamily(familyId: string): Promise<void> {
+    const deleted = await this.repository.deleteFamily(familyId);
+    if (!deleted) throw new NotFoundException(`No family found with id ${familyId}`);
+  }
 }

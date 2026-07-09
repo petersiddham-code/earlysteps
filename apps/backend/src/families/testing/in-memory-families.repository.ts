@@ -43,6 +43,25 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
   private readonly families = new Map<string, Family>();
   private readonly children = new Map<string, Child>();
 
+  /**
+   * Mirrors the production purge (issue #55): the Prisma implementation deletes every
+   * child-linked record in the same transaction, but the in-memory screening data lives in
+   * a SEPARATE test double — tests wire this hook to it so deleteFamily behaves like the
+   * real thing end-to-end.
+   */
+  onDeleteChildren: ((childIds: string[]) => Promise<void>) | null = null;
+
+  async deleteFamily(familyId: string): Promise<boolean> {
+    if (!this.families.has(familyId)) return false;
+    const childIds = [...this.children.values()]
+      .filter((child) => child.family_id === familyId)
+      .map((child) => child.id);
+    if (this.onDeleteChildren) await this.onDeleteChildren(childIds);
+    for (const id of childIds) this.children.delete(id);
+    this.families.delete(familyId);
+    return true;
+  }
+
   async createFamily(input: CreateFamilyInput): Promise<Family> {
     const family: Family = {
       id: generateId('family'),

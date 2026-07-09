@@ -20,7 +20,7 @@ export class ApiError extends Error {
 }
 
 async function request<T>(
-  method: 'GET' | 'POST' | 'PATCH',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<T> {
@@ -41,4 +41,6 @@ export const apiClient = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
+  // A 204 has no body — request() already tolerates that (json stays undefined).
+  delete: (path: string) => request<void>('DELETE', path),
 };
