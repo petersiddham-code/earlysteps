@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "locale": "en",
   "age_band": "preschool",
   "questions": [
@@ -625,6 +625,58 @@
       ],
       "hint": "Lots of children enjoy some of this — we're just building a picture.",
       "allow_free_text": true
+    },
+    {
+      "id": "P23",
+      "domain": "attention",
+      "age_band": "preschool",
+      "text": "Can [child] switch from one activity to another when you ask, without a big struggle?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "with_some_resistance",
+          "label": "With some resistance"
+        },
+        {
+          "id": "very_hard",
+          "label": "Very hard to switch"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Transitions between activities are hard for a lot of kids — pick what happens most days."
+    },
+    {
+      "id": "P24",
+      "domain": "attention",
+      "age_band": "preschool",
+      "text": "Does [child] point out or show you things they find interesting, like \"Look at that!\", wanting you to look too?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about wanting to share something exciting with you, not asking for help."
     }
   ]
 }

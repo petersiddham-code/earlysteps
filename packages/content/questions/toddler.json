@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "locale": "en",
   "age_band": "toddler",
   "questions": [
@@ -582,6 +582,58 @@
         }
       ],
       "hint": "Coming to you in their own way — reaching, leaning, or bringing a blanket — counts."
+    },
+    {
+      "id": "T22",
+      "domain": "attention",
+      "age_band": "toddler",
+      "text": "When [child] is absorbed in one toy or activity, how easily can you redirect them to something else?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_easily",
+          "label": "Easily"
+        },
+        {
+          "id": "with_some_effort",
+          "label": "Takes some effort"
+        },
+        {
+          "id": "very_hard",
+          "label": "Very hard to redirect"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about switching them from something they love to something new."
+    },
+    {
+      "id": "T23",
+      "domain": "attention",
+      "age_band": "toddler",
+      "text": "Does [child] bring or show you toys and things just to share them with you, not because they need help?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Holding something up to show you, even without words, counts."
     }
   ]
 }

@@ -138,7 +138,7 @@ young_adult as a side effect of the sleep-question work. Issue #78 closed sensor
 preschool/primary/teen/young_adult (the priority-1 batch below) — see
 `2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`. The rest remain open.
 
-### Current state (post #78)
+### Current state (post #79)
 
 | Domain | toddler | preschool | primary | teen | young_adult |
 |---|---|---|---|---|---|
@@ -146,7 +146,7 @@ preschool/primary/teen/young_adult (the priority-1 batch below) — see
 | communication | 4 ✅ | 6 ✅ | 3 ✅ | **2 •** | **2 •** |
 | sensory | 4 ✅ | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) |
 | repetitive_behaviour | **2 •** | 3 ✅ | 3 ✅ | 3 ✅ (closed by TE13) | **2 •** |
-| attention | **1 •** | **1 •** | **1 •** | — | — |
+| attention | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | — | — |
 | emotional_regulation | **1 •** | **1 •** | **2 •** | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
 | learning | — | **1 •** | **1 •** | **1 •** | — |
 | daily_living | — | — | **1 •** | **1 •** | **1 •** |
@@ -169,8 +169,10 @@ be masking-aware in their hints, the precedent set by TE13.
    drop-off in the matrix (toddler 4 → 1–2 everywhere else), hits 4 of 5 bands. Highest
    priority.~~ **Closed by issue #78** — P22, PR18/PR19, TE15/TE16, YA13/YA14, see
    `2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`.
-2. **Attention** (toddler +2, preschool +2, primary +2 = 6 items) — thin on every band it's
-   currently asked in. Now highest priority.
+2. ~~**Attention** (toddler +2, preschool +2, primary +2 = 6 items) — thin on every band
+   it's currently asked in. Now highest priority.~~ **Closed by issue #79** — T22/T23,
+   P23/P24, PR20/PR21, see
+   `2026-07-10-attention-coverage-toddler-preschool-primary.md`.
 3. **Communication** (teen +1, young_adult +1 = 2 items) — smallest lift, good quick win.
 4. **Repetitive_behaviour** (toddler +1, young_adult +1 = 2 items) — residual after TE13.
 5. **Emotional_regulation** (toddler +2, preschool +2, primary +1 = 5 items) — residual

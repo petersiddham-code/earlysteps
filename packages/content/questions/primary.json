@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "locale": "en",
   "age_band": "primary",
   "questions": [
@@ -528,6 +528,58 @@
         }
       ],
       "hint": "This is about how much pain or temperature registers — not about how tolerant they choose to be."
+    },
+    {
+      "id": "PR20",
+      "domain": "attention",
+      "age_band": "primary",
+      "text": "Can [child] switch focus between tasks — like stopping a game to listen when you need them for something — without a lot of prompting?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "with_some_prompting",
+          "label": "With some prompting"
+        },
+        {
+          "id": "very_hard",
+          "label": "Very hard to switch"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about shifting attention when needed, separate from staying focused on one thing."
+    },
+    {
+      "id": "PR21",
+      "domain": "attention",
+      "age_band": "primary",
+      "text": "Does [child] point out or comment on things they notice, wanting you to look or react too — like showing you something funny or interesting?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Sharing something because it's interesting to them, not just to get help, is what we're asking about."
     }
   ]
 }

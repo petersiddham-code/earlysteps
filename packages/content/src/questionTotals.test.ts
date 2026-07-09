@@ -37,6 +37,16 @@ describe('domainQuestionTotalsForBand (issue #52)', () => {
     }
   });
 
+  it('pins issue #79: attention reaches the 3-item evidence floor in toddler/preschool/primary', () => {
+    // Before #79, toddler/preschool/primary attention sat at 1 item each (below the floor
+    // of 3) — thin on every band it was asked in at all. Teen/young_adult stay at 0 (`—`),
+    // a separate scope question, not addressed here. If any of these regress, that's a
+    // clinical-content decision, so a conscious test update is the point.
+    expect(domainQuestionTotalsForBand('toddler').attention).toBeGreaterThanOrEqual(3);
+    expect(domainQuestionTotalsForBand('preschool').attention).toBeGreaterThanOrEqual(3);
+    expect(domainQuestionTotalsForBand('primary').attention).toBeGreaterThanOrEqual(3);
+  });
+
   it('every band total is at most the all-bank total for that domain', () => {
     const allBank: Record<string, number> = {};
     for (const ind of Object.values(INDICATORS_BY_QUESTION)) {
