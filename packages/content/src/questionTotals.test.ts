@@ -28,6 +28,15 @@ describe('domainQuestionTotalsForBand (issue #52)', () => {
     expect(domainQuestionTotalsForBand('toddler').repetitive_behaviour).toBe(2);
   });
 
+  it('pins issue #78: sensory reaches the 3-item evidence floor in every band', () => {
+    // Before #78, preschool/primary/teen/young_adult sensory sat at 1-2 items (below the
+    // floor of 3), the sharpest drop-off in the coverage matrix. If any of these regress,
+    // that's a clinical-content decision, so a conscious test update is the point.
+    for (const band of AGE_BANDS) {
+      expect(domainQuestionTotalsForBand(band).sensory).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it('every band total is at most the all-bank total for that domain', () => {
     const allBank: Record<string, number> = {};
     for (const ind of Object.values(INDICATORS_BY_QUESTION)) {

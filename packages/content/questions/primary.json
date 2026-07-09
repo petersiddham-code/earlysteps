@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "locale": "en",
   "age_band": "primary",
   "questions": [
@@ -455,6 +455,71 @@
         }
       ],
       "hint": "Pick what happens most nights — there's no wrong answer here."
+    },
+    {
+      "id": "PR18",
+      "domain": "sensory",
+      "age_band": "primary",
+      "text": "Does [child] seek out spinning, crashing into things, jumping, or tight squeezes (like a big hug or being wrapped snugly in a blanket)?",
+      "type": "chip_multi_select",
+      "options": [
+        {
+          "id": "spinning_self",
+          "label": "Spinning self around"
+        },
+        {
+          "id": "crashing_bumping",
+          "label": "Crashing or bumping into things"
+        },
+        {
+          "id": "jumping",
+          "label": "Jumping a lot"
+        },
+        {
+          "id": "seeks_tight_squeezes",
+          "label": "Seeks tight squeezes, hugs, or being wrapped up snugly"
+        },
+        {
+          "id": "something_else",
+          "label": "Something else"
+        },
+        {
+          "id": "none_noticed",
+          "label": "None noticed"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Seeking out movement or pressure is common — we're just building a picture.",
+      "allow_free_text": true
+    },
+    {
+      "id": "PR19",
+      "domain": "sensory",
+      "age_band": "primary",
+      "text": "Does [child] seem to not notice pain, cold, or heat the way other children do — like not reacting much to a scrape, cold weather, or a hot bath?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about how much pain or temperature registers — not about how tolerant they choose to be."
     }
   ]
 }
