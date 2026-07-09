@@ -134,15 +134,17 @@ availability so these domains can surface (at low confidence) once fully answere
 the honest remedy is authoring more questions per sparse domain per band (product-plan
 requirement #5), which needs advisor input. TE13 (issue #54) added one teen repetitive
 item, closing that cell; TE14/YA12 (issue #65) closed emotional_regulation for teen and
-young_adult as a side effect of the sleep-question work. The rest remain open.
+young_adult as a side effect of the sleep-question work. Issue #78 closed sensory for
+preschool/primary/teen/young_adult (the priority-1 batch below) — see
+`2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`. The rest remain open.
 
-### Current state (post #65, post TE13/PR #60)
+### Current state (post #78)
 
 | Domain | toddler | preschool | primary | teen | young_adult |
 |---|---|---|---|---|---|
 | social | 9 ✅ | 7 ✅ | 5 ✅ | 3 ✅ | 3 ✅ |
 | communication | 4 ✅ | 6 ✅ | 3 ✅ | **2 •** | **2 •** |
-| sensory | 4 ✅ | **2 •** | **1 •** | **1 •** | **1 •** |
+| sensory | 4 ✅ | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) |
 | repetitive_behaviour | **2 •** | 3 ✅ | 3 ✅ | 3 ✅ (closed by TE13) | **2 •** |
 | attention | **1 •** | **1 •** | **1 •** | — | — |
 | emotional_regulation | **1 •** | **1 •** | **2 •** | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
@@ -163,11 +165,12 @@ inside the product plan's autism-screening scope (e.g. attention items stay in
 "attention-shifting/joint attention," not general ADHD screening). Older-band items should
 be masking-aware in their hints, the precedent set by TE13.
 
-1. **Sensory** (preschool +1, primary +2, teen +2, young_adult +2 = 7 items) — sharpest
+1. ~~**Sensory** (preschool +1, primary +2, teen +2, young_adult +2 = 7 items) — sharpest
    drop-off in the matrix (toddler 4 → 1–2 everywhere else), hits 4 of 5 bands. Highest
-   priority.
+   priority.~~ **Closed by issue #78** — P22, PR18/PR19, TE15/TE16, YA13/YA14, see
+   `2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`.
 2. **Attention** (toddler +2, preschool +2, primary +2 = 6 items) — thin on every band it's
-   currently asked in.
+   currently asked in. Now highest priority.
 3. **Communication** (teen +1, young_adult +1 = 2 items) — smallest lift, good quick win.
 4. **Repetitive_behaviour** (toddler +1, young_adult +1 = 2 items) — residual after TE13.
 5. **Emotional_regulation** (toddler +2, preschool +2, primary +1 = 5 items) — residual

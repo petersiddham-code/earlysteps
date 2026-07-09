@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -328,6 +328,58 @@
         }
       ],
       "hint": "Pick what feels typical, not just a rough patch."
+    },
+    {
+      "id": "YA13",
+      "domain": "sensory",
+      "age_band": "young_adult",
+      "text": "After time in a loud, bright, or busy place, does [child] need extra downtime or a quiet space to recover, even if they seemed okay at the time?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "not_really",
+          "label": "Not really"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Many adults push through in the moment and only feel the effect afterward, alone."
+    },
+    {
+      "id": "YA14",
+      "domain": "sensory",
+      "age_band": "young_adult",
+      "text": "Does [child] seem to not notice pain, cold, or heat the way other people do — like shrugging off a minor injury or not dressing for the weather?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about how much pain or temperature registers — not about how tolerant they choose to be."
     }
   ]
 }

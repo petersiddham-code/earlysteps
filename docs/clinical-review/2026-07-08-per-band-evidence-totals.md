@@ -34,13 +34,13 @@ semantics were already documented in the engine; this wires them up.
 ## Coverage findings for the advisor (the content half of #52)
 
 Weighted (scoring-eligible) questions per domain each band can be asked, as of weights
-0.2.0-placeholder — entries **below the floor of 3** marked •:
+0.5.0-placeholder — entries **below the floor of 3** marked •:
 
 | Domain | toddler | preschool | primary | teen | young_adult |
 |---|---|---|---|---|---|
 | social | 9 | 7 | 5 | 3 | 3 |
 | communication | 4 | 6 | 3 | 2 • | 2 • |
-| sensory | 4 | 2 • | 1 • | 1 • | 1 • |
+| sensory | 4 | 3 (2 • before P22, #78) | 3 (1 • before PR18/PR19, #78) | 3 (1 • before TE15/TE16, #78) | 3 (1 • before YA13/YA14, #78) |
 | repetitive_behaviour | 2 • | 3 | 3 | 2 • (3 after TE13, PR #60) | 2 • |
 | attention | 1 • | 1 • | 1 • | — | — |
 | emotional_regulation | 1 • | 1 • (0 before P21, #65) | 2 • (1 • before PR17, #65) | 3 (2 • before TE14, #65) | 3 (2 • before YA12, #65) |
@@ -54,3 +54,6 @@ in `content-gaps.md`. TE13 (issue #54, PR #60) already adds one teen repetitive 
 sleep questions added for issue #65 (P21/PR17/TE14/YA12) were authored to close the
 `severe_sleep` red-flag coverage gap, not primarily to fix this table — but they land in
 `emotional_regulation` and happen to bring teen and young_adult up to the floor there.
+Issue #78 closed sensory in every band — see
+`2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`. Sensory was the
+sharpest drop-off in this table; attention is now the highest-priority remaining gap.
