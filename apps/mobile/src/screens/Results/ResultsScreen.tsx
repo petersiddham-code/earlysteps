@@ -375,6 +375,20 @@ export function ResultsScreen({ navigation, route }: Props) {
                 Confidence: {results.recommendationConfidence}
               </Text>
             )}
+            {/* Issue #70: a red flag forces this confidence to "high" regardless of how
+                sparse the domain evidence is (by design — CLAUDE.md §2 rule 8, a red flag
+                is a direct answer, not an average) — which can otherwise read as
+                contradicting a lower confidence shown next to a domain above. Only shown
+                in that one case; the non-red-flag path already borrows the domain
+                estimate's own confidence, so there's nothing to reconcile there. */}
+            {results.redFlagTypes.length > 0 && (
+              <Text
+                style={styles.recommendationConfidenceNote}
+                testID="red-flag-confidence-note"
+              >
+                {RESULT_COPY.red_flag_confidence_note}
+              </Text>
+            )}
           </>
         ) : (
           <>
@@ -546,6 +560,12 @@ const styles = StyleSheet.create({
   recommendationConfidenceText: {
     ...type.caption,
     color: colors.inkSoft,
+    marginBottom: spacing.xs,
+  },
+  recommendationConfidenceNote: {
+    ...type.caption,
+    color: colors.inkSoft,
+    fontStyle: 'italic',
     marginBottom: spacing.xs,
   },
   answerMoreButton: { marginTop: spacing.md },

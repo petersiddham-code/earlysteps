@@ -134,8 +134,30 @@ describe('ResultsScreen', () => {
     expect(screen.getByTestId('recommendation-confidence')).toHaveTextContent(
       'Confidence: high',
     );
+    // Issue #70: a red flag drove that "high" — say so, so it doesn't read as
+    // contradicting the "low" confidence shown next to the support level above.
+    expect(screen.getByTestId('red-flag-confidence-note')).toBeTruthy();
     // Whose results these are (#41): the child's name heads the screen.
     expect(await screen.findByText('ABOUT AVA')).toBeTruthy();
+  });
+
+  it('does not show the red-flag confidence note when no red flag drove the recommendation (issue #70)', async () => {
+    (getResults as jest.Mock).mockResolvedValue({
+      ...RESULTS,
+      redFlagTypes: [] as never[],
+      recommendationTier: 'Support activities can begin now' as const,
+      recommendationConfidence: 'medium' as const,
+    });
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+    expect(screen.getByTestId('recommendation-confidence')).toHaveTextContent(
+      'Confidence: medium',
+    );
+    // No red flag here, so recommendationConfidence is just the support estimate's own
+    // confidence — nothing to reconcile with a domain confidence, no note needed.
+    expect(screen.queryByTestId('red-flag-confidence-note')).toBeNull();
   });
 
   it('falls back to "ABOUT YOUR CHILD" when the nickname fetch fails (#41)', async () => {
@@ -328,6 +350,10 @@ describe('ResultsScreen', () => {
     expect(screen.getByTestId('recommendation-confidence')).toHaveTextContent(
       'Confidence: high',
     );
+    // Issue #70 (found in QA on PR #72): the domain above is gated to "Not enough
+    // information yet" — no score at all, let alone a lower one — so the note must still
+    // show and must not claim there's a "score" to contrast against.
+    expect(screen.getByTestId('red-flag-confidence-note')).toBeTruthy();
     // The tier replaces the "not enough info" next-step copy — never both, they contradict.
     expect(screen.queryByTestId('insufficient-overall-detail')).toBeNull();
     // Domains are still gated, so the path to more answers stays offered (#42).
