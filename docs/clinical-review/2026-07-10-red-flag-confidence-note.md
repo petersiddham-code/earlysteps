@@ -2,8 +2,7 @@
 
 **Content version:** result-copy 1.3.1 (one new field, wording corrected once post-QA; no
 other existing wording changed)
-**Status:** ⛔ awaiting advisor sign-off (same open question as
-`2026-07-09-recommendation-confidence.md`, which this builds on)
+**Status:** ✅ signed off — Peter Siddham, 2026-07-09 (see "Advisor sign-off" below)
 
 ## What issue #70 found
 
@@ -75,3 +74,15 @@ on `redFlagTypes.length > 0` only, unconditional on domain status.
 2. If it is the right framing, whether this exact wording holds up — no banned words are
    used, but tone/clarity for a low-literacy caregiver audience is a judgment call this
    note is explicitly not qualified to make on its own.
+
+## Advisor sign-off (2026-07-09, Peter Siddham)
+
+Approved as-is on both counts:
+
+1. The explanatory-note framing is the right caregiver-facing fix — it clarifies why two
+   confidence numbers on the same screen can differ, without touching the underlying
+   heuristic (approved separately in `2026-07-09-recommendation-confidence.md`).
+2. The current wording ("This confidence comes from a clear, direct answer you gave — not
+   from the area details above, which is why the two can look different on this screen.")
+   is approved verbatim for the low-literacy caregiver audience. No further wording change
+   requested.
