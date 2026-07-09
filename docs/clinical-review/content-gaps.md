@@ -26,12 +26,19 @@ question/option ids to the shipped banks so a rule can never silently go inert a
 await advisor sign-off. Still open from this item: whether the severe-sleep proxy (T15) truly
 meets the §4.8 "severe" bar.
 
+Related: the severe-sleep proxy was **toddler-only** until 2026-07-02 — preschool/primary/
+teen/young-adult had no sleep question at all, so the flag could never fire for those bands
+(issue #65). Closed 2026-07-09: one sleep question added per remaining band (P21/PR17/TE14/
+YA12), `checkSevereSleep` now checks all five — see `2026-07-09-severe-sleep-all-bands.md`.
+Wording/weights still await sign-off, same as the original T15 item.
+
 ## 3. Domain mapping of feeding & sleep
 
-Feeding (T14/P16) and sleep (T15) don't correspond to one of the nine DomainProfile domains.
-They're currently mapped to `sensory` and `emotional_regulation` respectively for domain
-scoring, but primarily drive red-flag rules. Confirm this mapping is clinically acceptable or
-introduce a dedicated handling path.
+Feeding (T14/P16) and sleep (T15, and now P21/PR17/TE14/YA12 — issue #65) don't correspond to
+one of the nine DomainProfile domains. They're currently mapped to `sensory` and
+`emotional_regulation` respectively for domain scoring, but primarily drive red-flag rules.
+Confirm this mapping is clinically acceptable or introduce a dedicated handling path — now a
+5-band decision, not a toddler-only one.
 
 ## 4. ~~Deferred age bands~~ — PARTIALLY CLOSED 2026-07-02
 

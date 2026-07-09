@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "locale": "en",
   "age_band": "preschool",
   "questions": [
@@ -552,6 +552,32 @@
         }
       ],
       "hint": "A distinctive voice is just one small part of the picture."
+    },
+    {
+      "id": "P21",
+      "domain": "emotional_regulation",
+      "age_band": "preschool",
+      "text": "How is [child] sleeping most nights?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "sleeps_well",
+          "label": "Sleeps well"
+        },
+        {
+          "id": "some_difficulty",
+          "label": "Some difficulty falling/staying asleep"
+        },
+        {
+          "id": "significant_struggles",
+          "label": "Significant sleep struggles"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Pick what happens most nights — sleep routines vary a lot at this age."
     }
   ]
 }

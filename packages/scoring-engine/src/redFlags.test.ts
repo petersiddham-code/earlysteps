@@ -72,9 +72,12 @@ describe('red-flag rules — each independent and traceable (product plan §8.5)
     expect(checkSevereFeeding([r('T14', 'wide_variety')])).toEqual([]);
   });
 
-  it('severe sleep triggers on significant struggles', () => {
-    expect(checkSevereSleep([r('T15', 'significant_struggles')])).toHaveLength(1);
-    expect(checkSevereSleep([r('T15', 'sleeps_well')])).toEqual([]);
+  it("severe sleep triggers on significant struggles, on every age band's sleep question (#65)", () => {
+    for (const questionId of ['T15', 'P21', 'PR17', 'TE14', 'YA12']) {
+      expect(checkSevereSleep([r(questionId, 'significant_struggles')])).toHaveLength(1);
+      expect(checkSevereSleep([r(questionId, 'sleeps_well')])).toEqual([]);
+    }
+    expect(checkSevereSleep([])).toEqual([]);
   });
 
   it('sudden behaviour change and safety risk trigger on their universal questions', () => {

@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "locale": "en",
   "age_band": "teen",
   "questions": [
@@ -348,6 +348,32 @@
       ],
       "hint": "Feel free to summarize what they said, if you'd like.",
       "allow_free_text": true
+    },
+    {
+      "id": "TE14",
+      "domain": "emotional_regulation",
+      "age_band": "teen",
+      "text": "How has [child]'s sleep been most nights?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "sleeps_well",
+          "label": "Sleeps well"
+        },
+        {
+          "id": "some_difficulty",
+          "label": "Some difficulty falling/staying asleep"
+        },
+        {
+          "id": "significant_struggles",
+          "label": "Significant sleep struggles"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Sleep patterns shift a lot in the teen years — pick what feels typical."
     }
   ]
 }
