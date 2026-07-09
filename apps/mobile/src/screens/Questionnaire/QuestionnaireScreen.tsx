@@ -201,11 +201,13 @@ export function QuestionnaireScreen({ navigation }: Props) {
 
     // Every question skipped — nothing to save. Don't POST an empty batch (the backend
     // rejects it as a validation error, surfacing as a bogus "couldn't save" message
-    // right after we promised skipping is fine, #20). Results handles both outcomes: it
-    // shows the latest computed profile if one exists, or routes back here if none does.
+    // right after we promised skipping is fine, #20). Results shows the latest computed
+    // profile if one exists; emptySubmit tells it that a 404 here means "answered
+    // nothing yet", so it renders the not-enough-information state instead of bouncing
+    // straight back to Question 1 like a silent reset (#53).
     if (responses.length === 0) {
       setSubmitting(false);
-      navigation.replace('Results');
+      navigation.replace('Results', { emptySubmit: true });
       return;
     }
 
