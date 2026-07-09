@@ -124,7 +124,7 @@ which this gate exists for). Until then, only red-flag-type signals generate con
 follow-ups. Issue #22's minimum-evidence gate should count confirmed free-text-derived
 answers toward its evidence floors when both land — coordinate there, don't duplicate.
 
-## 10. Sparse per-band domain coverage (issue #52)
+## 10. Sparse per-band domain coverage (issue #52) — authoring plan drafted 2026-07-09
 
 Several band/domain pairs offer fewer scored questions than the per-domain evidence floor
 of 3 — full matrix in `2026-07-08-per-band-evidence-totals.md`. Worst: teen and
@@ -133,7 +133,61 @@ everywhere it exists). Since 2026-07-08 the gate caps its floor at the band's re
 availability so these domains can surface (at low confidence) once fully answered — but
 the honest remedy is authoring more questions per sparse domain per band (product-plan
 requirement #5), which needs advisor input. TE13 (issue #54) added one teen repetitive
-item; the rest remain open.
+item, closing that cell; TE14/YA12 (issue #65) closed emotional_regulation for teen and
+young_adult as a side effect of the sleep-question work. The rest remain open.
+
+### Current state (post #65, post TE13/PR #60)
+
+| Domain | toddler | preschool | primary | teen | young_adult |
+|---|---|---|---|---|---|
+| social | 9 ✅ | 7 ✅ | 5 ✅ | 3 ✅ | 3 ✅ |
+| communication | 4 ✅ | 6 ✅ | 3 ✅ | **2 •** | **2 •** |
+| sensory | 4 ✅ | **2 •** | **1 •** | **1 •** | **1 •** |
+| repetitive_behaviour | **2 •** | 3 ✅ | 3 ✅ | 3 ✅ (closed by TE13) | **2 •** |
+| attention | **1 •** | **1 •** | **1 •** | — | — |
+| emotional_regulation | **1 •** | **1 •** | **2 •** | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
+| learning | — | **1 •** | **1 •** | **1 •** | — |
+| daily_living | — | — | **1 •** | **1 •** | **1 •** |
+
+`•` = below the floor of 3. `—` = domain not asked in that band at all — a scope question
+(is the domain developmentally inapplicable to that band, or an unaddressed gap?), not a
+count gap, and needs advisor input before any items are authored for those cells:
+attention (teen, young_adult), learning (toddler, young_adult), daily_living (toddler,
+preschool).
+
+### Proposed authoring batches, in priority order
+
+Grounded in the same validated-instrument constructs used for prior expansions (never
+copying licensed instrument text) — M-CHAT-R, SCQ, AQ, CAT-Q, RBQ, Sensory Profile — kept
+inside the product plan's autism-screening scope (e.g. attention items stay in
+"attention-shifting/joint attention," not general ADHD screening). Older-band items should
+be masking-aware in their hints, the precedent set by TE13.
+
+1. **Sensory** (preschool +1, primary +2, teen +2, young_adult +2 = 7 items) — sharpest
+   drop-off in the matrix (toddler 4 → 1–2 everywhere else), hits 4 of 5 bands. Highest
+   priority.
+2. **Attention** (toddler +2, preschool +2, primary +2 = 6 items) — thin on every band it's
+   currently asked in.
+3. **Communication** (teen +1, young_adult +1 = 2 items) — smallest lift, good quick win.
+4. **Repetitive_behaviour** (toddler +1, young_adult +1 = 2 items) — residual after TE13.
+5. **Emotional_regulation** (toddler +2, preschool +2, primary +1 = 5 items) — residual
+   after #65 closed teen/young_adult.
+6. **Scope decision for the `—` cells** — advisor input only, no authoring until resolved;
+   may turn into net-new domain coverage per band rather than a top-up.
+
+### Process per batch (mirrors how #52/#54/#65 shipped)
+
+1. Author items in the relevant band's question bank JSON; bump that bank's content
+   version.
+2. Add placeholder weights (`needs_clinical_signoff: true`); bump `domain-weights.json`
+   version.
+3. Update `packages/content/src/questionTotals.test.ts` and add a dated
+   `docs/clinical-review/YYYY-MM-DD-<domain>-coverage.md` note.
+4. Add a `docs/clinical-review/README.md` row, `_pending_`; flag the PR "clinical content
+   change — needs advisor sign-off" (CLAUDE.md §9 — every batch here is a wording + weight
+   change).
+5. Refresh the matrix in `2026-07-08-per-band-evidence-totals.md` so it stays the single
+   source of truth for coverage state.
 
 ## 11. Recommendation confidence only exists on the mobile Results screen (issue #64)
 
