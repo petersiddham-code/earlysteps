@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "locale": "en",
   "age_band": "teen",
   "questions": [
@@ -460,6 +460,84 @@
         }
       ],
       "hint": "Some teens learn practiced questions to keep a conversation going — go with what feels genuine, not just polite habit."
+    },
+    {
+      "id": "TE18",
+      "domain": "attention",
+      "age_band": "teen",
+      "text": "Can [child] focus on an activity or topic they're really into for an extended stretch of time?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_easily",
+          "label": "Yes, easily"
+        },
+        {
+          "id": "briefly",
+          "label": "Briefly"
+        },
+        {
+          "id": "very_hard",
+          "label": "Very hard to sustain"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about something they've chosen themselves — a hobby, game, or topic — not something assigned to them."
+    },
+    {
+      "id": "TE19",
+      "domain": "attention",
+      "age_band": "teen",
+      "text": "Can [child] switch from something they're focused on to something else when you ask, without a lot of pushback?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_usually",
+          "label": "Yes, usually"
+        },
+        {
+          "id": "with_some_resistance",
+          "label": "With some resistance"
+        },
+        {
+          "id": "very_hard",
+          "label": "Very hard to switch"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Many teens hold it together when asked to switch in front of others and only show the frustration afterward, at home — that still counts."
+    },
+    {
+      "id": "TE20",
+      "domain": "attention",
+      "age_band": "teen",
+      "text": "Does [child] show or send you things they find interesting — like a video, article, or something they noticed — wanting you to see it too, not because they need something?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_often",
+          "label": "Yes, often"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about wanting to share something because it interests them, not asking for help or approval."
     }
   ]
 }

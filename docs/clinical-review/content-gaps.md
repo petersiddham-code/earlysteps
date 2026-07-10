@@ -138,7 +138,7 @@ young_adult as a side effect of the sleep-question work. Issue #78 closed sensor
 preschool/primary/teen/young_adult (the priority-1 batch below) — see
 `2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`. The rest remain open.
 
-### Current state (post #82)
+### Current state (post #91)
 
 | Domain | toddler | preschool | primary | teen | young_adult |
 |---|---|---|---|---|---|
@@ -146,7 +146,7 @@ preschool/primary/teen/young_adult (the priority-1 batch below) — see
 | communication | 4 ✅ | 6 ✅ | 3 ✅ | 3 ✅ (closed by #80) | 3 ✅ (closed by #80) |
 | sensory | 4 ✅ | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) |
 | repetitive_behaviour | 3 ✅ (closed by #81) | 3 ✅ | 3 ✅ | 3 ✅ (closed by TE13) | 3 ✅ (closed by #81) |
-| attention | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | — (gap, filed as #91) | — (gap, filed as #91) |
+| attention | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #91) | 3 ✅ (closed by #91) |
 | emotional_regulation | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
 | learning | — (intentional) | **1 •** | **1 •** | **1 •** | — (gap, filed as #92) |
 | daily_living | — (intentional) | — (intentional) | **1 •** | **1 •** | **1 •** |
@@ -155,7 +155,8 @@ preschool/primary/teen/young_adult (the priority-1 batch below) — see
 advisor to resolve each `—` cell — is the domain developmentally inapplicable to that band,
 or an unaddressed gap? Resolved 2026-07-10:
 - **Attention (teen, young_adult)** — real gap, not intentional. Filed as #91 (net-new
-  domain coverage, 3 items each band).
+  domain coverage, 3 items each band). **Closed by issue #91** — TE18/TE19/TE20,
+  YA17/YA18/YA19, see `2026-07-10-attention-coverage-teen-young-adult.md`.
 - **Learning (toddler)** — confirmed intentional (too early for a learning-style signal).
   No items to author.
 - **Learning (young_adult)** — real gap, not intentional. Filed as #92 (net-new domain
@@ -195,6 +196,10 @@ be masking-aware in their hints, the precedent set by TE13.
    pre-existing thin cells for learning (preschool/primary/teen) and daily_living
    (primary/teen/young_adult) remain open, unaddressed gaps — out of scope for #83, still
    need their own batch.
+7. ~~**Attention** (teen +3, young_adult +3 = 6 items) — net-new domain coverage per #83's
+   scope resolution, not a top-up.~~ **Closed by issue #91** — TE18/TE19/TE20,
+   YA17/YA18/YA19, see `2026-07-10-attention-coverage-teen-young-adult.md`. Learning
+   (young_adult, #92) remains open from the same #83 resolution.
 
 ### Process per batch (mirrors how #52/#54/#65 shipped)
 
