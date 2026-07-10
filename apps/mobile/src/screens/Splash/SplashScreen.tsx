@@ -9,24 +9,29 @@ import { colors, radius, spacing, type } from '../../theme/index.js';
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 
 /**
- * Routes based on resumed session state (product plan Screen 1): no family yet -> Consent
- * Center; a family but no child -> Child Profile Setup; both -> Results. If the child has
- * no computed results yet (questionnaire never submitted), the Results screen forwards to
- * the Questionnaire — safe now that the scoring engine dedupes re-answered questions.
+ * Routes based on resumed session state (product plan Screen 1). Issue #97: a logged-out
+ * session goes to Login first, ahead of everything else — no valid access token means the
+ * caregiver never lands on Consent Center or Child Profile Setup. Once logged in: no family
+ * yet -> Consent Center; a family but no child -> Child Profile Setup; both -> Results. If
+ * the child has no computed results yet (questionnaire never submitted), the Results screen
+ * forwards to the Questionnaire — safe now that the scoring engine dedupes re-answered
+ * questions.
  */
 export function SplashScreen({ navigation }: Props) {
-  const { isLoading, familyId, childId } = useSession();
+  const { isLoading, accessToken, familyId, childId } = useSession();
 
   useEffect(() => {
     if (isLoading) return;
-    if (!familyId) {
+    if (!accessToken) {
+      navigation.replace('Login');
+    } else if (!familyId) {
       navigation.replace('ConsentCenter');
     } else if (!childId) {
       navigation.replace('ChildProfileSetup');
     } else {
       navigation.replace('Results');
     }
-  }, [isLoading, familyId, childId, navigation]);
+  }, [isLoading, accessToken, familyId, childId, navigation]);
 
   return (
     <View style={styles.container}>
