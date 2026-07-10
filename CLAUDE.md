@@ -46,7 +46,7 @@ If a task seems to require breaking any of these, stop and flag it back to the u
 | AI | Claude API (`claude-sonnet-4-6` unless told otherwise) for language generation; deterministic scoring engine is plain TypeScript, not an LLM call |
 | Speech-to-text | On-device (quantized Whisper) with cloud fallback, offline-first |
 | Offline storage | SQLite on-device + background sync queue |
-| Auth | Passwordless (magic link or OTP) — avoid storing anything beyond what's needed to authenticate a parent account |
+| Auth | Username/password (bcrypt-hashed, JWT session) — revised from the original passwordless plan in issue #94, to unblock login-gated premium-tier features; see `docs/clinical-review/content-gaps.md` §6 |
 | PDF generation | Server-side templating service for clinician-facing reports |
 
 Don't introduce a different framework/library for something already covered here without asking first — consistency matters more than marginal technical preference in a small team project like this.

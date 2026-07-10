@@ -82,9 +82,18 @@ Mobile is now wired end to end (Splash → Consent Center → Child Setup → Qu
 Results), all against the real API — no more sample-data demo screen.
 
 Still open:
-- **No auth.** Every endpoint is unauthenticated — this mirrors the screening endpoints'
-  existing (already-flagged) gap, not a new one, but it means none of this is real
-  account-security yet. Anyone with a `familyId`/`childId` can read or write it.
+- **No auth on existing endpoints.** Issue #94 added real username/password accounts
+  (`AuthModule`: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, bcrypt-hashed
+  passwords, JWT sessions) — but nothing yet requires a caller to hold one. Every
+  families/screening/analysis endpoint is still unauthenticated: anyone with a
+  `familyId`/`childId` can read or write it. `JwtAuthGuard` exists and works
+  (`apps/backend/src/auth/jwt-auth.guard.ts`) but isn't applied to any controller yet.
+  Still open, in order: (a) gate the existing endpoints behind login, (b) link a `User` to
+  the `Family`/`Child` it owns (today `User` is a standalone credentials table — no
+  relation to `Family` at all), (c) enforce `tier` for premium-gated features (e.g. LLM
+  suggestions, the issue's stated motivation). CLAUDE.md's tech-stack table has been
+  updated to record username/password (not the original passwordless/OTP plan) as the
+  actual decision, made explicitly for this issue.
 - **`data_storage` and `ai_analysis` consent are enforced; the other two are not.**
   `data_storage` gates intake persistence; since issue #26, `ai_analysis` gates the free-text
   response-analysis stage (no LLM call is ever made without it — a 403, and results still

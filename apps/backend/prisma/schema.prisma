@@ -18,6 +18,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Login credentials (issue #94). Deliberately standalone — not yet linked to Family; a
+/// user account owning/linking to a Family is a follow-up (docs/clinical-review/content-gaps.md
+/// §6), same as gating existing endpoints behind it. `tier` exists so premium-tier gating
+/// (the issue's stated motivation) has somewhere to read from later — nothing enforces it yet.
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  /// bcrypt hash — the plaintext password is never stored or logged.
+  passwordHash String
+  tier         String   @default("free")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Family {
   id               String   @id @default(cuid())
   locale           String
