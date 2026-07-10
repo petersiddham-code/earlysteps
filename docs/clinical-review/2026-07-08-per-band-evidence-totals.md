@@ -44,7 +44,7 @@ Weighted (scoring-eligible) questions per domain each band can be asked, as of w
 | repetitive_behaviour | 2 • (3 after T24, issue #81) | 3 | 3 | 2 • (3 after TE13, PR #60) | 2 • (3 after YA16, issue #81) |
 | attention | 1 • (3 after T22/T23, #79) | 1 • (3 after P23/P24, #79) | 1 • (3 after PR20/PR21, #79) | — (3 after TE18-20, #91) | — (3 after YA17-19, #91) |
 | emotional_regulation | 1 • (3 after T25/T26, #82) | 1 • (0 before P21, #65; 3 after P25/P26, #82) | 2 • (1 • before PR17, #65; 3 after PR22, #82) | 3 (2 • before TE14, #65) | 3 (2 • before YA12, #65) |
-| learning | — | 1 • | 1 • | 1 • | — |
+| learning | — | 1 • | 1 • | 1 • | 3 (— before YA20-22, #92) |
 | daily_living | — | — | 1 • | 1 • | 1 • |
 
 With the fix these sparse pairs surface (at low confidence) once fully answered — but the
@@ -57,9 +57,9 @@ sleep questions added for issue #65 (P21/PR17/TE14/YA12) were authored to close 
 Issue #78 closed sensory in every band, issue #79 closed attention in
 toddler/preschool/primary, issue #80 closed communication in teen/young_adult, issue #81
 closed repetitive_behaviour in toddler/young_adult, issue #82 closed emotional_regulation
-in toddler/preschool/primary, and issue #91 closed attention in teen/young_adult (net-new
-domain coverage, resolving the scope question #83 raised for that cell) — see each issue's
-dated note in this directory. The only remaining scope-question `—` is learning
-(young_adult), filed as #92; the pre-existing thin `•` cells for learning
+in toddler/preschool/primary, issue #91 closed attention in teen/young_adult, and issue #92
+closed learning in young_adult (both net-new domain coverage, resolving the scope questions
+#83 raised for those cells) — see each issue's dated note in this directory. That closes
+every scope-question `—` cell from #83; the pre-existing thin `•` cells for learning
 (preschool/primary/teen) and daily_living (primary/teen/young_adult) remain open,
 unaddressed gaps needing their own authoring batch (content-gaps.md §10).

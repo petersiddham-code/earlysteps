@@ -92,6 +92,14 @@ describe('domainQuestionTotalsForBand (issue #52)', () => {
     );
   });
 
+  it('pins issue #92: learning reaches the 3-item evidence floor in young_adult', () => {
+    // Before #92, young_adult asked zero learning items — the domain wasn't asked at all
+    // (confirmed a real gap, not intentional, by issue #83). Three newly authored items
+    // (YA20-22) close it to the floor of 3. If this regresses, that's a clinical-content
+    // decision, so a conscious test update is the point.
+    expect(domainQuestionTotalsForBand('young_adult').learning).toBeGreaterThanOrEqual(3);
+  });
+
   it('every band total is at most the all-bank total for that domain', () => {
     const allBank: Record<string, number> = {};
     for (const ind of Object.values(INDICATORS_BY_QUESTION)) {
