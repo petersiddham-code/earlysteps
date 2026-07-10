@@ -138,12 +138,12 @@ young_adult as a side effect of the sleep-question work. Issue #78 closed sensor
 preschool/primary/teen/young_adult (the priority-1 batch below) — see
 `2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`. The rest remain open.
 
-### Current state (post #79)
+### Current state (post #80)
 
 | Domain | toddler | preschool | primary | teen | young_adult |
 |---|---|---|---|---|---|
 | social | 9 ✅ | 7 ✅ | 5 ✅ | 3 ✅ | 3 ✅ |
-| communication | 4 ✅ | 6 ✅ | 3 ✅ | **2 •** | **2 •** |
+| communication | 4 ✅ | 6 ✅ | 3 ✅ | 3 ✅ (closed by #80) | 3 ✅ (closed by #80) |
 | sensory | 4 ✅ | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) |
 | repetitive_behaviour | **2 •** | 3 ✅ | 3 ✅ | 3 ✅ (closed by TE13) | **2 •** |
 | attention | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | — | — |
@@ -173,7 +173,9 @@ be masking-aware in their hints, the precedent set by TE13.
    it's currently asked in. Now highest priority.~~ **Closed by issue #79** — T22/T23,
    P23/P24, PR20/PR21, see
    `2026-07-10-attention-coverage-toddler-preschool-primary.md`.
-3. **Communication** (teen +1, young_adult +1 = 2 items) — smallest lift, good quick win.
+3. ~~**Communication** (teen +1, young_adult +1 = 2 items) — smallest lift, good quick
+   win.~~ **Closed by issue #80** — TE17, YA15, see
+   `2026-07-10-communication-coverage-teen-young-adult.md`.
 4. **Repetitive_behaviour** (toddler +1, young_adult +1 = 2 items) — residual after TE13.
 5. **Emotional_regulation** (toddler +2, preschool +2, primary +1 = 5 items) — residual
    after #65 closed teen/young_adult.

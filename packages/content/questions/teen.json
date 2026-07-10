@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "locale": "en",
   "age_band": "teen",
   "questions": [
@@ -434,6 +434,32 @@
         }
       ],
       "hint": "This is about how much pain or temperature registers — not about how tolerant they choose to be."
+    },
+    {
+      "id": "TE17",
+      "domain": "communication",
+      "age_band": "teen",
+      "text": "Do [child]'s conversations tend to go both ways — asking questions back, following what the other person says — or does it feel mostly one-sided, about their own topics?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "usually_two_way",
+          "label": "Usually goes both ways"
+        },
+        {
+          "id": "sometimes_one_sided",
+          "label": "Sometimes one-sided"
+        },
+        {
+          "id": "mostly_one_sided",
+          "label": "Mostly one-sided, about their own topics"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Some teens learn practiced questions to keep a conversation going — go with what feels genuine, not just polite habit."
     }
   ]
 }
