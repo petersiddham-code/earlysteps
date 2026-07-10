@@ -9,8 +9,10 @@ function Probe() {
     isLoading,
     familyId,
     childId,
+    accessToken,
     setFamilyId,
     setChildId,
+    setAccessToken,
     setGuestChildId,
     clearChildId,
     reset,
@@ -20,12 +22,16 @@ function Probe() {
     <>
       <Text>familyId:{familyId ?? 'none'}</Text>
       <Text>childId:{childId ?? 'none'}</Text>
+      <Text>accessToken:{accessToken ?? 'none'}</Text>
       <Text testID="child-id">{childId ?? ''}</Text>
       <Pressable onPress={() => setFamilyId('f1')}>
         <Text>set family</Text>
       </Pressable>
       <Pressable onPress={() => setChildId('c1')}>
         <Text>set child</Text>
+      </Pressable>
+      <Pressable onPress={() => setAccessToken('t1')}>
+        <Text>set token</Text>
       </Pressable>
       <Pressable
         onPress={() => {
@@ -83,6 +89,7 @@ describe('SessionProvider / useSession', () => {
   it('resumes a previously persisted session on mount', async () => {
     await AsyncStorage.setItem('earlysteps.familyId', 'f1');
     await AsyncStorage.setItem('earlysteps.childId', 'c1');
+    await AsyncStorage.setItem('earlysteps.accessToken', 't1');
 
     render(
       <SessionProvider>
@@ -92,6 +99,20 @@ describe('SessionProvider / useSession', () => {
 
     expect(await screen.findByText('familyId:f1')).toBeTruthy();
     expect(screen.getByText('childId:c1')).toBeTruthy();
+    expect(screen.getByText('accessToken:t1')).toBeTruthy();
+  });
+
+  it('setAccessToken updates context state and persists to storage (#97)', async () => {
+    render(
+      <SessionProvider>
+        <Probe />
+      </SessionProvider>,
+    );
+    await screen.findByText('accessToken:none');
+    fireEvent.press(screen.getByText('set token'));
+
+    await waitFor(() => expect(screen.getByText('accessToken:t1')).toBeTruthy());
+    expect(await AsyncStorage.getItem('earlysteps.accessToken')).toBe('t1');
   });
 
   it('clearChildId forgets the child in state and storage but keeps the family (#20)', async () => {
@@ -113,7 +134,7 @@ describe('SessionProvider / useSession', () => {
     expect(await AsyncStorage.getItem('earlysteps.childId')).toBeNull();
   });
 
-  it('reset clears both context state and storage', async () => {
+  it('reset clears context state and storage, including the access token (#97)', async () => {
     render(
       <SessionProvider>
         <Probe />
@@ -122,13 +143,16 @@ describe('SessionProvider / useSession', () => {
     await screen.findByText('familyId:none');
     fireEvent.press(screen.getByText('set family'));
     fireEvent.press(screen.getByText('set child'));
+    fireEvent.press(screen.getByText('set token'));
     await waitFor(() => expect(screen.getByText('familyId:f1')).toBeTruthy());
 
     fireEvent.press(screen.getByText('reset'));
 
     await waitFor(() => expect(screen.getByText('familyId:none')).toBeTruthy());
     expect(screen.getByText('childId:none')).toBeTruthy();
+    expect(screen.getByText('accessToken:none')).toBeTruthy();
     expect(await AsyncStorage.getItem('earlysteps.familyId')).toBeNull();
+    expect(await AsyncStorage.getItem('earlysteps.accessToken')).toBeNull();
   });
 
   it('setGuestChildId updates state but never persists to on-device storage (issue #63)', async () => {

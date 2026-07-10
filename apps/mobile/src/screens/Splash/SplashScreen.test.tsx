@@ -11,9 +11,22 @@ function navProp() {
 }
 
 describe('SplashScreen', () => {
-  it('routes to ConsentCenter when there is no family yet', async () => {
+  it('routes to Login when there is no access token (#97)', async () => {
     (useSession as jest.Mock).mockReturnValue({
       isLoading: false,
+      accessToken: null,
+      familyId: null,
+      childId: null,
+    });
+    const navigation = navProp();
+    render(<SplashScreen navigation={navigation} route={{} as never} />);
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Login'));
+  });
+
+  it('routes to ConsentCenter when logged in but there is no family yet', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      isLoading: false,
+      accessToken: 't1',
       familyId: null,
       childId: null,
     });
@@ -25,6 +38,7 @@ describe('SplashScreen', () => {
   it('routes to ChildProfileSetup when there is a family but no child', async () => {
     (useSession as jest.Mock).mockReturnValue({
       isLoading: false,
+      accessToken: 't1',
       familyId: 'f1',
       childId: null,
     });
@@ -35,9 +49,10 @@ describe('SplashScreen', () => {
     );
   });
 
-  it('routes straight to Results once both a family and a child exist', async () => {
+  it('routes straight to Results once logged in with both a family and a child', async () => {
     (useSession as jest.Mock).mockReturnValue({
       isLoading: false,
+      accessToken: 't1',
       familyId: 'f1',
       childId: 'c1',
     });
@@ -49,6 +64,7 @@ describe('SplashScreen', () => {
   it('does not navigate while the session is still loading', () => {
     (useSession as jest.Mock).mockReturnValue({
       isLoading: true,
+      accessToken: null,
       familyId: null,
       childId: null,
     });
