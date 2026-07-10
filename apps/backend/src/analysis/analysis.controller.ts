@@ -1,16 +1,28 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import type { FollowUpSuggestion } from '@earlysteps/shared-types';
 import { AnalysisService } from './analysis.service.js';
 import { AnswerFollowUpDto } from './dto/answer-follow-up.dto.js';
 import type { ResultsView } from '../screening/results-view.js';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
+import { PremiumTierGuard } from '../auth/premium-tier.guard.js';
 
 /**
  * Free-text response-analysis endpoints (issue #26). All three are additive to the
  * screening pipeline: results render fine if none of them is ever called.
+ *
+ * Issue #76: gated behind login + Premium tier at the HTTP boundary, not just the
+ * mobile app's canUseAiFeatures() check (issue #99) — closes the gap where a direct API
+ * call from a free or guest account could still reach the LLM stage as long as
+ * ai_analysis consent was set (docs/clinical-review/content-gaps.md §6(c)).
  */
+@UseGuards(JwtAuthGuard, PremiumTierGuard)
 @Controller('children/:childId')
 export class AnalysisController {
-  constructor(private readonly analysisService: AnalysisService) {}
+  constructor(
+    // Explicit token: vitest's esbuild transform emits no decorator design:paramtypes
+    // metadata, so class-typed constructor injection resolves to undefined in tests.
+    @Inject(AnalysisService) private readonly analysisService: AnalysisService,
+  ) {}
 
   /**
    * Analyzes any not-yet-processed free-text answers (403 without ai_analysis

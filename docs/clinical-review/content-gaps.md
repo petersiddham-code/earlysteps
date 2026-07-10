@@ -82,40 +82,53 @@ Mobile is now wired end to end (Splash → Consent Center → Child Setup → Qu
 Results), all against the real API — no more sample-data demo screen.
 
 Still open:
-- **No auth on existing endpoints.** Issue #94 added real username/password accounts
-  (`AuthModule`: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, bcrypt-hashed
-  passwords, JWT sessions) — but nothing yet requires a caller to hold one. Every
-  families/screening/analysis endpoint is still unauthenticated: anyone with a
-  `familyId`/`childId` can read or write it. `JwtAuthGuard` exists and works
-  (`apps/backend/src/auth/jwt-auth.guard.ts`) but isn't applied to any controller yet.
-  Still open, in order: (a) gate the existing endpoints behind login, (b) link a `User` to
-  the `Family`/`Child` it owns (today `User` is a standalone credentials table — no
-  relation to `Family` at all), (c) enforce `tier` for premium-gated features (e.g. LLM
-  suggestions, the issue's stated motivation). CLAUDE.md's tech-stack table has been
-  updated to record username/password (not the original passwordless/OTP plan) as the
-  actual decision, made explicitly for this issue.
+- **No auth on the families/screening endpoints.** Issue #94 added real username/password
+  accounts (`AuthModule`: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`,
+  bcrypt-hashed passwords, JWT sessions) — but `FamiliesController` and
+  `ScreeningController` still accept any caller: anyone with a `familyId`/`childId` can read
+  or write it. Still open, in order: (a) gate those endpoints behind login, (b) link a
+  `User` to the `Family`/`Child` it owns (today `User` is a standalone credentials table —
+  no relation to `Family` at all). CLAUDE.md's tech-stack table has been updated to record
+  username/password (not the original passwordless/OTP plan) as the actual decision, made
+  explicitly for this issue.
 - **`data_storage` and `ai_analysis` consent are enforced; the other two are not.**
   `data_storage` gates intake persistence; since issue #26, `ai_analysis` gates the free-text
   response-analysis stage (no LLM call is ever made without it — a 403, and results still
   work). `media_capture` and `professional_sharing` remain stored and toggleable but ungated —
   no media capture or report-sharing feature exists yet to enforce them against.
-- **Guest access + tier gating (issue #99) — frontend-only, not the backend enforcement
-  from item (c) above.** Three access levels now exist: guest (no account — "Continue as
+- **Guest access + tier gating (issue #99), backend enforcement now closed for the AI
+  endpoints (issue #76).** Three access levels exist: guest (no account — "Continue as
   guest" on Login bypasses the auth gate from issue #97/#98 and runs the questionnaire on
   the existing on-device guest pipeline from issue #63, nothing saved), free (logged in,
-  `tier: 'free'`), and premium (logged in, `tier: 'premium'`, set via a new self-service
+  `tier: 'free'`), and premium (logged in, `tier: 'premium'`, set via a self-service
   `PATCH /auth/upgrade` — there's no payment gateway in this app, so this is a deliberate
-  stub, one-directional, free → premium only). AI-assisted free-text analysis is gated to
-  premium-only: the mobile app disables the optional "anything else" note (with an
-  explanatory label) and skips the `response-analysis` call entirely for a guest or
-  free-tier session (`canUseAiFeatures()` in `apps/mobile/src/session/SessionContext.tsx`).
-  This is enforced **client-side only**. The backend's `AnalysisService` still gates purely
-  on `ai_analysis` consent, exactly as before — it has no way to know which `User` (or
-  tier) a given `childId` belongs to, because that's precisely items (a) and (b) above,
-  still open. A caller that talks to the API directly (bypassing the app) can still reach
-  the LLM stage on a free account with `ai_analysis` consent granted. Closing that requires
-  (a) and (b) first, then extending (c) to the analysis endpoint specifically — tracked
-  here, not solved by #99.
+  stub, one-directional, free → premium only). Issue #99 gated AI-assisted free-text
+  analysis client-side only (`canUseAiFeatures()` in
+  `apps/mobile/src/session/SessionContext.tsx`): the mobile app disables the optional
+  "anything else" note and skips the `response-analysis` call for a guest or free-tier
+  session, but a direct API call could still reach the LLM stage on a free account with
+  `ai_analysis` consent granted, since `AnalysisService` had no way to check the caller's
+  tier.
+
+  Issue #76 closed that specific gap without waiting on the broader (a)/(b) items above:
+  `AnalysisController`'s three routes (`POST response-analysis`, `GET
+  follow-up-suggestions`, `POST follow-up-suggestions/:id/answer`) are now gated by
+  `JwtAuthGuard` + a new `PremiumTierGuard`
+  (`apps/backend/src/auth/premium-tier.guard.ts`) at the controller level — an
+  unauthenticated call gets 401, an authenticated free-tier call gets 403 regardless of
+  `ai_analysis` consent, and `JwtStrategy` re-loads the account from the DB on every
+  request so an in-session upgrade takes effect immediately, with no new token needed.
+  This doesn't require the `User`↔`Family` link: the guard checks the *caller's own* tier
+  from their JWT identity, not who owns the child. Verified live against a real Postgres +
+  NestJS instance: no token → 401, free-tier token → 403 on all three routes even with
+  `ai_analysis` granted, same token after `PATCH /auth/upgrade` → success.
+
+  Still open, unchanged by #76: `FamiliesController` and `ScreeningController` remain
+  unauthenticated ((a) above), and there's still no `User`↔`Family` ownership link ((b)
+  above) — so a free/guest account's own `familyId` isn't provably *theirs*, only the tier
+  check on the analysis routes is enforced. Multi-tenancy (stopping one account from
+  reading/writing another's family/child data) is a separate, larger piece of work than
+  this issue's scope.
 
 ## 7. ~~Scoring engine does not dedupe repeated answers to the same question~~ — CLOSED 2026-07-02
 
