@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -166,6 +166,45 @@
         }
       ],
       "hint": "Think about unexpected changes, not planned ones."
+    },
+    {
+      "id": "YA16",
+      "domain": "repetitive_behaviour",
+      "age_band": "young_adult",
+      "text": "Does [child] have movements or sounds they repeat — like rocking, pacing, hand or finger movements, or repeating words and phrases?",
+      "type": "chip_multi_select",
+      "options": [
+        {
+          "id": "rocking_pacing",
+          "label": "Rocking or pacing"
+        },
+        {
+          "id": "hand_finger_movements",
+          "label": "Hand or finger movements"
+        },
+        {
+          "id": "repeating_phrases",
+          "label": "Repeating words, phrases, or scripts"
+        },
+        {
+          "id": "humming_sounds",
+          "label": "Humming or other repeated sounds"
+        },
+        {
+          "id": "something_else",
+          "label": "Something else"
+        },
+        {
+          "id": "none_noticed",
+          "label": "None I've noticed"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Many people learn to hold this in around others and let it out more in private — what you notice at home counts too.",
+      "allow_free_text": true
     },
     {
       "id": "YA7",

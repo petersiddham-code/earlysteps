@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "locale": "en",
   "age_band": "toddler",
   "questions": [
@@ -316,6 +316,32 @@
         }
       ],
       "hint": "Pick what feels closest — it's okay if it varies."
+    },
+    {
+      "id": "T24",
+      "domain": "repetitive_behaviour",
+      "age_band": "toddler",
+      "text": "Does [child] focus very intensely on certain objects or topics — like watching wheels spin, learning all the letters, or one specific toy — more than most toddlers?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_very_intense",
+          "label": "Yes, very intense"
+        },
+        {
+          "id": "somewhat",
+          "label": "Somewhat"
+        },
+        {
+          "id": "not_particularly",
+          "label": "Not particularly"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Strong interests are often a real strength — we're just building a picture."
     },
     {
       "id": "T12",
