@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -384,6 +384,32 @@
         }
       ],
       "hint": "This is about how much pain or temperature registers — not about how tolerant they choose to be."
+    },
+    {
+      "id": "YA15",
+      "domain": "communication",
+      "age_band": "young_adult",
+      "text": "In conversation, does it usually feel two-way — asking questions back, following what the other person says — or does it feel mostly one-sided, about their own topics?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "usually_two_way",
+          "label": "Usually goes both ways"
+        },
+        {
+          "id": "sometimes_one_sided",
+          "label": "Sometimes one-sided"
+        },
+        {
+          "id": "mostly_one_sided",
+          "label": "Mostly one-sided, about their own topics"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "It's fine to answer this together — their own sense of it counts most."
     }
   ]
 }

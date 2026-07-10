@@ -47,6 +47,16 @@ describe('domainQuestionTotalsForBand (issue #52)', () => {
     expect(domainQuestionTotalsForBand('primary').attention).toBeGreaterThanOrEqual(3);
   });
 
+  it('pins issue #80: communication reaches the 3-item evidence floor in teen/young_adult', () => {
+    // Before #80, teen/young_adult communication sat at 2 items each — the smallest gap in
+    // the coverage matrix. If any of these regress, that's a clinical-content decision, so
+    // a conscious test update is the point.
+    expect(domainQuestionTotalsForBand('teen').communication).toBeGreaterThanOrEqual(3);
+    expect(
+      domainQuestionTotalsForBand('young_adult').communication,
+    ).toBeGreaterThanOrEqual(3);
+  });
+
   it('every band total is at most the all-bank total for that domain', () => {
     const allBank: Record<string, number> = {};
     for (const ind of Object.values(INDICATORS_BY_QUESTION)) {
