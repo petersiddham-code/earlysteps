@@ -10,9 +10,13 @@ import {
 import { ClaudeResponseAnalysisClient } from './claude-analysis.client.js';
 import { FamiliesModule } from '../families/families.module.js';
 import { ScreeningModule } from '../screening/screening.module.js';
+import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
-  imports: [FamiliesModule, ScreeningModule],
+  // AuthModule registers the 'jwt' passport strategy that AnalysisController's
+  // JwtAuthGuard (issue #76) depends on — imported explicitly so this module still
+  // resolves correctly if it's ever bootstrapped on its own (e.g. in a test).
+  imports: [FamiliesModule, ScreeningModule, AuthModule],
   controllers: [AnalysisController],
   providers: [
     AnalysisService,
