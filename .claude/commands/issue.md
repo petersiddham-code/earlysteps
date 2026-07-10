@@ -86,8 +86,22 @@ and closing happen only via `/issue_close`, after the user has tested and explic
    - the clinical-content flag block from step 1.4, if applicable
 3. Watch CI to green: `gh pr checks --watch`. If CI fails, diagnose the real cause and fix
    it — don't paper over environment issues.
-4. Comment on the issue: link the PR, summarize the change in plain language, and give the
+4. **Hand off to Codex QA** (a separate Codex CLI session runs live QA against these PRs in
+   parallel, coordinating only through one shared file — see
+   `/Users/mamta/dev/temp/handoff.log`):
+   - Append exactly one line: `Codex : <YYYY-MM-DD HH:MM> Test Issue $ARGUMENTS` — note the
+     space before the colon (protocol v3). No other detail goes in this file; detailed QA
+     findings still land as normal PR comments, not in the log.
+   - Then start watching for the reply: launch a polling loop as an actual
+     `run_in_background: true` Bash command (never a `nohup`/`disown`-wrapped background
+     process — that orphans it and no completion notification ever fires) that checks every
+     ~15s for a new line appended after the current line count starting with `Claude :`, and
+     exits once it finds one.
+   - Do this even if you're not sure a Codex session is currently running — it's a cheap,
+     standing part of the handoff and costs nothing if nobody's watching the file yet.
+5. Comment on the issue: link the PR, summarize the change in plain language, and give the
    user concrete manual-test steps (what to run, what to click, what they should see).
-5. Report back to the user: what you built, what you verified, exact steps for their manual
-   test, and remind them to run `/issue_close $ARGUMENTS` when satisfied. **Stop here — do
-   not merge, do not close the issue.**
+6. Report back to the user: what you built, what you verified, exact steps for their manual
+   test, that the Codex handoff line was written and a watcher is running, and remind them
+   to run `/issue_close $ARGUMENTS` when satisfied. **Stop here — do not merge, do not close
+   the issue.**
