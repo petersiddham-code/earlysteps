@@ -16,10 +16,11 @@ function navProp() {
 
 describe('LoginScreen', () => {
   const setAccessToken = jest.fn();
+  const reset = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useSession as jest.Mock).mockReturnValue({ setAccessToken });
+    (useSession as jest.Mock).mockReturnValue({ reset, setAccessToken });
   });
 
   it('disables the submit button until both fields are filled', () => {
@@ -51,6 +52,30 @@ describe('LoginScreen', () => {
     });
   });
 
+  it('clears any stale familyId/childId from a previous session before storing the new token (Codex QA on #98)', async () => {
+    (login as jest.Mock).mockResolvedValue({
+      user: { id: 'u1', username: 'alex', tier: 'free', created_at: '2026-01-01' },
+      access_token: 't1',
+    });
+    const resetOrder: string[] = [];
+    reset.mockImplementation(async () => {
+      resetOrder.push('reset');
+    });
+    setAccessToken.mockImplementation(async () => {
+      resetOrder.push('setAccessToken');
+    });
+    const navigation = navProp();
+    render(<LoginScreen navigation={navigation} route={{} as never} />);
+
+    fireEvent.changeText(screen.getByTestId('login-username-input'), 'alex');
+    fireEvent.changeText(screen.getByTestId('login-password-input'), 'password123');
+    fireEvent.press(screen.getByTestId('login-submit-button'));
+
+    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1'));
+    expect(reset).toHaveBeenCalled();
+    expect(resetOrder).toEqual(['reset', 'setAccessToken']);
+  });
+
   it('shows the backend message on incorrect credentials, without navigating', async () => {
     (login as jest.Mock).mockRejectedValue(
       new ApiError(401, { message: 'Incorrect username or password.' }),
@@ -63,6 +88,7 @@ describe('LoginScreen', () => {
     fireEvent.press(screen.getByTestId('login-submit-button'));
 
     expect(await screen.findByText('Incorrect username or password.')).toBeTruthy();
+    expect(reset).not.toHaveBeenCalled();
     expect(setAccessToken).not.toHaveBeenCalled();
     expect(navigation.reset).not.toHaveBeenCalled();
   });

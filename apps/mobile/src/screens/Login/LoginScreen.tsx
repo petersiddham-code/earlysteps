@@ -20,12 +20,16 @@ import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js'
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 /**
- * Issue #97: gates the whole app behind a logged-in session. A successful login stores the
- * access_token and resets the navigation stack back to Splash, which re-runs its own
- * routing (family/child presence) — this screen stays unaware of what comes after it.
+ * Issue #97: gates the whole app behind a logged-in session. A successful login clears any
+ * stale familyId/childId first — until a User is linked to the Family/Child it owns (out of
+ * scope here, tracked in docs/clinical-review/content-gaps.md §6), carrying another
+ * session's local IDs into a fresh login would silently show one account another's family
+ * data or a broken questionnaire/results state. Then it stores the access_token and resets
+ * the navigation stack back to Splash, which re-runs its own routing — this screen stays
+ * unaware of what comes after it.
  */
 export function LoginScreen({ navigation }: Props) {
-  const { setAccessToken } = useSession();
+  const { reset, setAccessToken } = useSession();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -39,6 +43,7 @@ export function LoginScreen({ navigation }: Props) {
     setError(null);
     try {
       const result = await login(username.trim(), password);
+      await reset();
       await setAccessToken(result.access_token);
       navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
     } catch (err) {
