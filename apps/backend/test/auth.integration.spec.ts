@@ -10,14 +10,19 @@ import { AuthService } from '../src/auth/auth.service.js';
 import { AUTH_REPOSITORY } from '../src/auth/auth.repository.js';
 import { InMemoryAuthRepository } from '../src/auth/testing/in-memory-auth.repository.js';
 import { JwtStrategy } from '../src/auth/jwt.strategy.js';
-
-const TEST_JWT_SECRET = 'test-secret';
+import { getJwtExpiresIn, getJwtSecret } from '../src/auth/jwt-config.js';
 
 async function buildService() {
   const repository = new InMemoryAuthRepository();
   const moduleRef = await Test.createTestingModule({
     imports: [
-      JwtModule.register({ secret: TEST_JWT_SECRET, signOptions: { expiresIn: '7d' } }),
+      // Same config source as AuthModule/JwtStrategy (jwt-config.ts) — a test-only secret
+      // here would mask the exact bug this suite is meant to catch: the strategy and the
+      // signing module silently disagreeing on the secret.
+      JwtModule.register({
+        secret: getJwtSecret(),
+        signOptions: { expiresIn: getJwtExpiresIn() },
+      }),
     ],
     providers: [
       AuthService,
@@ -100,7 +105,7 @@ describe('auth — token round-trip and strategy', () => {
       'correct-horse-battery',
     );
 
-    const payload = jwtService.verify(access_token, { secret: TEST_JWT_SECRET }) as {
+    const payload = jwtService.verify(access_token, { secret: getJwtSecret() }) as {
       sub: string;
       username: string;
     };

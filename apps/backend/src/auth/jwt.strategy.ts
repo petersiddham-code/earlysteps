@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import type { User } from '@earlysteps/shared-types';
 import { AuthService } from './auth.service.js';
+import { getJwtSecret } from './jwt-config.js';
 
 interface JwtPayload {
   sub: string;
@@ -19,7 +20,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET ?? 'dev-only-insecure-secret',
+      // MUST match the secret JwtModule.register() signs with (auth.module.ts) — both read
+      // getJwtSecret() so they can never drift apart (see jwt-config.ts).
+      secretOrKey: getJwtSecret(),
     });
   }
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
 import type { User } from '@earlysteps/shared-types';
 import { AuthService, type AuthResult } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -8,7 +8,11 @@ import { CurrentUser } from './current-user.decorator.js';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    // Explicit token: vitest's esbuild transform emits no decorator design:paramtypes
+    // metadata, so class-typed constructor injection resolves to undefined in tests.
+    @Inject(AuthService) private readonly authService: AuthService,
+  ) {}
 
   @Post('register')
   register(@Body() dto: RegisterDto): Promise<AuthResult> {
@@ -16,6 +20,8 @@ export class AuthController {
   }
 
   @Post('login')
+  // Nest defaults POST handlers to 201 Created; login isn't creating anything, so it's 200.
+  @HttpCode(200)
   login(@Body() dto: LoginDto): Promise<AuthResult> {
     return this.authService.login(dto.username, dto.password);
   }

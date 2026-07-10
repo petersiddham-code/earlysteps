@@ -6,15 +6,16 @@ import { AuthService } from './auth.service.js';
 import { JwtStrategy } from './jwt.strategy.js';
 import { PrismaAuthRepository } from './prisma-auth.repository.js';
 import { AUTH_REPOSITORY } from './auth.repository.js';
+import { getJwtExpiresIn, getJwtSecret } from './jwt-config.js';
 
 @Module({
   imports: [
     PassportModule,
+    // Production MUST set JWT_SECRET (see apps/backend/.env.example) — the dev-only
+    // fallback in getJwtSecret() must never run there.
     JwtModule.register({
-      // Falls back to a fixed dev-only value so local/test runs don't need a .env entry;
-      // production MUST set JWT_SECRET (see apps/backend/.env.example).
-      secret: process.env.JWT_SECRET ?? 'dev-only-insecure-secret',
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN ?? '7d' },
+      secret: getJwtSecret(),
+      signOptions: { expiresIn: getJwtExpiresIn() },
     }),
   ],
   controllers: [AuthController],
