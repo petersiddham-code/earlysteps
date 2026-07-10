@@ -146,16 +146,22 @@ preschool/primary/teen/young_adult (the priority-1 batch below) — see
 | communication | 4 ✅ | 6 ✅ | 3 ✅ | 3 ✅ (closed by #80) | 3 ✅ (closed by #80) |
 | sensory | 4 ✅ | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) |
 | repetitive_behaviour | 3 ✅ (closed by #81) | 3 ✅ | 3 ✅ | 3 ✅ (closed by TE13) | 3 ✅ (closed by #81) |
-| attention | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | — | — |
+| attention | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | — (gap, filed as #91) | — (gap, filed as #91) |
 | emotional_regulation | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
-| learning | — | **1 •** | **1 •** | **1 •** | — |
-| daily_living | — | — | **1 •** | **1 •** | **1 •** |
+| learning | — (intentional) | **1 •** | **1 •** | **1 •** | — (gap, filed as #92) |
+| daily_living | — (intentional) | — (intentional) | **1 •** | **1 •** | **1 •** |
 
-`•` = below the floor of 3. `—` = domain not asked in that band at all — a scope question
-(is the domain developmentally inapplicable to that band, or an unaddressed gap?), not a
-count gap, and needs advisor input before any items are authored for those cells:
-attention (teen, young_adult), learning (toddler, young_adult), daily_living (toddler,
-preschool).
+`•` = below the floor of 3. `—` = domain not asked in that band at all. Issue #83 asked the
+advisor to resolve each `—` cell — is the domain developmentally inapplicable to that band,
+or an unaddressed gap? Resolved 2026-07-10:
+- **Attention (teen, young_adult)** — real gap, not intentional. Filed as #91 (net-new
+  domain coverage, 3 items each band).
+- **Learning (toddler)** — confirmed intentional (too early for a learning-style signal).
+  No items to author.
+- **Learning (young_adult)** — real gap, not intentional. Filed as #92 (net-new domain
+  coverage, 3 items).
+- **Daily_living (toddler, preschool)** — confirmed intentional (too early for independent
+  daily-living skills to be a meaningful signal). No items to author.
 
 ### Proposed authoring batches, in priority order
 
@@ -182,8 +188,13 @@ be masking-aware in their hints, the precedent set by TE13.
 5. ~~**Emotional_regulation** (toddler +2, preschool +2, primary +1 = 5 items) — residual
    after #65 closed teen/young_adult.~~ **Closed by issue #82** — T25/T26, P25/P26, PR22,
    see `2026-07-10-emotional-regulation-coverage-toddler-preschool-primary.md`.
-6. **Scope decision for the `—` cells** — advisor input only, no authoring until resolved;
-   may turn into net-new domain coverage per band rather than a top-up.
+6. ~~**Scope decision for the `—` cells** — advisor input only, no authoring until
+   resolved.~~ **Resolved by issue #83** (2026-07-10): attention (teen, young_adult) and
+   learning (young_adult) are real gaps, filed as #91 and #92; learning (toddler) and
+   daily_living (toddler, preschool) are confirmed intentional, no authoring needed. The
+   pre-existing thin cells for learning (preschool/primary/teen) and daily_living
+   (primary/teen/young_adult) remain open, unaddressed gaps — out of scope for #83, still
+   need their own batch.
 
 ### Process per batch (mirrors how #52/#54/#65 shipped)
 
