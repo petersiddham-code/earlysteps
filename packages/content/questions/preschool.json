@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "locale": "en",
   "age_band": "preschool",
   "questions": [
@@ -560,6 +560,58 @@
         }
       ],
       "hint": "A distinctive voice is just one small part of the picture."
+    },
+    {
+      "id": "P25",
+      "domain": "emotional_regulation",
+      "age_band": "preschool",
+      "text": "How does [child] handle frustration or not getting their way?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "copes_fairly_well",
+          "label": "Copes fairly well"
+        },
+        {
+          "id": "upset_but_recovers",
+          "label": "Gets upset but recovers"
+        },
+        {
+          "id": "big_reactions",
+          "label": "Big reactions, hard to calm down"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "There's no wrong answer — big feelings are part of this age."
+    },
+    {
+      "id": "P26",
+      "domain": "emotional_regulation",
+      "age_band": "preschool",
+      "text": "Does [child]'s mood shift suddenly — from calm to very upset (or back) without an obvious reason?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "rarely",
+          "label": "Rarely — mood is fairly steady"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "often_suddenly",
+          "label": "Often, and it can be sudden or intense"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about how quickly mood changes, not what causes it — every child has off days."
     },
     {
       "id": "P21",

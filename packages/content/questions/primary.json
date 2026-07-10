@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "locale": "en",
   "age_band": "primary",
   "questions": [
@@ -463,6 +463,29 @@
         }
       ],
       "hint": "Pick what happens most nights — there's no wrong answer here."
+    },
+    {
+      "id": "PR22",
+      "domain": "emotional_regulation",
+      "age_band": "primary",
+      "text": "Has [child] mentioned feeling anxious, upset, different from other kids, or like they don't fit in?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes"
+        },
+        {
+          "id": "no",
+          "label": "No"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "If comfortable, a short note helps — no pressure to share details.",
+      "allow_free_text": true
     },
     {
       "id": "PR18",

@@ -1,5 +1,5 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "locale": "en",
   "age_band": "toddler",
   "questions": [
@@ -426,6 +426,58 @@
         }
       ],
       "hint": "There's no right answer — eating changes a lot at this age."
+    },
+    {
+      "id": "T25",
+      "domain": "emotional_regulation",
+      "age_band": "toddler",
+      "text": "When [child] doesn't get what they want or something upsets them, what usually happens?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "copes_fairly_well",
+          "label": "Copes fairly well"
+        },
+        {
+          "id": "upset_but_recovers",
+          "label": "Gets upset but recovers"
+        },
+        {
+          "id": "big_reactions",
+          "label": "Big reactions, hard to calm down"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Big feelings are part of being a toddler — pick what happens most of the time."
+    },
+    {
+      "id": "T26",
+      "domain": "emotional_regulation",
+      "age_band": "toddler",
+      "text": "Does [child]'s mood shift suddenly — going from calm to very upset (or the other way around) without an obvious reason?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "rarely",
+          "label": "Rarely — mood is fairly steady"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "often_suddenly",
+          "label": "Often, and it can be sudden or intense"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about how quickly mood changes, not what causes it."
     },
     {
       "id": "T15",
