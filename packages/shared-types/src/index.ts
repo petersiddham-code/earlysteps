@@ -10,3 +10,4 @@ export * from './profile.js';
 export * from './analysis.js';
 export * from './family.js';
 export * from './resultsView.js';
+export * from './auth.js';
