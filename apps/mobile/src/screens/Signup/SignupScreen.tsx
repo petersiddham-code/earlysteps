@@ -44,7 +44,7 @@ export function SignupScreen({ navigation }: Props) {
     try {
       const result = await register(username.trim(), password);
       await reset();
-      await setAccessToken(result.access_token);
+      await setAccessToken(result.access_token, result.user.tier);
       navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
     } catch (err) {
       setError(

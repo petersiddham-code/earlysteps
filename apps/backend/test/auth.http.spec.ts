@@ -86,4 +86,20 @@ describe('auth routes — HTTP status codes', () => {
       .set('Authorization', `Bearer ${registered.body.access_token}`)
       .expect(200);
   });
+
+  it('upgrade responds 401 with no token and flips tier to premium with a valid one', async () => {
+    const registered = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ username: 'parent1', password: 'correct-horse-battery' })
+      .expect(201);
+    expect(registered.body.user.tier).toBe('free');
+
+    await request(app.getHttpServer()).patch('/auth/upgrade').expect(401);
+
+    const upgraded = await request(app.getHttpServer())
+      .patch('/auth/upgrade')
+      .set('Authorization', `Bearer ${registered.body.access_token}`)
+      .expect(200);
+    expect(upgraded.body.tier).toBe('premium');
+  });
 });

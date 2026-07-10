@@ -2,6 +2,7 @@
  * Test double ONLY. Never register this in AppModule/AuthModule providers — production
  * always uses PrismaAuthRepository.
  */
+import type { UserTier } from '@earlysteps/shared-types';
 import type { AuthRepository, CreateUserInput, StoredUser } from '../auth.repository.js';
 
 let nextId = 0;
@@ -34,5 +35,13 @@ export class InMemoryAuthRepository implements AuthRepository {
 
   async findById(id: string): Promise<StoredUser | null> {
     return this.usersById.get(id) ?? null;
+  }
+
+  async updateTier(id: string, tier: UserTier): Promise<StoredUser> {
+    const existing = this.usersById.get(id);
+    if (!existing) throw new Error(`No user with id ${id}`);
+    const updated: StoredUser = { ...existing, tier };
+    this.usersById.set(id, updated);
+    return updated;
   }
 }

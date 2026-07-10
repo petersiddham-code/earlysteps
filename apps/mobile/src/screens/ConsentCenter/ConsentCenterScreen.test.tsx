@@ -6,6 +6,7 @@ import {
   getChild,
   getFamily,
   updateConsent,
+  upgradeTier,
 } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import { CONSENT_COPY } from '@earlysteps/content';
@@ -16,11 +17,13 @@ jest.mock('../../api/index.js', () => ({
   getChild: jest.fn(),
   getFamily: jest.fn(),
   updateConsent: jest.fn(),
+  upgradeTier: jest.fn(),
 }));
 jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
 
 function navProp(canGoBack = false) {
   return {
+    navigate: jest.fn(),
     replace: jest.fn(),
     goBack: jest.fn(),
     reset: jest.fn(),
@@ -261,6 +264,111 @@ describe('ConsentCenterScreen', () => {
       expect(await screen.findByText(/couldn't delete your data/i)).toBeTruthy();
       expect(reset).not.toHaveBeenCalled();
       expect(navigation.reset).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('guest session (issue #99)', () => {
+    beforeEach(() => {
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: null,
+        childId: null,
+        setFamilyId: jest.fn(),
+        isGuest: true,
+        tier: null,
+      });
+      (createFamily as jest.Mock).mockResolvedValue(FAMILY);
+    });
+
+    it('hides data_storage and ai_analysis, keeps the other two scopes', async () => {
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('consent-guest-banner');
+
+      expect(screen.queryByText(CONSENT_COPY.scopes.data_storage.label)).toBeNull();
+      expect(screen.queryByText(CONSENT_COPY.scopes.ai_analysis.label)).toBeNull();
+      expect(screen.getByText(CONSENT_COPY.scopes.media_capture.label)).toBeTruthy();
+      expect(
+        screen.getByText(CONSENT_COPY.scopes.professional_sharing.label),
+      ).toBeTruthy();
+    });
+
+    it('hides "Delete everything" — a guest has nothing saved to delete', async () => {
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('consent-guest-banner');
+
+      expect(screen.queryByTestId('delete-everything-button')).toBeNull();
+    });
+
+    it('hides the plan section — a guest has no account to upgrade', async () => {
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('consent-guest-banner');
+
+      expect(screen.queryByTestId('consent-plan-section')).toBeNull();
+    });
+
+    it('the login link navigates to Login', async () => {
+      const navigation = navProp();
+      render(<ConsentCenterScreen navigation={navigation} route={{} as never} />);
+      await screen.findByTestId('consent-guest-banner');
+
+      fireEvent.press(screen.getByTestId('consent-guest-login-link'));
+
+      expect(navigation.navigate).toHaveBeenCalledWith('Login');
+    });
+  });
+
+  describe('plan / upgrade (issue #99)', () => {
+    it('shows an Upgrade button for a logged-in free-tier account', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        isGuest: false,
+        tier: 'free',
+        setTier: jest.fn(),
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+
+      expect(await screen.findByTestId('upgrade-to-premium-button')).toBeTruthy();
+    });
+
+    it('upgrading calls the API and updates the session tier, without an Upgrade button afterwards', async () => {
+      const setTier = jest.fn().mockResolvedValue(undefined);
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        isGuest: false,
+        tier: 'free',
+        setTier,
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+      (upgradeTier as jest.Mock).mockResolvedValue({
+        id: 'u1',
+        username: 'alex',
+        tier: 'premium',
+        created_at: '2026-01-01',
+      });
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      fireEvent.press(await screen.findByTestId('upgrade-to-premium-button'));
+
+      await waitFor(() => expect(setTier).toHaveBeenCalledWith('premium'));
+    });
+
+    it('shows Premium without an Upgrade button for an already-premium account', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        isGuest: false,
+        tier: 'premium',
+        setTier: jest.fn(),
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+
+      expect(await screen.findByTestId('consent-plan-section')).toBeTruthy();
+      expect(screen.queryByTestId('upgrade-to-premium-button')).toBeNull();
     });
   });
 });

@@ -1,7 +1,7 @@
 import { Text, Pressable } from 'react-native';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SessionProvider, useSession } from './SessionContext';
+import { SessionProvider, useSession, canUseAiFeatures } from './SessionContext';
 import { createGuestChild, getGuestChild } from '../guest/guestStore';
 
 function Probe() {
@@ -10,9 +10,13 @@ function Probe() {
     familyId,
     childId,
     accessToken,
+    tier,
+    isGuest,
     setFamilyId,
     setChildId,
     setAccessToken,
+    setTier,
+    continueAsGuest,
     setGuestChildId,
     clearChildId,
     reset,
@@ -23,6 +27,8 @@ function Probe() {
       <Text>familyId:{familyId ?? 'none'}</Text>
       <Text>childId:{childId ?? 'none'}</Text>
       <Text>accessToken:{accessToken ?? 'none'}</Text>
+      <Text>tier:{tier ?? 'none'}</Text>
+      <Text>isGuest:{String(isGuest)}</Text>
       <Text testID="child-id">{childId ?? ''}</Text>
       <Pressable onPress={() => setFamilyId('f1')}>
         <Text>set family</Text>
@@ -30,8 +36,14 @@ function Probe() {
       <Pressable onPress={() => setChildId('c1')}>
         <Text>set child</Text>
       </Pressable>
-      <Pressable onPress={() => setAccessToken('t1')}>
+      <Pressable onPress={() => setAccessToken('t1', 'free')}>
         <Text>set token</Text>
+      </Pressable>
+      <Pressable onPress={() => setTier('premium')}>
+        <Text>set premium</Text>
+      </Pressable>
+      <Pressable onPress={() => continueAsGuest()}>
+        <Text>continue as guest</Text>
       </Pressable>
       <Pressable
         onPress={() => {
@@ -90,6 +102,7 @@ describe('SessionProvider / useSession', () => {
     await AsyncStorage.setItem('earlysteps.familyId', 'f1');
     await AsyncStorage.setItem('earlysteps.childId', 'c1');
     await AsyncStorage.setItem('earlysteps.accessToken', 't1');
+    await AsyncStorage.setItem('earlysteps.tier', 'premium');
 
     render(
       <SessionProvider>
@@ -100,6 +113,7 @@ describe('SessionProvider / useSession', () => {
     expect(await screen.findByText('familyId:f1')).toBeTruthy();
     expect(screen.getByText('childId:c1')).toBeTruthy();
     expect(screen.getByText('accessToken:t1')).toBeTruthy();
+    expect(screen.getByText('tier:premium')).toBeTruthy();
   });
 
   it('setAccessToken updates context state and persists to storage (#97)', async () => {
@@ -112,7 +126,54 @@ describe('SessionProvider / useSession', () => {
     fireEvent.press(screen.getByText('set token'));
 
     await waitFor(() => expect(screen.getByText('accessToken:t1')).toBeTruthy());
+    expect(screen.getByText('tier:free')).toBeTruthy();
     expect(await AsyncStorage.getItem('earlysteps.accessToken')).toBe('t1');
+    expect(await AsyncStorage.getItem('earlysteps.tier')).toBe('free');
+  });
+
+  it('setTier updates context state and persists to storage without touching the rest (#99)', async () => {
+    render(
+      <SessionProvider>
+        <Probe />
+      </SessionProvider>,
+    );
+    await screen.findByText('accessToken:none');
+    fireEvent.press(screen.getByText('set token'));
+    await waitFor(() => expect(screen.getByText('tier:free')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('set premium'));
+
+    await waitFor(() => expect(screen.getByText('tier:premium')).toBeTruthy());
+    expect(screen.getByText('accessToken:t1')).toBeTruthy();
+    expect(await AsyncStorage.getItem('earlysteps.tier')).toBe('premium');
+  });
+
+  it('continueAsGuest sets isGuest in state only, never to on-device storage (#99)', async () => {
+    render(
+      <SessionProvider>
+        <Probe />
+      </SessionProvider>,
+    );
+    await screen.findByText('isGuest:false');
+    fireEvent.press(screen.getByText('continue as guest'));
+
+    await waitFor(() => expect(screen.getByText('isGuest:true')).toBeTruthy());
+    expect(await AsyncStorage.getItem('earlysteps.isGuest')).toBeNull();
+  });
+
+  it('reset also forgets isGuest (#99)', async () => {
+    render(
+      <SessionProvider>
+        <Probe />
+      </SessionProvider>,
+    );
+    await screen.findByText('isGuest:false');
+    fireEvent.press(screen.getByText('continue as guest'));
+    await waitFor(() => expect(screen.getByText('isGuest:true')).toBeTruthy());
+
+    fireEvent.press(screen.getByText('reset'));
+
+    await waitFor(() => expect(screen.getByText('isGuest:false')).toBeTruthy());
   });
 
   it('clearChildId forgets the child in state and storage but keeps the family (#20)', async () => {
@@ -151,8 +212,10 @@ describe('SessionProvider / useSession', () => {
     await waitFor(() => expect(screen.getByText('familyId:none')).toBeTruthy());
     expect(screen.getByText('childId:none')).toBeTruthy();
     expect(screen.getByText('accessToken:none')).toBeTruthy();
+    expect(screen.getByText('tier:none')).toBeTruthy();
     expect(await AsyncStorage.getItem('earlysteps.familyId')).toBeNull();
     expect(await AsyncStorage.getItem('earlysteps.accessToken')).toBeNull();
+    expect(await AsyncStorage.getItem('earlysteps.tier')).toBeNull();
   });
 
   it('setGuestChildId updates state but never persists to on-device storage (issue #63)', async () => {
@@ -213,5 +276,20 @@ describe('SessionProvider / useSession', () => {
       'useSession must be used within a SessionProvider',
     );
     spy.mockRestore();
+  });
+});
+
+describe('canUseAiFeatures (#99)', () => {
+  it('is false for a guest, regardless of tier', () => {
+    expect(canUseAiFeatures({ isGuest: true, tier: 'premium' })).toBe(false);
+    expect(canUseAiFeatures({ isGuest: true, tier: null })).toBe(false);
+  });
+
+  it('is false for a logged-in free-tier account', () => {
+    expect(canUseAiFeatures({ isGuest: false, tier: 'free' })).toBe(false);
+  });
+
+  it('is true only for a logged-in premium account', () => {
+    expect(canUseAiFeatures({ isGuest: false, tier: 'premium' })).toBe(true);
   });
 });

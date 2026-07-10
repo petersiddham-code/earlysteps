@@ -97,6 +97,23 @@ describe('auth — login', () => {
   });
 });
 
+describe('auth — upgrade', () => {
+  let service: AuthService;
+
+  beforeEach(async () => {
+    ({ service } = await buildService());
+  });
+
+  it('sets tier to premium and returns the public shape', async () => {
+    const { user } = await service.register('parent1', 'correct-horse-battery');
+    expect(user.tier).toBe('free');
+
+    const upgraded = await service.upgradeTier(user.id, 'premium');
+    expect(upgraded).toMatchObject({ id: user.id, username: 'parent1', tier: 'premium' });
+    expect(upgraded).not.toHaveProperty('passwordHash');
+  });
+});
+
 describe('auth — token round-trip and strategy', () => {
   it('a token issued at login carries the user id, and the strategy resolves it back to the user', async () => {
     const { service, strategy, jwtService } = await buildService();

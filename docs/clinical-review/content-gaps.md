@@ -99,6 +99,23 @@ Still open:
   response-analysis stage (no LLM call is ever made without it — a 403, and results still
   work). `media_capture` and `professional_sharing` remain stored and toggleable but ungated —
   no media capture or report-sharing feature exists yet to enforce them against.
+- **Guest access + tier gating (issue #99) — frontend-only, not the backend enforcement
+  from item (c) above.** Three access levels now exist: guest (no account — "Continue as
+  guest" on Login bypasses the auth gate from issue #97/#98 and runs the questionnaire on
+  the existing on-device guest pipeline from issue #63, nothing saved), free (logged in,
+  `tier: 'free'`), and premium (logged in, `tier: 'premium'`, set via a new self-service
+  `PATCH /auth/upgrade` — there's no payment gateway in this app, so this is a deliberate
+  stub, one-directional, free → premium only). AI-assisted free-text analysis is gated to
+  premium-only: the mobile app disables the optional "anything else" note (with an
+  explanatory label) and skips the `response-analysis` call entirely for a guest or
+  free-tier session (`canUseAiFeatures()` in `apps/mobile/src/session/SessionContext.tsx`).
+  This is enforced **client-side only**. The backend's `AnalysisService` still gates purely
+  on `ai_analysis` consent, exactly as before — it has no way to know which `User` (or
+  tier) a given `childId` belongs to, because that's precisely items (a) and (b) above,
+  still open. A caller that talks to the API directly (bypassing the app) can still reach
+  the LLM stage on a free account with `ai_analysis` consent granted. Closing that requires
+  (a) and (b) first, then extending (c) to the analysis endpoint specifically — tracked
+  here, not solved by #99.
 
 ## 7. ~~Scoring engine does not dedupe repeated answers to the same question~~ — CLOSED 2026-07-02
 

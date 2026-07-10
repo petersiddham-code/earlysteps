@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 // Default import, not `import * as bcrypt` — under ts-node/esm's CJS interop (unlike
 // vitest's esbuild transform) a namespace import silently drops bcryptjs's methods.
 import bcrypt from 'bcryptjs';
-import type { User } from '@earlysteps/shared-types';
+import type { User, UserTier } from '@earlysteps/shared-types';
 import {
   AUTH_REPOSITORY,
   type AuthRepository,
@@ -62,6 +62,16 @@ export class AuthService {
   async findById(id: string): Promise<User | null> {
     const stored = await this.repository.findById(id);
     return stored ? toPublicUser(stored) : null;
+  }
+
+  /**
+   * Issue #99: a free-tier account can self-upgrade to premium — there's no payment
+   * gateway in this app yet, so this is a deliberate stub (docs/clinical-review/
+   * content-gaps.md §6). One-directional: no downgrade path, matching the issue's ask.
+   */
+  async upgradeTier(userId: string, tier: UserTier): Promise<User> {
+    const stored = await this.repository.updateTier(userId, tier);
+    return toPublicUser(stored);
   }
 
   private issueToken(stored: StoredUser): AuthResult {

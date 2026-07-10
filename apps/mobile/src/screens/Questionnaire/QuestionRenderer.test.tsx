@@ -226,4 +226,38 @@ describe('QuestionRenderer', () => {
       expect(screen.getByTestId('free-text-U9')).toBeTruthy();
     });
   });
+
+  describe('AI-gated free-text box (issue #99)', () => {
+    it('is editable by default (backward compatible with callers that never pass canUseAiFeatures)', () => {
+      renderQuestion(otherQuestion, {
+        value: ['music'],
+        freeText: '',
+        onFreeTextChange: () => {},
+      });
+      expect(screen.getByTestId('free-text-U9').props.editable).not.toBe(false);
+    });
+
+    it('is disabled with an explanatory note when canUseAiFeatures is false', () => {
+      renderQuestion(otherQuestion, {
+        value: ['music'],
+        freeText: '',
+        onFreeTextChange: () => {},
+        canUseAiFeatures: false,
+      });
+      expect(screen.getByTestId('free-text-U9').props.editable).toBe(false);
+      expect(screen.getByText(/Available on Premium accounts/)).toBeTruthy();
+    });
+
+    it('a caregiver cannot type into the disabled free-text box', () => {
+      const onFreeTextChange = jest.fn();
+      renderQuestion(otherQuestion, {
+        value: ['music'],
+        freeText: '',
+        onFreeTextChange,
+        canUseAiFeatures: false,
+      });
+      fireEvent.changeText(screen.getByTestId('free-text-U9'), 'anything');
+      expect(onFreeTextChange).not.toHaveBeenCalled();
+    });
+  });
 });

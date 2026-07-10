@@ -30,7 +30,7 @@ import {
   getResults,
 } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
-import { useSession } from '../../session/index.js';
+import { canUseAiFeatures, useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import {
   PersonalizedText,
@@ -134,7 +134,7 @@ function followUpOptions(
 }
 
 export function ResultsScreen({ navigation, route }: Props) {
-  const { familyId, childId, clearChildId } = useSession();
+  const { familyId, childId, isGuest, tier, clearChildId } = useSession();
   const [results, setResults] = useState<ResultsView | null>(null);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -178,12 +178,16 @@ export function ResultsScreen({ navigation, route }: Props) {
     // Best-effort extras (issue #26): ask the server to analyze any typed answers and
     // return pending confirmation follow-ups. Results NEVER wait on this — any failure
     // (offline, no AI consent → 403, analysis unavailable) just means no follow-up
-    // card. The deterministic results above are complete without it.
-    analyzeResponses(childId)
-      .then((suggestions) => {
-        if (!cancelled) setFollowUps(suggestions);
-      })
-      .catch(() => {});
+    // card. The deterministic results above are complete without it. Issue #99: a guest
+    // or free-tier session never reaches the LLM stage — same as the free-text box being
+    // disabled on the questionnaire, don't even attempt the call.
+    if (canUseAiFeatures({ isGuest, tier })) {
+      analyzeResponses(childId)
+        .then((suggestions) => {
+          if (!cancelled) setFollowUps(suggestions);
+        })
+        .catch(() => {});
+    }
     if (familyId) {
       getChild(familyId, childId)
         .then((child) => {
@@ -194,7 +198,7 @@ export function ResultsScreen({ navigation, route }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [familyId, childId, navigation, route.params, attempt]);
+  }, [familyId, childId, isGuest, tier, navigation, route.params, attempt]);
 
   /**
    * The caregiver's structured answer is submitted as a NORMAL intake response — the
