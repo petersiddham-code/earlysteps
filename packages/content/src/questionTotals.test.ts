@@ -63,6 +63,23 @@ describe('domainQuestionTotalsForBand (issue #52)', () => {
     ).toBeGreaterThanOrEqual(3);
   });
 
+  it('pins issue #82: emotional_regulation reaches the 3-item evidence floor in toddler/preschool/primary', () => {
+    // Before #82, toddler/preschool sat at 1 item (just the sleep question, T15/P21) and
+    // primary sat at 2 (PR13 frustration-coping + PR17 sleep) — the last remaining gap
+    // after #65's sleep-question work closed teen/young_adult as a side effect. If any of
+    // these regress, that's a clinical-content decision, so a conscious test update is the
+    // point.
+    expect(
+      domainQuestionTotalsForBand('toddler').emotional_regulation,
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      domainQuestionTotalsForBand('preschool').emotional_regulation,
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      domainQuestionTotalsForBand('primary').emotional_regulation,
+    ).toBeGreaterThanOrEqual(3);
+  });
+
   it('every band total is at most the all-bank total for that domain', () => {
     const allBank: Record<string, number> = {};
     for (const ind of Object.values(INDICATORS_BY_QUESTION)) {

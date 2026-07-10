@@ -138,7 +138,7 @@ young_adult as a side effect of the sleep-question work. Issue #78 closed sensor
 preschool/primary/teen/young_adult (the priority-1 batch below) — see
 `2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`. The rest remain open.
 
-### Current state (post #81)
+### Current state (post #82)
 
 | Domain | toddler | preschool | primary | teen | young_adult |
 |---|---|---|---|---|---|
@@ -147,7 +147,7 @@ preschool/primary/teen/young_adult (the priority-1 batch below) — see
 | sensory | 4 ✅ | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) | 3 ✅ (closed by #78) |
 | repetitive_behaviour | 3 ✅ (closed by #81) | 3 ✅ | 3 ✅ | 3 ✅ (closed by TE13) | 3 ✅ (closed by #81) |
 | attention | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | — | — |
-| emotional_regulation | **1 •** | **1 •** | **2 •** | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
+| emotional_regulation | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
 | learning | — | **1 •** | **1 •** | **1 •** | — |
 | daily_living | — | — | **1 •** | **1 •** | **1 •** |
 
@@ -179,8 +179,9 @@ be masking-aware in their hints, the precedent set by TE13.
 4. ~~**Repetitive_behaviour** (toddler +1, young_adult +1 = 2 items) — residual after
    TE13.~~ **Closed by issue #81** — T24, YA16, see
    `2026-07-10-repetitive-behaviour-coverage-toddler-young-adult.md`.
-5. **Emotional_regulation** (toddler +2, preschool +2, primary +1 = 5 items) — residual
-   after #65 closed teen/young_adult.
+5. ~~**Emotional_regulation** (toddler +2, preschool +2, primary +1 = 5 items) — residual
+   after #65 closed teen/young_adult.~~ **Closed by issue #82** — T25/T26, P25/P26, PR22,
+   see `2026-07-10-emotional-regulation-coverage-toddler-preschool-primary.md`.
 6. **Scope decision for the `—` cells** — advisor input only, no authoring until resolved;
    may turn into net-new domain coverage per band rather than a top-up.
 
