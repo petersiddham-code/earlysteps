@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -527,6 +527,84 @@
         }
       ],
       "hint": "This is about wanting to share something because it interests them, not asking for help or approval."
+    },
+    {
+      "id": "YA20",
+      "domain": "learning",
+      "age_band": "young_adult",
+      "text": "Does [child] work or study best with a clear, predictable structure — and find it harder without one?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "strongly_prefers_structure",
+          "label": "Strongly prefers a set structure"
+        },
+        {
+          "id": "somewhat_prefers_structure",
+          "label": "Somewhat prefers it, manages either way"
+        },
+        {
+          "id": "no_strong_preference",
+          "label": "No strong preference"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about work or study routines specifically — not daily life in general."
+    },
+    {
+      "id": "YA21",
+      "domain": "learning",
+      "age_band": "young_adult",
+      "text": "When a teacher, manager, or course suddenly changes how something is explained or the format of a task, how does [child] handle it?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "adjusts_easily",
+          "label": "Adjusts fairly easily"
+        },
+        {
+          "id": "needs_time_to_adjust",
+          "label": "Needs time and re-explanation to adjust"
+        },
+        {
+          "id": "very_unsettling",
+          "label": "Finds it very unsettling or hard to follow"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about a change in how instructions are given, not a change in the task's difficulty."
+    },
+    {
+      "id": "YA22",
+      "domain": "learning",
+      "age_band": "young_adult",
+      "text": "When learning something new, does [child] tend to focus closely on getting details exactly right, sometimes more than on the overall goal?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "yes_strongly",
+          "label": "Yes, strongly"
+        },
+        {
+          "id": "somewhat",
+          "label": "Somewhat"
+        },
+        {
+          "id": "not_particularly",
+          "label": "Not particularly"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "A close eye for detail is often a real strength — we're just building a picture of learning style."
     }
   ]
 }
