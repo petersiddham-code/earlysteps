@@ -13,7 +13,11 @@ import {
 } from '@earlysteps/shared-types';
 
 const MAX_SIGNALS = 3;
-const MAX_QUOTE_CHARS = 500;
+// Issue #102: several suggestions can now render together on one compact screen before
+// Results, instead of spread down the Results page one at a time — a generous backstop
+// (the prompt asks the model for ~10-12 words), not the primary length control, so a
+// slightly verbose model response doesn't silently drop an otherwise-valid safety signal.
+const MAX_QUOTE_CHARS = 160;
 
 const signalSchema = z.object({
   red_flag_type: z.enum(RED_FLAG_TYPES).nullable(),

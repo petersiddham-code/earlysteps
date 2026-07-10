@@ -17,6 +17,7 @@ import {
   isAskedInQuestionnaire,
 } from '@earlysteps/content';
 import {
+  isFreeTextAnswer,
   makeFreeTextAnswer,
   OTHER_OPTION_ID,
   type Child,
@@ -59,6 +60,20 @@ function isAnswered(answer: Answer | undefined): answer is Answer {
   if (answer === undefined) return false;
   if (Array.isArray(answer)) return answer.length > 0;
   return answer.trim().length > 0;
+}
+
+/**
+ * Issue #102: whether this submission batch carries any caregiver-typed text at all —
+ * decides whether the FollowUpCheck interim step runs before Results. A guest or
+ * free-tier session can never produce true here (the free-text box is disabled for
+ * them, #99), but the check is cheap insurance rather than trusting that indirectly.
+ */
+function hasFreeTextAnswer(responses: Omit<IntakeResponse, 'child_id'>[]): boolean {
+  return responses.some((r) =>
+    Array.isArray(r.answer)
+      ? r.answer.some(isFreeTextAnswer)
+      : typeof r.answer === 'string' && isFreeTextAnswer(r.answer),
+  );
 }
 
 /**
@@ -213,7 +228,15 @@ export function QuestionnaireScreen({ navigation }: Props) {
 
     try {
       await submitIntakeResponses(childId, responses);
-      navigation.replace('Results');
+      // Issue #102: a Premium submission that included free text checks for AI-detected
+      // confirmation follow-ups BEFORE Results renders, so a caregiver never watches a
+      // result change under them after confirming one. Everyone else — guest, free tier,
+      // or nothing typed this session — goes straight to Results, unchanged.
+      if (canUseAiFeatures({ isGuest, tier }) && hasFreeTextAnswer(responses)) {
+        navigation.replace('FollowUpCheck');
+      } else {
+        navigation.replace('Results');
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
         // Saving answers needs data_storage consent — send them back to grant it, don't

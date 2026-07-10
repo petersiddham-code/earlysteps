@@ -406,6 +406,44 @@ describe('QuestionnaireScreen', () => {
     await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Results'));
   });
 
+  it('navigates to FollowUpCheck, not Results, when a Premium submission includes free text (issue #102)', async () => {
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    (submitIntakeResponses as jest.Mock).mockResolvedValue({});
+    const navigation = navProp();
+    render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    skipToQuestion(/avoid certain textures/); // T13, flagged allow_free_text
+    fireEvent.changeText(screen.getByTestId('free-text-T13'), 'only certain socks');
+    fireEvent.press(screen.getByTestId('next-button'));
+    skipToReview();
+    fireEvent.press(screen.getByTestId('submit-button'));
+
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('FollowUpCheck'));
+    expect(navigation.replace).not.toHaveBeenCalledWith('Results');
+  });
+
+  it('still navigates straight to Results for a free-tier account, never FollowUpCheck (issue #102)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      isGuest: false,
+      tier: 'free',
+    });
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    (submitIntakeResponses as jest.Mock).mockResolvedValue({});
+    const navigation = navProp();
+    render(<QuestionnaireScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    fireEvent.press(screen.getByText('Yes')); // answer Q1 (U3) so there is something to save
+    skipToReview();
+    fireEvent.press(screen.getByTestId('submit-button'));
+
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Results'));
+    expect(navigation.replace).not.toHaveBeenCalledWith('FollowUpCheck');
+  });
+
   it('skips the save entirely when every question was skipped — straight to Results (#20)', async () => {
     (getChild as jest.Mock).mockResolvedValue(CHILD);
     const navigation = navProp();

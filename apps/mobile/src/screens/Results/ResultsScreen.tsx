@@ -8,10 +8,9 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { allQuestions, getFollowUp, RESULT_COPY } from '@earlysteps/content';
+import { allQuestions, RESULT_COPY } from '@earlysteps/content';
 import {
   DOMAIN_DISPLAY_NAMES,
-  FOLLOW_UP_ANSWER_OPTIONS,
   isFreeTextAnswer,
   stripFreeTextPrefix,
   type Domain,
@@ -23,17 +22,17 @@ import {
   type SignLevelLabel,
 } from '@earlysteps/shared-types';
 import {
-  analyzeResponses,
   answerFollowUpSuggestion,
   getChild,
   getIntakeResponses,
+  getFollowUpSuggestions,
   getResults,
 } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
 import { canUseAiFeatures, useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import {
-  PersonalizedText,
+  FollowUpSuggestions,
   PrimaryButton,
   ScreeningDisclaimer,
   StrengthsFirstList,
@@ -119,20 +118,6 @@ const LABEL_TO_SIGN_LEVEL: Record<SignLevelLabel, SignLevel> = {
   'Many signs observed': 'many',
 };
 
-/**
- * Closed-choice answers for a confirmation follow-up, labelled from the content
- * package (single source of truth — never hardcoded here, CLAUDE.md §5). Anything
- * off the yes/no/not_sure vocabulary is dropped defensively.
- */
-function followUpOptions(
-  suggestion: FollowUpSuggestion,
-): { id: FollowUpAnswer; label: string }[] {
-  const options = getFollowUp(suggestion.follow_up_id)?.options ?? [];
-  return options.filter((option): option is { id: FollowUpAnswer; label: string } =>
-    (FOLLOW_UP_ANSWER_OPTIONS as readonly string[]).includes(option.id),
-  );
-}
-
 export function ResultsScreen({ navigation, route }: Props) {
   const { familyId, childId, isGuest, tier, clearChildId } = useSession();
   const [results, setResults] = useState<ResultsView | null>(null);
@@ -175,14 +160,15 @@ export function ResultsScreen({ navigation, route }: Props) {
         setError("We couldn't load your results. Please try again.");
       });
 
-    // Best-effort extras (issue #26): ask the server to analyze any typed answers and
-    // return pending confirmation follow-ups. Results NEVER wait on this — any failure
-    // (offline, no AI consent → 403, analysis unavailable) just means no follow-up
-    // card. The deterministic results above are complete without it. Issue #99: a guest
-    // or free-tier session never reaches the LLM stage — same as the free-text box being
-    // disabled on the questionnaire, don't even attempt the call.
+    // Safety net, not a trigger (issue #102): FollowUpCheckScreen is what actually asks
+    // the server to analyze typed answers, before this screen ever renders, for a
+    // Premium submission that included free text. This just reads whatever's still
+    // pending — e.g. the 8-second timeout there elapsed before analysis finished — so a
+    // slow result still surfaces here rather than being lost. Never calls the LLM itself,
+    // never blocks: any failure (offline, no AI consent → 403) just means no card. Issue
+    // #99: a guest or free-tier session never reaches the LLM stage at all.
     if (canUseAiFeatures({ isGuest, tier })) {
-      analyzeResponses(childId)
+      getFollowUpSuggestions(childId)
         .then((suggestions) => {
           if (!cancelled) setFollowUps(suggestions);
         })
@@ -450,57 +436,19 @@ export function ResultsScreen({ navigation, route }: Props) {
         )}
       </View>
 
-      {/* Issue #26: confirmation follow-ups for things the caregiver typed in their
-          own words. The AI only proposed showing these content-authored questions —
-          the caregiver's structured answer goes through the normal deterministic
-          pipeline, which alone decides scores and red flags. Purely additive: when
-          there are no suggestions (or AI consent is off), this card simply isn't. */}
-      {followUps.length > 0 && (
-        <View style={styles.card} testID="follow-up-card">
-          <Text style={styles.followUpHeading}>About something you wrote</Text>
-          <Text style={styles.followUpIntro}>
-            Your own words matter. To be sure we understood them, here's a quick question
-            — your answer is what counts, and "I'm not sure" is always fine.
-          </Text>
-          {followUps.map((suggestion) => (
-            <View
-              key={suggestion.id}
-              style={styles.followUpItem}
-              testID={`follow-up-${suggestion.follow_up_id}`}
-            >
-              <Text style={styles.followUpQuote}>"{suggestion.source_quote}"</Text>
-              <PersonalizedText
-                template={suggestion.text}
-                name={childName}
-                style={styles.followUpQuestion}
-              />
-              <PersonalizedText
-                template={suggestion.hint}
-                name={childName}
-                style={styles.followUpHint}
-              />
-              <View style={styles.followUpOptions}>
-                {followUpOptions(suggestion).map((option) => (
-                  <Pressable
-                    key={option.id}
-                    onPress={() => handleFollowUpAnswer(suggestion, option.id)}
-                    disabled={answeringId !== null}
-                    accessibilityRole="button"
-                    style={[
-                      styles.followUpOption,
-                      answeringId !== null && styles.followUpOptionDisabled,
-                    ]}
-                    testID={`follow-up-${suggestion.follow_up_id}-${option.id}`}
-                  >
-                    <Text style={styles.followUpOptionText}>{option.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          ))}
-          {followUpError && <Text style={styles.errorText}>{followUpError}</Text>}
-        </View>
-      )}
+      {/* Issue #26: a safety net for any confirmation follow-up still pending (issue
+          #102 moved the normal path to FollowUpCheckScreen, before this screen ever
+          renders). The AI only proposed showing these content-authored questions — the
+          caregiver's structured answer goes through the normal deterministic pipeline,
+          which alone decides scores and red flags. Purely additive: nothing pending (or
+          AI consent is off) means this card simply isn't. */}
+      <FollowUpSuggestions
+        suggestions={followUps}
+        childName={childName}
+        answeringId={answeringId}
+        error={followUpError}
+        onAnswer={handleFollowUpAnswer}
+      />
 
       {/* Issue #20: results must never be a dead end. Splash replace()s straight here for
           a returning session, so without these the caregiver has no path back into the
@@ -588,30 +536,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   answerMoreButton: { marginTop: spacing.md },
-  followUpHeading: { ...type.title, color: colors.ink, marginBottom: spacing.xs },
-  followUpIntro: { ...type.caption, color: colors.inkSoft, marginBottom: spacing.lg },
-  followUpItem: { marginBottom: spacing.md },
-  followUpQuote: {
-    ...type.body,
-    color: colors.inkSoft,
-    fontStyle: 'italic',
-    marginBottom: spacing.sm,
-  },
-  followUpQuestion: { ...type.bodyStrong, color: colors.ink, marginBottom: spacing.xs },
-  followUpHint: { ...type.caption, color: colors.inkSoft, marginBottom: spacing.md },
-  followUpOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  followUpOption: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  followUpOptionDisabled: { opacity: 0.5 },
-  followUpOptionText: { ...type.bodyStrong, color: colors.ink },
   actions: { marginTop: spacing.md, gap: spacing.sm },
   actionsHint: {
     ...type.caption,

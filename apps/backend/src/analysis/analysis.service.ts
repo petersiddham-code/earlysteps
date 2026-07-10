@@ -114,7 +114,10 @@ export class AnalysisService {
             followUpId: followUp.id,
             redFlagType: signal.red_flag_type,
             sourceQuestionId: response.question_id,
-            sourceQuote: freeText,
+            // Issue #102: the model's own short, schema-length-capped fragment, not the
+            // caregiver's whole typed note — several of these can now render together
+            // on one screen, so each needs to stay display-sized.
+            sourceQuote: signal.evidence_quote,
             salience: signal.salience,
           });
         }
