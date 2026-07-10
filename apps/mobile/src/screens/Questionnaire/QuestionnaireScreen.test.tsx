@@ -10,7 +10,11 @@ jest.mock('../../api/index.js', () => ({
   getIntakeResponses: jest.fn(),
   submitIntakeResponses: jest.fn(),
 }));
-jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
+jest.mock('../../session/index.js', () => ({
+  // canUseAiFeatures is real — only useSession is a mock (issue #99).
+  ...jest.requireActual('../../session/index.js'),
+  useSession: jest.fn(),
+}));
 
 function navProp() {
   return { replace: jest.fn(), navigate: jest.fn() } as unknown as Parameters<
@@ -54,7 +58,14 @@ function skipToReview() {
 describe('QuestionnaireScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (useSession as jest.Mock).mockReturnValue({ familyId: 'f1', childId: 'c1' });
+    // Default: a logged-in premium account, so existing free-text tests exercise full
+    // functionality unless a test opts into guest/free-tier gating (issue #99).
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      isGuest: false,
+      tier: 'premium',
+    });
     // Default: a first visit — nothing answered yet, the full bank is asked.
     (getIntakeResponses as jest.Mock).mockResolvedValue([]);
   });
@@ -285,6 +296,36 @@ describe('QuestionnaireScreen', () => {
         answer: ['free_text:only certain socks'],
       }),
     ]);
+  });
+
+  it('disables the "add anything else" free-text box for a guest session (issue #99)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'guest:c1',
+      isGuest: true,
+      tier: null,
+    });
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    skipToQuestion(/avoid certain textures/); // T13, flagged allow_free_text
+    expect(screen.getByTestId('free-text-T13').props.editable).toBe(false);
+  });
+
+  it('disables the "add anything else" free-text box for a logged-in free-tier account (issue #99)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      isGuest: false,
+      tier: 'free',
+    });
+    (getChild as jest.Mock).mockResolvedValue(CHILD);
+    render(<QuestionnaireScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(/Question 1 of \d+/);
+
+    skipToQuestion(/avoid certain textures/); // T13, flagged allow_free_text
+    expect(screen.getByTestId('free-text-T13').props.editable).toBe(false);
   });
 
   it('only submits answered questions, with the correct payload shape', async () => {

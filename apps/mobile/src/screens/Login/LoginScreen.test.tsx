@@ -17,10 +17,11 @@ function navProp() {
 describe('LoginScreen', () => {
   const setAccessToken = jest.fn();
   const reset = jest.fn();
+  const continueAsGuest = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useSession as jest.Mock).mockReturnValue({ reset, setAccessToken });
+    (useSession as jest.Mock).mockReturnValue({ reset, setAccessToken, continueAsGuest });
   });
 
   it('disables the submit button until both fields are filled', () => {
@@ -45,7 +46,7 @@ describe('LoginScreen', () => {
     fireEvent.press(screen.getByTestId('login-submit-button'));
 
     await waitFor(() => expect(login).toHaveBeenCalledWith('alex', 'password123'));
-    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1'));
+    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1', 'free'));
     expect(navigation.reset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: 'Splash' }],
@@ -71,7 +72,7 @@ describe('LoginScreen', () => {
     fireEvent.changeText(screen.getByTestId('login-password-input'), 'password123');
     fireEvent.press(screen.getByTestId('login-submit-button'));
 
-    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1'));
+    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1', 'free'));
     expect(reset).toHaveBeenCalled();
     expect(resetOrder).toEqual(['reset', 'setAccessToken']);
   });
@@ -100,5 +101,19 @@ describe('LoginScreen', () => {
     fireEvent.press(screen.getByTestId('login-go-to-signup'));
 
     expect(navigation.navigate).toHaveBeenCalledWith('Signup');
+  });
+
+  it('continues as guest and resets to Splash without calling login (#99)', () => {
+    const navigation = navProp();
+    render(<LoginScreen navigation={navigation} route={{} as never} />);
+
+    fireEvent.press(screen.getByTestId('login-continue-as-guest'));
+
+    expect(continueAsGuest).toHaveBeenCalled();
+    expect(login).not.toHaveBeenCalled();
+    expect(navigation.reset).toHaveBeenCalledWith({
+      index: 0,
+      routes: [{ name: 'Splash' }],
+    });
   });
 });

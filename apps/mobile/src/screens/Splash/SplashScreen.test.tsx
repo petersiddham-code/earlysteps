@@ -11,16 +11,30 @@ function navProp() {
 }
 
 describe('SplashScreen', () => {
-  it('routes to Login when there is no access token (#97)', async () => {
+  it('routes to Login when there is no access token and no guest session (#97)', async () => {
     (useSession as jest.Mock).mockReturnValue({
       isLoading: false,
       accessToken: null,
+      isGuest: false,
       familyId: null,
       childId: null,
     });
     const navigation = navProp();
     render(<SplashScreen navigation={navigation} route={{} as never} />);
     await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Login'));
+  });
+
+  it('bypasses Login for a guest session even without an access token (#99)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      isLoading: false,
+      accessToken: null,
+      isGuest: true,
+      familyId: null,
+      childId: null,
+    });
+    const navigation = navProp();
+    render(<SplashScreen navigation={navigation} route={{} as never} />);
+    await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('ConsentCenter'));
   });
 
   it('routes to ConsentCenter when logged in but there is no family yet', async () => {

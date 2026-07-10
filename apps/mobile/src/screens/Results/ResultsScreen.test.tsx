@@ -18,7 +18,11 @@ jest.mock('../../api/index.js', () => ({
   answerFollowUpSuggestion: jest.fn(),
   getChild: jest.fn(),
 }));
-jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
+jest.mock('../../session/index.js', () => ({
+  // canUseAiFeatures is real — only useSession is a mock (issue #99).
+  ...jest.requireActual('../../session/index.js'),
+  useSession: jest.fn(),
+}));
 
 function navProp() {
   return { replace: jest.fn(), navigate: jest.fn() } as unknown as Parameters<
@@ -104,6 +108,8 @@ describe('ResultsScreen', () => {
     (useSession as jest.Mock).mockReturnValue({
       familyId: 'f1',
       childId: 'c1',
+      isGuest: false,
+      tier: 'premium',
       clearChildId,
     });
     // Default: analysis is a no-op extra — most tests exercise plain results.
@@ -493,6 +499,34 @@ describe('ResultsScreen', () => {
     expect(await screen.findByText(SCREENING_DISCLAIMER)).toBeTruthy();
     expect(getResults).toHaveBeenCalledTimes(2);
   });
+
+  it('never calls analyzeResponses for a guest session (issue #99)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'guest:c1',
+      isGuest: true,
+      tier: null,
+      clearChildId,
+    });
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(analyzeResponses).not.toHaveBeenCalled();
+  });
+
+  it('never calls analyzeResponses for a logged-in free-tier account (issue #99)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      isGuest: false,
+      tier: 'free',
+      clearChildId,
+    });
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(analyzeResponses).not.toHaveBeenCalled();
+  });
 });
 
 describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () => {
@@ -502,6 +536,8 @@ describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () =
     (useSession as jest.Mock).mockReturnValue({
       familyId: 'f1',
       childId: 'c1',
+      isGuest: false,
+      tier: 'premium',
       clearChildId,
     });
     (getResults as jest.Mock).mockResolvedValue({ ...RESULTS, redFlagTypes: [] });

@@ -45,7 +45,7 @@ describe('SignupScreen', () => {
     fireEvent.press(screen.getByTestId('signup-submit-button'));
 
     await waitFor(() => expect(register).toHaveBeenCalledWith('alex', 'password123'));
-    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1'));
+    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1', 'free'));
     expect(navigation.reset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: 'Splash' }],
@@ -71,7 +71,7 @@ describe('SignupScreen', () => {
     fireEvent.changeText(screen.getByTestId('signup-password-input'), 'password123');
     fireEvent.press(screen.getByTestId('signup-submit-button'));
 
-    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1'));
+    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1', 'free'));
     expect(reset).toHaveBeenCalled();
     expect(resetOrder).toEqual(['reset', 'setAccessToken']);
   });

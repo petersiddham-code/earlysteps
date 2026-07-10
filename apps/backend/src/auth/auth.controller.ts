@@ -1,4 +1,13 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Inject,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import type { User } from '@earlysteps/shared-types';
 import { AuthService, type AuthResult } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -30,5 +39,16 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: User): User {
     return user;
+  }
+
+  /**
+   * Issue #99: self-service upgrade — no payment gateway exists yet, so this is a
+   * deliberate stub (docs/clinical-review/content-gaps.md §6), one-directional
+   * (free -> premium only).
+   */
+  @Patch('upgrade')
+  @UseGuards(JwtAuthGuard)
+  upgrade(@CurrentUser() user: User): Promise<User> {
+    return this.authService.upgradeTier(user.id, 'premium');
   }
 }

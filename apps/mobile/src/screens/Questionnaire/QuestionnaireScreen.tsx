@@ -25,7 +25,7 @@ import {
 } from '@earlysteps/shared-types';
 import { getChild, getIntakeResponses, submitIntakeResponses } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
-import { useSession } from '../../session/index.js';
+import { canUseAiFeatures, useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { PrimaryButton, SteppingStones } from '../../components/index.js';
 import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
@@ -101,7 +101,7 @@ function mergeAnswer(
  * the review step, exactly as before the redesign.
  */
 export function QuestionnaireScreen({ navigation }: Props) {
-  const { familyId, childId } = useSession();
+  const { familyId, childId, isGuest, tier } = useSession();
   const [child, setChild] = useState<Child | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
@@ -420,6 +420,7 @@ export function QuestionnaireScreen({ navigation }: Props) {
             onOtherTextChange={(next) =>
               setOtherTexts((prev) => ({ ...prev, [question.id]: next }))
             }
+            canUseAiFeatures={canUseAiFeatures({ isGuest, tier })}
           />
         </Animated.View>
       )}

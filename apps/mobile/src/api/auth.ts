@@ -13,3 +13,8 @@ export function register(username: string, password: string): Promise<AuthResult
 export function login(username: string, password: string): Promise<AuthResult> {
   return apiClient.post<AuthResult>('/auth/login', { username, password });
 }
+
+/** Issue #99: self-service, one-directional (free -> premium) — see AuthController.upgrade. */
+export function upgradeTier(): Promise<User> {
+  return apiClient.patch<User>('/auth/upgrade');
+}

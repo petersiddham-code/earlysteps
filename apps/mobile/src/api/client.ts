@@ -19,14 +19,29 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Issue #99: the only JwtAuthGuard-protected route today is `/auth/upgrade` — most
+ * families/screening/analysis endpoints are still unauthenticated (see
+ * docs/clinical-review/content-gaps.md §6). SessionContext calls this whenever the
+ * in-session access token changes, so any guarded route this client calls carries it.
+ */
+let currentAccessToken: string | null = null;
+export function setAuthToken(token: string | null): void {
+  currentAccessToken = token;
+}
+
 async function request<T>(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (body) headers['content-type'] = 'application/json';
+  if (currentAccessToken) headers.authorization = `Bearer ${currentAccessToken}`;
+
   const res = await fetch(`${getApiBaseUrl()}${path}`, {
     method,
-    headers: body ? { 'content-type': 'application/json' } : undefined,
+    headers: Object.keys(headers).length > 0 ? headers : undefined,
     body: body ? JSON.stringify(body) : undefined,
   });
 

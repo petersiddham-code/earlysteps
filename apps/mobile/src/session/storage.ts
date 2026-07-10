@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { UserTier } from '@earlysteps/shared-types';
 
 /**
  * On-device persistence for the current family/child/login session so the app doesn't force
@@ -9,20 +10,25 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const FAMILY_ID_KEY = 'earlysteps.familyId';
 const CHILD_ID_KEY = 'earlysteps.childId';
 const ACCESS_TOKEN_KEY = 'earlysteps.accessToken';
+/** Issue #99: mirrors the logged-in user's tier so LLM-gated UI survives an app restart
+ * without a round trip — refreshed from the server on every login/signup/upgrade. */
+const TIER_KEY = 'earlysteps.tier';
 
 export interface StoredSession {
   familyId: string | null;
   childId: string | null;
   accessToken: string | null;
+  tier: UserTier | null;
 }
 
 export async function loadSession(): Promise<StoredSession> {
-  const [familyId, childId, accessToken] = await Promise.all([
+  const [familyId, childId, accessToken, tier] = await Promise.all([
     AsyncStorage.getItem(FAMILY_ID_KEY),
     AsyncStorage.getItem(CHILD_ID_KEY),
     AsyncStorage.getItem(ACCESS_TOKEN_KEY),
+    AsyncStorage.getItem(TIER_KEY),
   ]);
-  return { familyId, childId, accessToken };
+  return { familyId, childId, accessToken, tier: tier as UserTier | null };
 }
 
 export async function saveFamilyId(familyId: string): Promise<void> {
@@ -37,6 +43,10 @@ export async function saveAccessToken(accessToken: string): Promise<void> {
   await AsyncStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
 }
 
+export async function saveTier(tier: UserTier): Promise<void> {
+  await AsyncStorage.setItem(TIER_KEY, tier);
+}
+
 /** Forget the child but keep the family (and its consent flags) — used to start a fresh
  * screening for another child's details (#20 interim, until multi-child lands, #23). */
 export async function clearChildId(): Promise<void> {
@@ -44,5 +54,10 @@ export async function clearChildId(): Promise<void> {
 }
 
 export async function clearSession(): Promise<void> {
-  await AsyncStorage.multiRemove([FAMILY_ID_KEY, CHILD_ID_KEY, ACCESS_TOKEN_KEY]);
+  await AsyncStorage.multiRemove([
+    FAMILY_ID_KEY,
+    CHILD_ID_KEY,
+    ACCESS_TOKEN_KEY,
+    TIER_KEY,
+  ]);
 }

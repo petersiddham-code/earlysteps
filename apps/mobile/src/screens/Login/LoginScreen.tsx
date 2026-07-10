@@ -27,9 +27,14 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
  * data or a broken questionnaire/results state. Then it stores the access_token and resets
  * the navigation stack back to Splash, which re-runs its own routing — this screen stays
  * unaware of what comes after it.
+ *
+ * Issue #99: "Continue as guest" is the other way past the gate — no account, so answers
+ * run through the same on-device-only pipeline as declining data_storage consent (issue
+ * #63) and AI-assisted analysis is unavailable (packages/scoring-engine untouched; see
+ * canUseAiFeatures in session/SessionContext.tsx).
  */
 export function LoginScreen({ navigation }: Props) {
-  const { reset, setAccessToken } = useSession();
+  const { reset, setAccessToken, continueAsGuest } = useSession();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +49,7 @@ export function LoginScreen({ navigation }: Props) {
     try {
       const result = await login(username.trim(), password);
       await reset();
-      await setAccessToken(result.access_token);
+      await setAccessToken(result.access_token, result.user.tier);
       navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
     } catch (err) {
       setError(
@@ -54,6 +59,11 @@ export function LoginScreen({ navigation }: Props) {
       );
       setSubmitting(false);
     }
+  };
+
+  const handleContinueAsGuest = () => {
+    continueAsGuest();
+    navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
   };
 
   return (
@@ -114,6 +124,24 @@ export function LoginScreen({ navigation }: Props) {
         >
           <Text style={styles.linkText}>Don't have an account? Sign up</Text>
         </Pressable>
+
+        <View style={styles.guestDivider}>
+          <View style={styles.guestDividerLine} />
+          <Text style={styles.guestDividerText}>or</Text>
+          <View style={styles.guestDividerLine} />
+        </View>
+
+        <Pressable
+          onPress={handleContinueAsGuest}
+          accessibilityRole="button"
+          testID="login-continue-as-guest"
+        >
+          <Text style={styles.guestText}>Continue as guest</Text>
+        </Pressable>
+        <Text style={styles.guestHint}>
+          Answer now without an account. Nothing is saved, and AI-assisted analysis isn't
+          available — sign up any time to keep your results and unlock more.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -152,5 +180,32 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: 'center',
     marginTop: spacing.xl,
+  },
+  guestDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.xxl,
+  },
+  guestDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  guestDividerText: {
+    ...type.caption,
+    color: colors.inkSoft,
+    marginHorizontal: spacing.md,
+  },
+  guestText: {
+    ...type.bodyStrong,
+    color: colors.ink,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+  },
+  guestHint: {
+    ...type.caption,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
 });

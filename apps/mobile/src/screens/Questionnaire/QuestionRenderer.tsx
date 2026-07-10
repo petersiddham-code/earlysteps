@@ -25,6 +25,14 @@ export interface QuestionRendererProps {
   /** What the caregiver typed for a selected "Other — type it" option (#28). */
   otherText?: string;
   onOtherTextChange?: (value: string) => void;
+  /**
+   * Issue #99: the optional "anything else" note is analyzed by an LLM stage — a guest
+   * session or a free-tier account never reaches that stage (see canUseAiFeatures in
+   * session/SessionContext.tsx), so the box is shown but disabled rather than hidden, with
+   * an explanation, instead of silently accepting text that's never analyzed. Defaults to
+   * true so every other caller/test is unaffected.
+   */
+  canUseAiFeatures?: boolean;
 }
 
 /**
@@ -50,6 +58,7 @@ export function QuestionRenderer({
   onFreeTextChange,
   otherText,
   onOtherTextChange,
+  canUseAiFeatures = true,
 }: QuestionRendererProps) {
   const isMultiSelect = question.type === 'chip_multi_select';
   const selectedIds = isMultiSelect ? ((value as string[]) ?? []) : undefined;
@@ -178,11 +187,19 @@ export function QuestionRenderer({
           <Text style={styles.freeTextLabel}>
             Anything else you'd like to add, in your own words? (optional)
           </Text>
+          {!canUseAiFeatures && (
+            <Text style={styles.freeTextDisabledNote}>
+              Available on Premium accounts — log in and upgrade to add notes here for
+              AI-assisted analysis.
+            </Text>
+          )}
           <TextInput
-            style={styles.input}
+            style={[styles.input, !canUseAiFeatures && styles.inputDisabled]}
             value={freeText ?? ''}
-            onChangeText={onFreeTextChange}
+            onChangeText={canUseAiFeatures ? onFreeTextChange : undefined}
+            editable={canUseAiFeatures}
             accessibilityLabel="Anything else you'd like to add, in your own words? (optional)"
+            accessibilityState={{ disabled: !canUseAiFeatures }}
             testID={`free-text-${question.id}`}
             multiline
           />
@@ -275,8 +292,18 @@ const styles = StyleSheet.create({
     minHeight: 88,
     textAlignVertical: 'top',
   },
+  inputDisabled: {
+    backgroundColor: colors.disabled,
+    color: colors.inkSoft,
+  },
   freeTextBlock: {
     marginTop: spacing.lg,
+  },
+  freeTextDisabledNote: {
+    ...type.caption,
+    color: colors.inkSoft,
+    fontStyle: 'italic',
+    marginBottom: spacing.sm,
   },
   otherInput: {
     minHeight: 44,

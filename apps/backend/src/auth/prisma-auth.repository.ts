@@ -39,4 +39,9 @@ export class PrismaAuthRepository implements AuthRepository {
     const row = await this.prisma.user.findUnique({ where: { id } });
     return row ? toStoredUser(row) : null;
   }
+
+  async updateTier(id: string, tier: UserTier): Promise<StoredUser> {
+    const row = await this.prisma.user.update({ where: { id }, data: { tier } });
+    return toStoredUser(row);
+  }
 }

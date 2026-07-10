@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,10 +18,15 @@ import {
   getChild,
   getFamily,
   updateConsent,
+  upgradeTier,
 } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { colors, spacing, type } from '../../theme/index.js';
+
+/** Issue #99: a guest session has nothing to save and no AI analysis to consent to —
+ * these two scopes are non-negotiable, not just off by default. */
+const GUEST_HIDDEN_SCOPES: readonly ConsentScope[] = ['data_storage', 'ai_analysis'];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ConsentCenter'>;
 
@@ -37,7 +43,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ConsentCenter'>;
  * a dead end. See apps/mobile/src/guest/guestStore.ts for that path.
  */
 export function ConsentCenterScreen({ navigation }: Props) {
-  const { familyId, childId, setFamilyId, reset } = useSession();
+  const { familyId, childId, setFamilyId, reset, isGuest, tier, setTier } = useSession();
   const [family, setFamily] = useState<Family | null>(null);
   const [childName, setChildName] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +52,25 @@ export function ConsentCenterScreen({ navigation }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+
+  const visibleScopes = isGuest
+    ? CONSENT_SCOPES.filter((scope) => !GUEST_HIDDEN_SCOPES.includes(scope))
+    : CONSENT_SCOPES;
+
+  const handleUpgrade = async () => {
+    setUpgrading(true);
+    setUpgradeError(null);
+    try {
+      const user = await upgradeTier();
+      await setTier(user.tier);
+    } catch {
+      setUpgradeError("We couldn't upgrade your account. Please try again.");
+    } finally {
+      setUpgrading(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -141,7 +166,27 @@ export function ConsentCenterScreen({ navigation }: Props) {
       <Text style={styles.subheading}>
         You're in control — turn any of these on or off, any time.
       </Text>
-      {CONSENT_SCOPES.map((scope) => (
+
+      {/* Issue #99: a guest has nothing to save and no AI analysis available — spell that
+          out plainly instead of showing two toggles that can never meaningfully turn on. */}
+      {isGuest && (
+        <View style={styles.guestBanner} testID="consent-guest-banner">
+          <Text style={styles.guestBannerTitle}>You're browsing as a guest</Text>
+          <Text style={styles.guestBannerBody}>
+            Answers here aren't saved, and AI-assisted analysis isn't available. Log in or
+            sign up any time to unlock saving your results and more.
+          </Text>
+          <Pressable
+            onPress={() => navigation.navigate('Login')}
+            accessibilityRole="button"
+            testID="consent-guest-login-link"
+          >
+            <Text style={styles.guestBannerLink}>Log in or sign up</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {visibleScopes.map((scope) => (
         <ConsentToggle
           key={scope}
           scope={scope}
@@ -153,6 +198,31 @@ export function ConsentCenterScreen({ navigation }: Props) {
       {pendingScope && (
         <ActivityIndicator style={styles.pendingIndicator} color={colors.primary} />
       )}
+
+      {/* Issue #99: self-service, one-directional upgrade — no payment gateway exists yet
+          (docs/clinical-review/content-gaps.md §6). Guests aren't logged in, so there's no
+          account here to upgrade. */}
+      {!isGuest && tier && (
+        <View style={styles.planSection} testID="consent-plan-section">
+          <Text style={styles.planHeading}>Your plan</Text>
+          <Text style={styles.planBody}>
+            {tier === 'premium'
+              ? 'Premium — AI-assisted analysis of your typed answers is available.'
+              : 'Free — AI-assisted analysis of your typed answers is not included.'}
+          </Text>
+          {tier === 'free' && (
+            <PrimaryButton
+              label="Upgrade to Premium"
+              variant="quiet"
+              loading={upgrading}
+              onPress={handleUpgrade}
+              testID="upgrade-to-premium-button"
+            />
+          )}
+          {upgradeError && <Text style={styles.deleteErrorText}>{upgradeError}</Text>}
+        </View>
+      )}
+
       <View style={styles.continueButton}>
         <PrimaryButton
           label="Continue"
@@ -172,45 +242,48 @@ export function ConsentCenterScreen({ navigation }: Props) {
       {/* Right-to-erasure (issue #55, product plan Screen 13). Two deliberate taps: the
           first only reveals the confirmation, and the confirmation spells out exactly
           what disappears before anything is sent. Copy avoids alarm styling but is
-          unambiguous about permanence. */}
-      <View style={styles.deleteSection}>
-        <Text style={styles.deleteHeading}>Delete everything</Text>
-        <Text style={styles.deleteBody}>
-          Permanently removes everything saved here — the child details, all answers, and
-          all results. This cannot be undone.
-        </Text>
-        {!confirmingDelete ? (
-          <PrimaryButton
-            label="Delete everything"
-            variant="quiet"
-            onPress={() => setConfirmingDelete(true)}
-            testID="delete-everything-button"
-          />
-        ) : (
-          <View testID="delete-confirm-block">
-            <Text style={styles.deleteConfirmText}>
-              Are you sure? Everything will be gone for good, and we can't bring it back.
-            </Text>
+          unambiguous about permanence. Guests have nothing saved to delete. */}
+      {!isGuest && (
+        <View style={styles.deleteSection}>
+          <Text style={styles.deleteHeading}>Delete everything</Text>
+          <Text style={styles.deleteBody}>
+            Permanently removes everything saved here — the child details, all answers,
+            and all results. This cannot be undone.
+          </Text>
+          {!confirmingDelete ? (
             <PrimaryButton
-              label="Yes, delete everything"
-              loading={deleting}
-              onPress={handleDeleteEverything}
-              testID="confirm-delete-button"
-            />
-            <PrimaryButton
-              label="Keep my data"
+              label="Delete everything"
               variant="quiet"
-              disabled={deleting}
-              onPress={() => {
-                setConfirmingDelete(false);
-                setDeleteError(null);
-              }}
-              testID="cancel-delete-button"
+              onPress={() => setConfirmingDelete(true)}
+              testID="delete-everything-button"
             />
-          </View>
-        )}
-        {deleteError && <Text style={styles.deleteErrorText}>{deleteError}</Text>}
-      </View>
+          ) : (
+            <View testID="delete-confirm-block">
+              <Text style={styles.deleteConfirmText}>
+                Are you sure? Everything will be gone for good, and we can't bring it
+                back.
+              </Text>
+              <PrimaryButton
+                label="Yes, delete everything"
+                loading={deleting}
+                onPress={handleDeleteEverything}
+                testID="confirm-delete-button"
+              />
+              <PrimaryButton
+                label="Keep my data"
+                variant="quiet"
+                disabled={deleting}
+                onPress={() => {
+                  setConfirmingDelete(false);
+                  setDeleteError(null);
+                }}
+                testID="cancel-delete-button"
+              />
+            </View>
+          )}
+          {deleteError && <Text style={styles.deleteErrorText}>{deleteError}</Text>}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -250,6 +323,42 @@ const styles = StyleSheet.create({
   },
   pendingIndicator: {
     marginTop: spacing.sm,
+  },
+  guestBanner: {
+    backgroundColor: colors.primaryTint,
+    borderRadius: 12,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  guestBannerTitle: {
+    ...type.bodyStrong,
+    color: colors.ink,
+    marginBottom: spacing.xs,
+  },
+  guestBannerBody: {
+    ...type.caption,
+    color: colors.inkSoft,
+  },
+  guestBannerLink: {
+    ...type.bodyStrong,
+    color: colors.primary,
+    marginTop: spacing.sm,
+  },
+  planSection: {
+    marginTop: spacing.xl,
+    paddingTop: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: colors.disabled,
+  },
+  planHeading: {
+    ...type.bodyStrong,
+    color: colors.ink,
+    marginBottom: spacing.xs,
+  },
+  planBody: {
+    ...type.caption,
+    color: colors.inkSoft,
+    marginBottom: spacing.md,
   },
   continueButton: {
     marginTop: spacing.xxl,

@@ -11,18 +11,20 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
 /**
  * Routes based on resumed session state (product plan Screen 1). Issue #97: a logged-out
  * session goes to Login first, ahead of everything else — no valid access token means the
- * caregiver never lands on Consent Center or Child Profile Setup. Once logged in: no family
- * yet -> Consent Center; a family but no child -> Child Profile Setup; both -> Results. If
- * the child has no computed results yet (questionnaire never submitted), the Results screen
- * forwards to the Questionnaire — safe now that the scoring engine dedupes re-answered
- * questions.
+ * caregiver never lands on Consent Center or Child Profile Setup. Issue #99: "Continue as
+ * guest" on Login is the other way past that gate — a guest session (isGuest) proceeds
+ * exactly like a logged-in one from here on, just without an accessToken. Once past the
+ * gate: no family yet -> Consent Center; a family but no child -> Child Profile Setup; both
+ * -> Results. If the child has no computed results yet (questionnaire never submitted), the
+ * Results screen forwards to the Questionnaire — safe now that the scoring engine dedupes
+ * re-answered questions.
  */
 export function SplashScreen({ navigation }: Props) {
-  const { isLoading, accessToken, familyId, childId } = useSession();
+  const { isLoading, accessToken, isGuest, familyId, childId } = useSession();
 
   useEffect(() => {
     if (isLoading) return;
-    if (!accessToken) {
+    if (!accessToken && !isGuest) {
       navigation.replace('Login');
     } else if (!familyId) {
       navigation.replace('ConsentCenter');
@@ -31,7 +33,7 @@ export function SplashScreen({ navigation }: Props) {
     } else {
       navigation.replace('Results');
     }
-  }, [isLoading, accessToken, familyId, childId, navigation]);
+  }, [isLoading, accessToken, isGuest, familyId, childId, navigation]);
 
   return (
     <View style={styles.container}>
