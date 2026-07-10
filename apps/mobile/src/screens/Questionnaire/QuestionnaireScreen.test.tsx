@@ -170,12 +170,10 @@ describe('QuestionnaireScreen', () => {
     await screen.findByText(/Question 1 of \d+/);
 
     expect(screen.queryByTestId('halfway-encouragement')).toBeNull();
-    skipToQuestion(
-      'Does Alex ever point at something just to show you — like a dog outside — not because they want it?',
-    );
-    // T6 sits at index 17 of 35 — the midpoint for a toddler path (12 universal + 23 toddler,
-    // with U1/U2 collected at profile setup). Issue #79 added T22/T23, shifting the midpoint
-    // from T5 (index 16 of 33) to T6.
+    skipToQuestion('Does Alex smile back when you smile at them?');
+    // T7 sits at index 18 of 36 — the midpoint for a toddler path (12 universal + 24
+    // toddler, with U1/U2 collected at profile setup). Issue #81 added T24 (inserted after
+    // T11), shifting the midpoint from T6 (index 17 of 35) to T7.
     expect(screen.getByTestId('halfway-encouragement')).toBeTruthy();
   });
 

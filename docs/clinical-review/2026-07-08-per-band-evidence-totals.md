@@ -41,7 +41,7 @@ Weighted (scoring-eligible) questions per domain each band can be asked, as of w
 | social | 9 | 7 | 5 | 3 | 3 |
 | communication | 4 | 6 | 3 | 2 • | 2 • |
 | sensory | 4 | 3 (2 • before P22, #78) | 3 (1 • before PR18/PR19, #78) | 3 (1 • before TE15/TE16, #78) | 3 (1 • before YA13/YA14, #78) |
-| repetitive_behaviour | 2 • | 3 | 3 | 2 • (3 after TE13, PR #60) | 2 • |
+| repetitive_behaviour | 2 • (3 after T24, issue #81) | 3 | 3 | 2 • (3 after TE13, PR #60) | 2 • (3 after YA16, issue #81) |
 | attention | 1 • | 1 • | 1 • | — | — |
 | emotional_regulation | 1 • | 1 • (0 before P21, #65) | 2 • (1 • before PR17, #65) | 3 (2 • before TE14, #65) | 3 (2 • before YA12, #65) |
 | learning | — | 1 • | 1 • | 1 • | — |

@@ -22,10 +22,16 @@ describe('domainQuestionTotalsForBand (issue #52)', () => {
     }
   });
 
-  it('pins the issue #52 repro: a toddler can only ever be asked 2 repetitive-behaviour questions (T10, T11)', () => {
-    // If this changes, the evidence-gate behaviour for toddlers changes with it — that's
-    // a clinical-content decision, so a conscious test update is the point.
-    expect(domainQuestionTotalsForBand('toddler').repetitive_behaviour).toBe(2);
+  it('pins issue #81: repetitive_behaviour reaches the 3-item evidence floor in toddler/young_adult', () => {
+    // Before #81, toddler (T10, T11) and young_adult (YA5, YA6) sat at 2 items each — the
+    // last remaining gap after TE13 (#54) closed teen. If any of these regress, that's a
+    // clinical-content decision, so a conscious test update is the point.
+    expect(
+      domainQuestionTotalsForBand('toddler').repetitive_behaviour,
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      domainQuestionTotalsForBand('young_adult').repetitive_behaviour,
+    ).toBeGreaterThanOrEqual(3);
   });
 
   it('pins issue #78: sensory reaches the 3-item evidence floor in every band', () => {
