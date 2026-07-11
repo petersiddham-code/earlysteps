@@ -12,7 +12,11 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      include: ['packages/scoring-engine/src/**', 'packages/content/src/**'],
+      include: [
+        'packages/scoring-engine/src/**',
+        'packages/content/src/**',
+        'packages/comparison-engine/src/**',
+      ],
     },
   },
   resolve: {
@@ -25,6 +29,10 @@ export default defineConfig({
         .pathname,
       '@earlysteps/scoring-engine': new URL(
         './packages/scoring-engine/src/index.ts',
+        import.meta.url,
+      ).pathname,
+      '@earlysteps/comparison-engine': new URL(
+        './packages/comparison-engine/src/index.ts',
         import.meta.url,
       ).pathname,
     },

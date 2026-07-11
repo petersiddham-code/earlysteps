@@ -40,6 +40,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.109.0
         version: 0.109.0(zod@3.25.76)
+      '@earlysteps/comparison-engine':
+        specifier: workspace:*
+        version: link:../../packages/comparison-engine
       '@earlysteps/content':
         specifier: workspace:*
         version: link:../../packages/content
@@ -189,6 +192,15 @@ importers:
       typescript:
         specifier: ~6.0.3
         version: 6.0.3
+
+  packages/comparison-engine:
+    dependencies:
+      '@earlysteps/content':
+        specifier: workspace:*
+        version: link:../content
+      '@earlysteps/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
 
   packages/content:
     dependencies:

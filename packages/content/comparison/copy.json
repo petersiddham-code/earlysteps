@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "locale": "en",
+  "needs_clinical_signoff": true,
+  "note": "Clinical content (CLAUDE.md §9, dual-assessment architecture 2026-07-11) — PLACEHOLDER COPY pending advisor sign-off, see docs/clinical-review/2026-07-11-dual-assessment-architecture.md. Templated into ComparisonResult.narrative by @earlysteps/comparison-engine — never LLM-generated. statuses/reasons cover the CLAUDE.md §13 vocabulary verbatim (agreement/partial_agreement/disagreement; unsupported_text_evidence/contradictory_responses/insufficient_evidence/missing_observations/low_confidence/conflicting_developmental_history). red_flag_safety_note is prepended whenever a red flag is present, regardless of computed status, so this section can never read as softening one (CLAUDE.md §2 rule 8).",
+  "statuses": {
+    "agreement": "The official screening result and this independent AI read point in the same general direction.",
+    "partial_agreement": "The official screening result and this independent AI read are broadly in the same range, but not a close match.",
+    "disagreement": "The official screening result and this independent AI read point in noticeably different directions."
+  },
+  "reasons": {
+    "unsupported_text_evidence": "The AI read draws on typed notes and free-text answers that the official screening result doesn't use — that can shift the two apart.",
+    "contradictory_responses": "Some of the typed answers this session don't fully line up with each other.",
+    "insufficient_evidence": "There isn't yet enough answered evidence for the official screening result to compare closely against.",
+    "missing_observations": "A few areas still have too few answers for a full comparison.",
+    "low_confidence": "At least one side of this comparison is working from limited or uncertain evidence right now.",
+    "conflicting_developmental_history": "Some details about development over time point in different directions."
+  },
+  "red_flag_safety_note": "A specific serious-sign answer was given directly by the caregiver. That finding stands no matter what this comparison shows."
+}

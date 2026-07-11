@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import {
   isFreeTextAnswer,
   type AiResultsSummary,
@@ -109,7 +110,7 @@ export class PrismaAnalysisRepository implements AnalysisRepository {
     return {
       contentHash: row.contentHash,
       content: {
-        ...(row.content as Omit<AiResultsSummary, 'generatedAt'>),
+        ...(row.content as unknown as Omit<AiResultsSummary, 'generatedAt'>),
         generatedAt: row.generatedAt.toISOString(),
       },
     };
@@ -121,10 +122,19 @@ export class PrismaAnalysisRepository implements AnalysisRepository {
     content: AiResultsSummary,
   ): Promise<void> {
     const { generatedAt, ...rest } = content;
+    // v2's nested supportPriorities shape isn't structurally an index-signature-compatible
+    // JSON object to TS by default (same reason findings/consentFlags need this elsewhere in
+    // this file's siblings) — it IS plain JSON-serializable data, so the cast is safe.
+    const jsonContent = rest as unknown as Prisma.InputJsonValue;
     await this.prisma.aiResultsSummaryRecord.upsert({
       where: { childId },
-      create: { childId, contentHash, content: rest, generatedAt: new Date(generatedAt) },
-      update: { contentHash, content: rest, generatedAt: new Date(generatedAt) },
+      create: {
+        childId,
+        contentHash,
+        content: jsonContent,
+        generatedAt: new Date(generatedAt),
+      },
+      update: { contentHash, content: jsonContent, generatedAt: new Date(generatedAt) },
     });
   }
 

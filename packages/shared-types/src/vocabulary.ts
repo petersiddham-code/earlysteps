@@ -107,6 +107,103 @@ export const APPROVED_DIFFERENCE_TERMS = [
   'learning style',
 ] as const;
 
+/**
+ * Assessment B's (the AI Assessment Engine, CLAUDE.md §13) likelihood scale — a SEPARATE
+ * scale from Assessment A's SIGN_LEVEL_LABELS above (CLAUDE.md §2 rule 2). Never substitute
+ * one vocabulary for the other, and keep them visually distinct on screen (rule 14).
+ */
+export const AI_LIKELIHOOD_LEVELS = [
+  'very_low',
+  'low',
+  'moderate',
+  'high',
+  'very_high',
+] as const;
+export type AiLikelihoodLevel = (typeof AI_LIKELIHOOD_LEVELS)[number];
+
+export const AI_LIKELIHOOD_LABELS = [
+  'Very Low',
+  'Low',
+  'Moderate',
+  'High',
+  'Very High',
+] as const;
+export type AiLikelihoodLabel = (typeof AI_LIKELIHOOD_LABELS)[number];
+
+export const AI_LIKELIHOOD_TO_LABEL: Record<AiLikelihoodLevel, AiLikelihoodLabel> = {
+  very_low: 'Very Low',
+  low: 'Low',
+  moderate: 'Moderate',
+  high: 'High',
+  very_high: 'Very High',
+};
+
+/**
+ * Assessment B's self-reported evidence-uncertainty taxonomy (CLAUDE.md §13's "uncertainty"
+ * field). Describes uncertainty ONLY in the evidence Assessment B itself was given — it must
+ * never reference or imply anything about Assessment A's output (isolation, rule 7 §2).
+ */
+export const UNCERTAINTY_FACTORS = [
+  'contradictory_responses',
+  'conflicting_developmental_history',
+  'limited_free_text_evidence',
+  'sparse_structured_answers',
+] as const;
+export type UncertaintyFactor = (typeof UNCERTAINTY_FACTORS)[number];
+
+export const UNCERTAINTY_FACTOR_LABELS: Record<UncertaintyFactor, string> = {
+  contradictory_responses: 'Contradictory responses',
+  conflicting_developmental_history: 'Conflicting developmental history',
+  limited_free_text_evidence: 'Limited free-text evidence',
+  sparse_structured_answers: 'Sparse structured answers',
+};
+
+/**
+ * Comparison Section vocabulary (CLAUDE.md §13/rule 14 §2) — computed by
+ * @earlysteps/comparison-engine AFTER both engines have independently produced their own
+ * output; never merged, averaged, or reconciled into one number or label.
+ */
+export const COMPARISON_STATUSES = [
+  'agreement',
+  'partial_agreement',
+  'disagreement',
+] as const;
+export type ComparisonStatus = (typeof COMPARISON_STATUSES)[number];
+
+export const COMPARISON_STATUS_LABELS: Record<ComparisonStatus, string> = {
+  agreement: 'Agreement',
+  partial_agreement: 'Partial agreement',
+  disagreement: 'Disagreement',
+};
+
+/** The six disagreement reasons named verbatim in CLAUDE.md §13. */
+export const COMPARISON_REASONS = [
+  'unsupported_text_evidence',
+  'contradictory_responses',
+  'insufficient_evidence',
+  'missing_observations',
+  'low_confidence',
+  'conflicting_developmental_history',
+] as const;
+export type ComparisonReason = (typeof COMPARISON_REASONS)[number];
+
+export const COMPARISON_REASON_LABELS: Record<ComparisonReason, string> = {
+  unsupported_text_evidence: 'Unsupported text evidence',
+  contradictory_responses: 'Contradictory responses',
+  insufficient_evidence: 'Insufficient evidence',
+  missing_observations: 'Missing observations',
+  low_confidence: 'Low confidence',
+  conflicting_developmental_history: 'Conflicting developmental history',
+};
+
+/**
+ * Coarse 3-band risk position both engines' own vocabularies collapse onto SOLELY for
+ * comparison purposes — never rendered as a label itself; each engine keeps rendering only
+ * its own vocabulary on screen (rule 2 §2).
+ */
+export const RISK_BANDS = ['low', 'medium', 'high'] as const;
+export type RiskBand = (typeof RISK_BANDS)[number];
+
 const BANNED_WORD_PATTERN = new RegExp(`\\b(${BANNED_WORDS.join('|')})\\b`, 'i');
 
 /**
@@ -146,18 +243,37 @@ const PROFESSIONAL_REFERRAL_PATTERN = new RegExp(
 );
 
 /**
- * Runtime, fail-closed content-safety check for LLM-generated caregiver-facing text
- * (CLAUDE.md §8: "parse defensively and fail closed"). Mirrors the banned-word rule
- * scripts/lint-content.mjs enforces on static content, applied instead to ephemeral
- * generated narrative text the lint script never sees. Deliberately stricter than the
- * static-content check — no allowlisted phrases — since generated text can't be
- * human-audited the way shipped content JSON is.
+ * Banned-word + reserved-result-phrase half of the content-safety check (CLAUDE.md §8:
+ * "parse defensively and fail closed"). Split out from `containsUnsafeResultLanguage` (issue
+ * #104 dual-assessment update) so a field whose entire stated purpose is naming professional
+ * assessment priorities — Assessment B's `professionalAssessmentPriorities` (CLAUDE.md §13) —
+ * can be exempted from the professional-referral half below without weakening this half.
  */
-export function containsUnsafeResultLanguage(text: string): boolean {
+export function containsBannedOrReservedLanguage(text: string): boolean {
   if (BANNED_WORD_PATTERN.test(text)) return true;
-  if (PROFESSIONAL_REFERRAL_PATTERN.test(text)) return true;
   const lower = text.toLowerCase();
   return RESERVED_RESULT_PHRASES.some((phrase) => lower.includes(phrase.toLowerCase()));
+}
+
+/** Professional-referral half of the content-safety check — see PROFESSIONAL_REFERRAL_TERMS. */
+export function containsProfessionalReferralLanguage(text: string): boolean {
+  return PROFESSIONAL_REFERRAL_PATTERN.test(text);
+}
+
+/**
+ * Runtime, fail-closed content-safety check for LLM-generated caregiver-facing text.
+ * Mirrors the banned-word rule scripts/lint-content.mjs enforces on static content, applied
+ * instead to ephemeral generated narrative text the lint script never sees. Deliberately
+ * stricter than the static-content check — no allowlisted phrases — since generated text
+ * can't be human-audited the way shipped content JSON is. Combines both halves above; most
+ * fields should use this. `professionalAssessmentPriorities` is the one documented exception
+ * (see `docs/clinical-review/2026-07-11-dual-assessment-architecture.md`) that uses only
+ * `containsBannedOrReservedLanguage`.
+ */
+export function containsUnsafeResultLanguage(text: string): boolean {
+  return (
+    containsBannedOrReservedLanguage(text) || containsProfessionalReferralLanguage(text)
+  );
 }
 
 /**

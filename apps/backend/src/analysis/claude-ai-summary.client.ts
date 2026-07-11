@@ -22,8 +22,11 @@ import {
 
 export const AI_RESULTS_SUMMARY_MODEL = 'claude-sonnet-4-6';
 
-/** A four-section narrative is a short document; plenty of headroom for it. */
-const MAX_OUTPUT_TOKENS = 2048;
+/**
+ * v2 (dual-assessment update): a tiered support-priorities object plus the rest of the
+ * CLAUDE.md §13 schema is a materially larger document than v1's four short sections.
+ */
+const MAX_OUTPUT_TOKENS = 4096;
 
 /** Cap what we send per free-text note: a note is a note, not a document. */
 const MAX_FREE_TEXT_CHARS = 2000;

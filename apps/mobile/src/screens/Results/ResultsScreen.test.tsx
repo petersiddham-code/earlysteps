@@ -534,10 +534,20 @@ describe('ResultsScreen', () => {
 
 describe('ResultsScreen — AI results summary (issue #104)', () => {
   const AI_SUMMARY = {
-    overview: 'The answers describe a toddler who enjoys playing with others.',
+    likelihood: 'Moderate',
+    confidence: 'medium',
+    reasoning: 'The answers describe a toddler who enjoys playing with others.',
+    developmentalProfile:
+      'A pattern of typical play interest alongside some communication differences.',
     strengths: ['Enjoys back-and-forth play with familiar adults'],
-    areasToWatch: ['Limited spoken vocabulary for their age'],
-    notedByCaregiver: [],
+    supportPriorities: { immediate: [], short_term: [], medium_term: [], long_term: [] },
+    uncertainty: 'Only a few questions were answered this session.',
+    uncertaintyFactors: ['sparse_structured_answers'],
+    evidenceSummary:
+      'The answers given lean toward limited spoken vocabulary for their age.',
+    homeRecommendations: [],
+    schoolRecommendations: [],
+    professionalAssessmentPriorities: [],
     generatedAt: '2026-07-11T00:00:00.000Z',
   };
 
@@ -583,7 +593,7 @@ describe('ResultsScreen — AI results summary (issue #104)', () => {
 
     fireEvent.press(screen.getByTestId('ai-results-summary-toggle'));
 
-    expect(screen.getByText(AI_SUMMARY.overview)).toBeTruthy();
+    expect(screen.getByText(AI_SUMMARY.reasoning)).toBeTruthy();
     expect(
       screen.getByText(/separate, AI-generated read of your typed answers/i),
     ).toBeTruthy();

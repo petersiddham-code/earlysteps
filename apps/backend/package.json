@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.109.0",
+    "@earlysteps/comparison-engine": "workspace:*",
     "@earlysteps/content": "workspace:*",
     "@earlysteps/scoring-engine": "workspace:*",
     "@earlysteps/shared-types": "workspace:*",

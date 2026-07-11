@@ -7,6 +7,8 @@ import { z } from 'zod';
 import {
   AGE_BANDS,
   BANNED_WORDS,
+  COMPARISON_REASONS,
+  COMPARISON_STATUSES,
   CONSENT_SCOPES,
   DOMAINS,
   QUESTION_TYPES,
@@ -245,11 +247,12 @@ export const consentCopySchema = z.object({
 });
 
 /**
- * Copy shell around the LLM-generated AI results summary (issue #104, product plan §9.3):
- * section headings and the fixed framing sentence separating this independent AI read
- * from the official deterministic result. The narrative CONTENT itself is never authored
- * here — it's generated per-child at runtime and validated against the same
- * banned-word/reserved-label rules (CLAUDE.md §2 rules 1–4) before ever reaching a
+ * Copy shell around the LLM-generated AI results summary — Assessment B (issue #104,
+ * product plan §9.3, CLAUDE.md §13). v2 (2026-07-11 dual-assessment update): section
+ * headings cover the full §13 schema (likelihood/confidence/reasoning/etc.), replacing
+ * v1's overview/areas_to_watch/noted_by_caregiver headings. The narrative CONTENT itself
+ * is never authored here — it's generated per-child at runtime and validated against the
+ * same banned-word/reserved-label rules (CLAUDE.md §2 rules 1–4) before ever reaching a
  * screen. There is no unavailable/error copy: a missing or invalid narrative means the
  * section just doesn't render (fail closed, CLAUDE.md §8).
  */
@@ -258,13 +261,53 @@ export const aiResultsSummaryCopySchema = z.object({
   locale: z.string(),
   needs_clinical_signoff: z.boolean(),
   note: z.string(),
+  card_heading: safeCopyNonEmpty,
   section_headings: z.object({
-    overview: safeCopyNonEmpty,
+    likelihood: safeCopyNonEmpty,
+    confidence: safeCopyNonEmpty,
+    reasoning: safeCopyNonEmpty,
+    developmental_profile: safeCopyNonEmpty,
     strengths: safeCopyNonEmpty,
-    areas_to_watch: safeCopyNonEmpty,
-    noted_by_caregiver: safeCopyNonEmpty,
+    support_priorities: z.object({
+      heading: safeCopyNonEmpty,
+      immediate: safeCopyNonEmpty,
+      short_term: safeCopyNonEmpty,
+      medium_term: safeCopyNonEmpty,
+      long_term: safeCopyNonEmpty,
+    }),
+    uncertainty: safeCopyNonEmpty,
+    evidence_summary: safeCopyNonEmpty,
+    home_recommendations: safeCopyNonEmpty,
+    school_recommendations: safeCopyNonEmpty,
+    professional_assessment_priorities: safeCopyNonEmpty,
   }),
   framing_note: safeCopyNonEmpty,
+});
+
+/**
+ * Comparison Section copy (CLAUDE.md §13/§14, rule 14 §2): per-status intro sentences, a
+ * sentence per one of the six disagreement reasons, and the non-suppressible red-flag
+ * safety note (rule 8) — all templated into `ComparisonResult.narrative` by
+ * @earlysteps/comparison-engine, never LLM-generated. Explicit per-key object (not a loose
+ * z.record) so a missing status/reason fails at parse time, same precedent as
+ * consentCopySchema above.
+ */
+export const comparisonCopySchema = z.object({
+  version: z.string(),
+  locale: z.string(),
+  needs_clinical_signoff: z.boolean(),
+  note: z.string(),
+  statuses: z.object(
+    Object.fromEntries(
+      COMPARISON_STATUSES.map((status) => [status, safeCopyNonEmpty]),
+    ) as Record<(typeof COMPARISON_STATUSES)[number], typeof safeCopyNonEmpty>,
+  ),
+  reasons: z.object(
+    Object.fromEntries(
+      COMPARISON_REASONS.map((reason) => [reason, safeCopyNonEmpty]),
+    ) as Record<(typeof COMPARISON_REASONS)[number], typeof safeCopyNonEmpty>,
+  ),
+  red_flag_safety_note: safeCopyNonEmpty,
 });
 
 export type FollowUp = z.infer<typeof followUpSchema>;
@@ -279,3 +322,4 @@ export type ConsentCopy = z.infer<typeof consentCopySchema>;
 export type DomainResource = z.infer<typeof domainResourceSchema>;
 export type DomainResourcesFile = z.infer<typeof domainResourcesFileSchema>;
 export type AiResultsSummaryCopy = z.infer<typeof aiResultsSummaryCopySchema>;
+export type ComparisonCopy = z.infer<typeof comparisonCopySchema>;

@@ -1,5 +1,6 @@
 /**
- * Integration tests for the independent AI results summary (issue #104).
+ * Integration tests for the independent AI results summary / Assessment B (issue #104,
+ * dual-assessment update 2026-07-11, CLAUDE.md §13/§14).
  *
  * Covers the safety-critical paths the issue mandates:
  *  - consent-off: without ai_analysis consent the stage never runs, the LLM client is
@@ -9,7 +10,11 @@
  *    LLM again; a changed answer set triggers regeneration;
  *  - fail-closed schema validation: malformed model output yields null, nothing cached;
  *  - fail-closed content safety: banned words / reserved result labels anywhere in the
- *    model's output yield null, nothing cached.
+ *    model's output yield null, nothing cached, EXCEPT the documented
+ *    professionalAssessmentPriorities carve-out;
+ *  - the Comparison Section (§13/§14): agreement / partial agreement / disagreement,
+ *    computed AFTER both Assessment A and Assessment B have independently produced their
+ *    own output, and the red-flag safety note that always survives regardless of status.
  *
  * Runs against the in-memory repositories with a stubbed AiResultsSummaryClient — no
  * live Postgres and no live LLM.
@@ -17,6 +22,7 @@
 import { describe, it, expect } from 'vitest';
 import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
+import type { IntakeResponse } from '@earlysteps/shared-types';
 import { AnalysisService } from '../src/analysis/analysis.service.js';
 import { ANALYSIS_REPOSITORY } from '../src/analysis/analysis.repository.js';
 import {
@@ -38,12 +44,64 @@ import { InMemoryFamiliesRepository } from '../src/families/testing/in-memory-fa
 const AT = '2026-07-11T00:00:00.000Z';
 const LATER = '2026-07-11T00:05:00.000Z';
 
-const VALID_OUTPUT = JSON.stringify({
-  overview: 'The answers describe a toddler who enjoys playing with others.',
-  strengths: ['Enjoys back-and-forth play with familiar adults'],
-  areas_to_watch: ['Limited spoken vocabulary for their age'],
-  noted_by_caregiver: [],
-});
+/** Builds a v2 model-output fixture; override individual fields per test. */
+function buildOutput(overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({
+    likelihood: 'Moderate',
+    confidence: 'medium',
+    reasoning: 'Several answers point toward reduced social reciprocity for their age.',
+    developmental_profile:
+      'The overall pattern suggests social-communication differences alongside typical play interests.',
+    strengths: ['Enjoys back-and-forth play with familiar adults'],
+    support_priorities: {
+      immediate: [],
+      short_term: [
+        {
+          priority: 'Shared picture-book time',
+          reason: 'Builds on existing play enjoyment.',
+        },
+      ],
+      medium_term: [],
+      long_term: [],
+    },
+    uncertainty:
+      'Only a few questions were answered this session, so this read is tentative.',
+    uncertainty_factors: ['sparse_structured_answers'],
+    evidence_summary:
+      'The answers given lean toward limited spoken vocabulary for their age.',
+    home_recommendations: ['Narrate daily routines out loud together'],
+    school_recommendations: [],
+    professional_assessment_priorities: [],
+    ...overrides,
+  });
+}
+
+const VALID_OUTPUT = buildOutput();
+
+function r(
+  question_id: string,
+  answer: IntakeResponse['answer'],
+  domain: IntakeResponse['domain'] = 'communication',
+): Omit<IntakeResponse, 'child_id'> {
+  return { question_id, domain, answer, timestamp: AT };
+}
+
+// Same fixture as screening.integration.spec.ts's "low-signal case": clears every
+// evidence floor and yields recommendationTier 'Support activities can begin now' with no
+// red flags — the deterministic "low" band this file's comparison tests build agreement/
+// partial-agreement/disagreement fixtures against.
+const REASSURING_BATCH = [
+  r('T1', 'before_12mo'),
+  r('T2', 'short_sentences'),
+  r('T3', 'yes_often'),
+  r('T4', 'looks_right_away'),
+  r('T5', 'almost_always'),
+  r('T6', 'yes_often'),
+  r('T7', 'yes_usually'),
+  r('T12', 'no'),
+  r('T13', 'no'),
+  r('T14', 'wide_variety'),
+];
 
 /** Test double for the LLM: replays canned outputs and records every call it gets. */
 class StubAiSummaryClient implements AiResultsSummaryClient {
@@ -198,11 +256,8 @@ describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () =>
   });
 
   it('returns null when the model uses a reserved result label', async () => {
-    const unsafeOutput = JSON.stringify({
-      overview: 'Overall, Low signs observed across the answers given.',
-      strengths: ['Enjoys play'],
-      areas_to_watch: [],
-      noted_by_caregiver: [],
+    const unsafeOutput = buildOutput({
+      reasoning: 'Overall, Low signs observed across the answers given.',
     });
     const { analysisService, screeningService, familiesRepository } = await buildStack([
       unsafeOutput,
@@ -227,11 +282,8 @@ describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () =>
   });
 
   it('returns null when the model uses a banned word', async () => {
-    const unsafeOutput = JSON.stringify({
-      overview: 'The answers do not suggest anything abnormal.',
-      strengths: ['Enjoys play'],
-      areas_to_watch: [],
-      noted_by_caregiver: [],
+    const unsafeOutput = buildOutput({
+      developmental_profile: 'The answers do not suggest anything abnormal.',
     });
     const { analysisService, screeningService, familiesRepository } = await buildStack([
       unsafeOutput,
@@ -258,15 +310,98 @@ describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () =>
   // QA on PR #105 found the model can suggest seeing a professional in soft language
   // ("worth discussing with a healthcare provider") without ever using a reserved label —
   // that reads as a second, competing recommendation just as much as the reserved phrases.
-  it('returns null when the model suggests professional follow-up in its own words', async () => {
-    const unsafeOutput = JSON.stringify({
-      overview: 'The answers describe a toddler who enjoys playing with others.',
-      strengths: ['Enjoys play'],
-      areas_to_watch: [
+  it('returns null when the model suggests professional follow-up in its own words OUTSIDE professionalAssessmentPriorities', async () => {
+    const unsafeOutput = buildOutput({
+      evidence_summary:
         'This detail deserves follow-up with a professional, worth discussing with a healthcare provider.',
-      ],
-      noted_by_caregiver: [],
     });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      unsafeOutput,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).toBeNull();
+  });
+
+  // Professional-referral carve-out (dual-assessment update, flagged for clinical-review
+  // sign-off): professionalAssessmentPriorities is the ONE field allowed to name
+  // professional/specialist assessment, since that's its entire stated purpose.
+  it('accepts professional-assessment language INSIDE professionalAssessmentPriorities', async () => {
+    const output = buildOutput({
+      professional_assessment_priorities: [
+        'A comprehensive social-communication evaluation with a developmental specialist may help build a fuller picture.',
+      ],
+    });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      output,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.professionalAssessmentPriorities).toEqual([
+      'A comprehensive social-communication evaluation with a developmental specialist may help build a fuller picture.',
+    ]);
+  });
+
+  // Carve-out boundary: the exemption is narrow — professionalAssessmentPriorities is
+  // still checked against banned words / Assessment A's reserved result phrases, just not
+  // the professional-referral-term ban.
+  it('still rejects a reserved result label INSIDE professionalAssessmentPriorities', async () => {
+    const unsafeOutput = buildOutput({
+      professional_assessment_priorities: ['Formal assessment is recommended soon.'],
+    });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      unsafeOutput,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).toBeNull();
+  });
+
+  it('returns null when uncertainty_factors carries a value outside the fixed enum', async () => {
+    const unsafeOutput = buildOutput({ uncertainty_factors: ['not_a_real_factor'] });
     const { analysisService, screeningService, familiesRepository } = await buildStack([
       unsafeOutput,
     ]);
@@ -345,13 +480,126 @@ describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () =>
     const cached = await analysisRepository.getCachedAiSummary(child.id);
     await analysisRepository.saveAiSummary(child.id, cached!.contentHash, {
       ...cached!.content,
-      overview: 'This is worth discussing with a healthcare provider.',
+      reasoning: 'This is worth discussing with a healthcare provider.',
     });
 
     const result = await analysisService.getResultsSummary(child.id);
 
     expect(result).not.toBeNull();
-    expect(result?.overview).not.toContain('healthcare provider');
+    expect(result?.reasoning).not.toContain('healthcare provider');
     expect(aiSummaryClient.calls).toHaveLength(2);
+  });
+});
+
+describe('Comparison Section (CLAUDE.md §13/§14, dual-assessment update 2026-07-11)', () => {
+  it('refuses to run without ai_analysis consent and never invokes the LLM client', async () => {
+    const { analysisService, familiesRepository, aiSummaryClient } = await buildStack([
+      VALID_OUTPUT,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent(['data_storage']);
+
+    await expect(analysisService.getComparisonResult(child.id)).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(aiSummaryClient.calls).toHaveLength(0);
+  });
+
+  it('returns null when there is no AI summary yet (no answers)', async () => {
+    const { analysisService, familiesRepository } = await buildStack([VALID_OUTPUT]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+
+    const result = await analysisService.getComparisonResult(child.id);
+
+    expect(result).toBeNull();
+  });
+
+  it('agreement: both assessments land in the same risk band', async () => {
+    const output = buildOutput({ likelihood: 'Low' });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      output,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(
+      child.id,
+      REASSURING_BATCH.map((res) => ({ ...res, child_id: child.id })),
+    );
+
+    const result = await analysisService.getComparisonResult(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.status).toBe('agreement');
+    expect(result?.reasons).toEqual([]);
+    expect(result?.assessmentABand).toBe('low');
+    expect(result?.assessmentBBand).toBe('low');
+  });
+
+  it('partial agreement: bands are one apart', async () => {
+    const output = buildOutput({ likelihood: 'Moderate' });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      output,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(
+      child.id,
+      REASSURING_BATCH.map((res) => ({ ...res, child_id: child.id })),
+    );
+
+    const result = await analysisService.getComparisonResult(child.id);
+
+    expect(result?.status).toBe('partial_agreement');
+    expect(result?.bandDistance).toBe(1);
+  });
+
+  it('disagreement: bands are at opposite ends', async () => {
+    const output = buildOutput({ likelihood: 'Very High' });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      output,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(
+      child.id,
+      REASSURING_BATCH.map((res) => ({ ...res, child_id: child.id })),
+    );
+
+    const result = await analysisService.getComparisonResult(child.id);
+
+    expect(result?.status).toBe('disagreement');
+    expect(result?.bandDistance).toBe(2);
+  });
+
+  it('a red-flag case keeps the safety note in the narrative even though evidence is sparse (rule 8)', async () => {
+    const output = buildOutput({ likelihood: 'Very Low', confidence: 'low' });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      output,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    // Same fixture as screening.integration.spec.ts's "urgent red-flag case": one answer,
+    // far below every evidence floor, but red flags are exempt from the gate and force a
+    // tier (CLAUDE.md §2 rule 8).
+    await screeningService.submitIntakeResponses(child.id, [
+      { ...r('RF_self_injury', 'yes'), child_id: child.id },
+    ]);
+
+    const result = await analysisService.getComparisonResult(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.narrative).toContain(
+      'A specific serious-sign answer was given directly by the caregiver.',
+    );
   });
 });

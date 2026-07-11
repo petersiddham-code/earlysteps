@@ -33,10 +33,12 @@ import {
   isFreeTextAnswer,
   stripFreeTextPrefix,
   type AiResultsSummary,
+  type ComparisonResult,
   type FollowUpAnswer,
   type FollowUpSuggestion,
   type IntakeResponse,
 } from '@earlysteps/shared-types';
+import { compareAssessments } from '@earlysteps/comparison-engine';
 import {
   FOLLOW_UPS_BY_RED_FLAG_TYPE,
   allQuestions,
@@ -226,6 +228,33 @@ export class AnalysisService {
 
     await this.repository.saveAiSummary(childId, contentHash, summary);
     return summary;
+  }
+
+  /**
+   * The Comparison Section (CLAUDE.md §13/§14, dual-assessment update 2026-07-11): a THIRD,
+   * standalone computation run AFTER Assessment A and Assessment B have each independently
+   * produced their own output (rule 7, §2 — it never feeds either engine's output back into
+   * the other, and @earlysteps/comparison-engine's inputs are Pick<>-typed to exactly the
+   * fields it may read). Same ai_analysis consent gate as the rest of this service. Returns
+   * null (section doesn't render) when there is no AI summary yet (no answers, consent/tier
+   * gate, transport failure, or a malformed/unsafe model response) or no computed Assessment
+   * A view yet — fail closed, same precedent as getResultsSummary.
+   *
+   * Deliberately NOT cached: this is a cheap, pure function over two already-computed
+   * inputs, each with its own independent cache/recompute lifecycle — caching this result
+   * too would need its own invalidation key tracking both sides' staleness at once, which
+   * isn't worth it while it's this cheap to just recompute.
+   */
+  async getComparisonResult(childId: string): Promise<ComparisonResult | null> {
+    await this.ensureAiAnalysisConsent(childId);
+
+    const summary = await this.getResultsSummary(childId);
+    if (summary === null) return null;
+
+    const resultsView = await this.screeningService.getResults(childId).catch(() => null);
+    if (resultsView === null) return null;
+
+    return compareAssessments(resultsView, summary);
   }
 
   /**
