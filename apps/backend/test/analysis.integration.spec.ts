@@ -263,6 +263,11 @@ describe('response analysis — red-flag fixture: free text -> confirmation -> f
     expect(suggestions[0]!.text.length).toBeGreaterThan(0);
     expect(suggestions[0]!.hint.length).toBeGreaterThan(0);
 
+    // Issue #102: source_quote is the model's own short extracted fragment, not the
+    // caregiver's full typed note, so several suggestions can render together on one
+    // compact screen. This fixture's note and evidence_quote happen to be identical
+    // strings, so the next test proves the distinction with a longer note.
+
     // 3. The caregiver confirms — and only then does the deterministic rule fire.
     const view = await analysisService.answerSuggestion(
       child.id,
@@ -421,5 +426,36 @@ describe('response analysis — red-flag fixture: free text -> confirmation -> f
 
     expect(await analysisService.runAnalysis(child.id)).toEqual([]);
     expect(client.calls).toEqual([]);
+  });
+
+  it("source_quote is the model's short evidence_quote, not the caregiver's full note (issue #102)", async () => {
+    const longNote =
+      'He used to say about ten words and wave bye-bye, but over the last month he ' +
+      'stopped speaking almost entirely and does not respond when we call his name ' +
+      'either, which is very different from how he was over the summer.';
+    const output = JSON.stringify({
+      signals: [
+        {
+          red_flag_type: 'loss_of_skills',
+          domain: 'communication',
+          salience: 'high',
+          evidence_quote: 'stopped speaking almost entirely',
+        },
+      ],
+    });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      output,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      freeTextResponse(child.id, 'T2', longNote),
+    ]);
+
+    const [suggestion] = await analysisService.runAnalysis(child.id);
+    expect(suggestion!.source_quote).toBe('stopped speaking almost entirely');
+    expect(suggestion!.source_quote).not.toBe(longNote);
   });
 });

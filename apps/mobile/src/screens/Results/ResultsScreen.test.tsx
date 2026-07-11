@@ -1,9 +1,9 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { ResultsScreen } from './ResultsScreen';
 import {
-  analyzeResponses,
   answerFollowUpSuggestion,
   getChild,
+  getFollowUpSuggestions,
   getIntakeResponses,
   getResults,
 } from '../../api/index.js';
@@ -14,7 +14,7 @@ import { SCREENING_DISCLAIMER } from '@earlysteps/shared-types';
 jest.mock('../../api/index.js', () => ({
   getResults: jest.fn(),
   getIntakeResponses: jest.fn(),
-  analyzeResponses: jest.fn(),
+  getFollowUpSuggestions: jest.fn(),
   answerFollowUpSuggestion: jest.fn(),
   getChild: jest.fn(),
 }));
@@ -112,8 +112,8 @@ describe('ResultsScreen', () => {
       tier: 'premium',
       clearChildId,
     });
-    // Default: analysis is a no-op extra — most tests exercise plain results.
-    (analyzeResponses as jest.Mock).mockResolvedValue([]);
+    // Default: nothing pending — most tests exercise plain results.
+    (getFollowUpSuggestions as jest.Mock).mockResolvedValue([]);
     (getChild as jest.Mock).mockResolvedValue({
       id: 'c1',
       family_id: 'f1',
@@ -500,7 +500,7 @@ describe('ResultsScreen', () => {
     expect(getResults).toHaveBeenCalledTimes(2);
   });
 
-  it('never calls analyzeResponses for a guest session (issue #99)', async () => {
+  it('never calls getFollowUpSuggestions for a guest session (issue #99)', async () => {
     (useSession as jest.Mock).mockReturnValue({
       familyId: 'f1',
       childId: 'guest:c1',
@@ -511,10 +511,10 @@ describe('ResultsScreen', () => {
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(SCREENING_DISCLAIMER);
 
-    expect(analyzeResponses).not.toHaveBeenCalled();
+    expect(getFollowUpSuggestions).not.toHaveBeenCalled();
   });
 
-  it('never calls analyzeResponses for a logged-in free-tier account (issue #99)', async () => {
+  it('never calls getFollowUpSuggestions for a logged-in free-tier account (issue #99)', async () => {
     (useSession as jest.Mock).mockReturnValue({
       familyId: 'f1',
       childId: 'c1',
@@ -525,11 +525,16 @@ describe('ResultsScreen', () => {
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(SCREENING_DISCLAIMER);
 
-    expect(analyzeResponses).not.toHaveBeenCalled();
+    expect(getFollowUpSuggestions).not.toHaveBeenCalled();
   });
 });
 
-describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () => {
+describe('ResultsScreen — pending follow-up safety net (issues #26, #102)', () => {
+  // Issue #102 moved the analyze-and-confirm flow to FollowUpCheckScreen, which runs
+  // before this screen ever renders for a Premium submission with free text. This
+  // screen now only reads whatever's still pending (e.g. that screen's 8-second
+  // timeout elapsed before analysis finished) — it never triggers a fresh LLM call
+  // itself. See FollowUpCheckScreen.test.tsx for the full analyze/confirm coverage.
   beforeEach(() => {
     jest.clearAllMocks();
     clearChildId.mockResolvedValue(undefined);
@@ -551,8 +556,8 @@ describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () =
     });
   });
 
-  it("renders the follow-up with the caregiver's own words and the child's name", async () => {
-    (analyzeResponses as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
+  it("renders a still-pending follow-up with the caregiver's own words and the child's name", async () => {
+    (getFollowUpSuggestions as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
 
     expect(await screen.findByTestId('follow-up-card')).toBeTruthy();
@@ -568,7 +573,7 @@ describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () =
   });
 
   it('confirming yes submits the structured answer and shows the recomputed results', async () => {
-    (analyzeResponses as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
+    (getFollowUpSuggestions as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
     (answerFollowUpSuggestion as jest.Mock).mockResolvedValue({
       ...RESULTS,
       redFlagTypes: ['loss_of_skills'],
@@ -591,7 +596,7 @@ describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () =
   });
 
   it('no consent / analysis unavailable (403) -> no card, results render normally', async () => {
-    (analyzeResponses as jest.Mock).mockRejectedValue(
+    (getFollowUpSuggestions as jest.Mock).mockRejectedValue(
       new ApiError(403, { message: 'requires ai_analysis consent' }),
     );
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
@@ -601,8 +606,8 @@ describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () =
     expect(screen.queryByText(/couldn't load your results/i)).toBeNull();
   });
 
-  it('no suggestions -> no card at all', async () => {
-    (analyzeResponses as jest.Mock).mockResolvedValue([]);
+  it('nothing pending -> no card at all', async () => {
+    (getFollowUpSuggestions as jest.Mock).mockResolvedValue([]);
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
 
     await screen.findByText(SCREENING_DISCLAIMER);
@@ -610,7 +615,7 @@ describe('ResultsScreen — free-text follow-up confirmations (issue #26)', () =
   });
 
   it('a failed answer keeps the question and shows a gentle retryable message', async () => {
-    (analyzeResponses as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
+    (getFollowUpSuggestions as jest.Mock).mockResolvedValue([FOLLOW_UP_SUGGESTION]);
     (answerFollowUpSuggestion as jest.Mock).mockRejectedValue(new Error('offline'));
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
     await screen.findByTestId('follow-up-card');
