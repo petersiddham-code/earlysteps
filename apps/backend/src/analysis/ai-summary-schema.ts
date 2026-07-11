@@ -38,13 +38,35 @@ function extractJsonObject(text: string): unknown | null {
   }
 }
 
-function allStrings(parsed: z.infer<typeof summaryOutputSchema>): string[] {
+function allStrings(summary: {
+  overview: string;
+  strengths: string[];
+  areas_to_watch: string[];
+  noted_by_caregiver: string[];
+}): string[] {
   return [
-    parsed.overview,
-    ...parsed.strengths,
-    ...parsed.areas_to_watch,
-    ...parsed.noted_by_caregiver,
+    summary.overview,
+    ...summary.strengths,
+    ...summary.areas_to_watch,
+    ...summary.noted_by_caregiver,
   ];
+}
+
+/**
+ * Re-checks an already-parsed, previously cached narrative against the current
+ * content-safety rules (issue #104 QA, PR #105): the safety check itself can gain new
+ * rules over time (as this one did), so a narrative cached under an older, weaker check
+ * must never keep serving unsafe content indefinitely just because the caregiver's
+ * answers haven't changed since it was generated. The caller treats `false` as a cache
+ * miss and regenerates.
+ */
+export function isSummaryStillSafe(summary: AiResultsSummary): boolean {
+  return !allStrings({
+    overview: summary.overview,
+    strengths: summary.strengths,
+    areas_to_watch: summary.areasToWatch,
+    noted_by_caregiver: summary.notedByCaregiver,
+  }).some(containsUnsafeResultLanguage);
 }
 
 /**

@@ -25,4 +25,17 @@ describe('containsUnsafeResultLanguage (issue #104)', () => {
       containsUnsafeResultLanguage('Enjoys back-and-forth play with familiar adults.'),
     ).toBe(false);
   });
+
+  // Issue #104 QA (PR #105): a model can suggest seeing a professional without ever
+  // using a reserved label, and that reads as a second, competing recommendation too.
+  it.each([
+    'These details deserve follow-up with a professional.',
+    'This is worth discussing with a healthcare provider.',
+    'A professional should hear about this sooner rather than later.',
+    'A professional can offer practical strategies for this.',
+    "It may help to mention this to the child's pediatrician.",
+    'A specialist could offer more guidance here.',
+  ])('flags professional-referral language: %s', (text) => {
+    expect(containsUnsafeResultLanguage(text)).toBe(true);
+  });
 });

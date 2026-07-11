@@ -78,6 +78,7 @@ async function buildStack(clientOutputs: (string | null)[]) {
     analysisService: moduleRef.get(AnalysisService),
     screeningService: moduleRef.get(ScreeningService),
     familiesRepository,
+    analysisRepository,
     aiSummaryClient,
   };
 }
@@ -254,6 +255,40 @@ describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () =>
     expect(result).toBeNull();
   });
 
+  // QA on PR #105 found the model can suggest seeing a professional in soft language
+  // ("worth discussing with a healthcare provider") without ever using a reserved label —
+  // that reads as a second, competing recommendation just as much as the reserved phrases.
+  it('returns null when the model suggests professional follow-up in its own words', async () => {
+    const unsafeOutput = JSON.stringify({
+      overview: 'The answers describe a toddler who enjoys playing with others.',
+      strengths: ['Enjoys play'],
+      areas_to_watch: [
+        'This detail deserves follow-up with a professional, worth discussing with a healthcare provider.',
+      ],
+      noted_by_caregiver: [],
+    });
+    const { analysisService, screeningService, familiesRepository } = await buildStack([
+      unsafeOutput,
+    ]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).toBeNull();
+  });
+
   it('returns null when the LLM client is unavailable (no API key / transport failure)', async () => {
     const { analysisService, screeningService, familiesRepository } = await buildStack([
       null,
@@ -275,5 +310,48 @@ describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () =>
     const result = await analysisService.getResultsSummary(child.id);
 
     expect(result).toBeNull();
+  });
+
+  // A narrative cached before a content-safety rule existed (or was tightened) must not
+  // keep serving unsafe content forever just because the answers it was built from
+  // haven't changed since — PR #105 QA prompted the professional-referral rule above.
+  it('discards and regenerates a previously cached narrative that is unsafe under current rules', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      analysisRepository,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT, VALID_OUTPUT]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const generated = await analysisService.getResultsSummary(child.id);
+    expect(generated).not.toBeNull();
+
+    // Simulate a narrative that was cached under an older, weaker safety check: same
+    // content hash (the answers haven't changed), but text that today's rules reject.
+    const cached = await analysisRepository.getCachedAiSummary(child.id);
+    await analysisRepository.saveAiSummary(child.id, cached!.contentHash, {
+      ...cached!.content,
+      overview: 'This is worth discussing with a healthcare provider.',
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.overview).not.toContain('healthcare provider');
+    expect(aiSummaryClient.calls).toHaveLength(2);
   });
 });

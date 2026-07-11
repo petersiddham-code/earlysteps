@@ -122,6 +122,30 @@ const RESERVED_RESULT_PHRASES: readonly string[] = [
 ];
 
 /**
+ * Terms naming a professional or a referral to one — banned from the independent AI
+ * results summary regardless of phrasing (issue #104 QA: a model can suggest "worth
+ * discussing with a healthcare provider" or "a professional should hear about this"
+ * without ever using a reserved label, and that reads as a second, competing
+ * recommendation just as much as the reserved phrases do). Whether and when to see a
+ * professional is exclusively the deterministic recommendation tier and red-flag rules'
+ * call (CLAUDE.md §2 rules 7-8) — this narrative only ever describes the raw answers.
+ */
+const PROFESSIONAL_REFERRAL_TERMS = [
+  'professional',
+  'doctor',
+  'pediatrician',
+  'paediatrician',
+  'specialist',
+  'clinician',
+  'healthcare provider',
+  'health care provider',
+] as const;
+const PROFESSIONAL_REFERRAL_PATTERN = new RegExp(
+  `\\b(${PROFESSIONAL_REFERRAL_TERMS.map((t) => t.replace(/ /g, '\\s+')).join('|')})\\b`,
+  'i',
+);
+
+/**
  * Runtime, fail-closed content-safety check for LLM-generated caregiver-facing text
  * (CLAUDE.md §8: "parse defensively and fail closed"). Mirrors the banned-word rule
  * scripts/lint-content.mjs enforces on static content, applied instead to ephemeral
@@ -131,6 +155,7 @@ const RESERVED_RESULT_PHRASES: readonly string[] = [
  */
 export function containsUnsafeResultLanguage(text: string): boolean {
   if (BANNED_WORD_PATTERN.test(text)) return true;
+  if (PROFESSIONAL_REFERRAL_PATTERN.test(text)) return true;
   const lower = text.toLowerCase();
   return RESERVED_RESULT_PHRASES.some((phrase) => lower.includes(phrase.toLowerCase()));
 }

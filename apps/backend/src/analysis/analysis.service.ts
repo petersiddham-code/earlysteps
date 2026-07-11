@@ -64,7 +64,7 @@ import {
   type AiSummaryAnsweredQuestion,
 } from './ai-summary-client.js';
 import { parseAnalysisOutput } from './signal-schema.js';
-import { parseAiSummaryOutput } from './ai-summary-schema.js';
+import { isSummaryStillSafe, parseAiSummaryOutput } from './ai-summary-schema.js';
 
 function freeTextEntries(answer: IntakeResponse['answer']): string[] {
   const entries = Array.isArray(answer)
@@ -202,7 +202,17 @@ export class AnalysisService {
 
     const contentHash = this.hashAnsweredQuestions(child.age_band, child.gender, answers);
     const cached = await this.repository.getCachedAiSummary(childId);
-    if (cached && cached.contentHash === contentHash) return cached.content;
+    // Re-validated on every read, not just at generation time (PR #105 QA): the
+    // content-safety rules can gain new checks over time, so a narrative cached under an
+    // older, weaker check must never keep serving unsafe content indefinitely just
+    // because the underlying answers haven't changed since it was generated.
+    if (
+      cached &&
+      cached.contentHash === contentHash &&
+      isSummaryStillSafe(cached.content)
+    ) {
+      return cached.content;
+    }
 
     const rawOutput = await this.aiSummaryClient.generateSummary({
       ageBand: child.age_band,
