@@ -77,11 +77,13 @@ export function FollowUpCheckScreen({ navigation }: Props) {
     setError(null);
     try {
       await answerFollowUpSuggestion(childId, suggestion.id, answer);
-      setFollowUps((prev) => {
-        const next = (prev ?? []).filter((s) => s.id !== suggestion.id);
-        if (next.length === 0) navigation.replace('Results');
-        return next;
-      });
+      // The answeringId guard above means only one call is ever in flight, so reading
+      // followUps here (rather than a setFollowUps updater) is safe — and it keeps the
+      // navigation side effect out of a state updater, which React 19 warns about
+      // ("cannot update a component while rendering a different component").
+      const next = (followUps ?? []).filter((s) => s.id !== suggestion.id);
+      setFollowUps(next);
+      if (next.length === 0) navigation.replace('Results');
     } catch {
       setError("We couldn't save that answer. Please try again.");
     } finally {
