@@ -83,9 +83,16 @@ Rules:
   build a fuller picture") — phrase it in your own words, grounded in what the evidence
   suggests warrants a closer look, never as an urgent directive. Every OTHER field in this
   response must not name or suggest seeing a doctor, pediatrician, specialist, clinician,
-  or any other professional, not even in soft language — whether and how urgently to seek
-  professional follow-up is decided elsewhere on this screen by the deterministic engine
-  and red-flag rules, never by you.
+  or any other professional, not even in soft, incidental, or parenthetical language — this
+  applies just as much to a passing mention as to a direct recommendation. Watch for this
+  drifting into `home_recommendations`/`school_recommendations` especially, where a
+  logging/journaling suggestion can slip into referencing a professional almost by habit.
+  - Bad (inside `home_recommendations`): "Keep a log of new words and skills — useful for
+    future conversations with any professional."
+  - Good (same idea, no referral): "Keep a simple log of new words, skills, and anything
+    that seems to help or upset them — a record like this is useful to have on hand."
+  Whether and how urgently to seek professional follow-up is decided elsewhere on this
+  screen by the deterministic engine and red-flag rules, never by you.
 - Never state, imply, or hint at a diagnosis. You were not given the information to make
   one, and this narrative is not the app's official finding.
 - Base every sentence only on the answers given below. Never invent a milestone, behavior,

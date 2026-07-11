@@ -30,7 +30,12 @@ import {
   type AiResultsSummary,
 } from '@earlysteps/shared-types';
 
-const MAX_LONG_TEXT = 800;
+// 800 was too tight for real generations (live-verified 2026-07-11: a genuinely synthesized
+// evidence_summary/reasoning routinely lands in the 700-850 char range once free-text
+// caregiver notes are involved, landing this cap right on the boundary — a real, frequent
+// zod rejection with nothing to do with content safety). 1500 gives real headroom while
+// still bounding a genuinely malformed/runaway response.
+const MAX_LONG_TEXT = 1500;
 const MAX_ITEM_CHARS = 300;
 const MAX_ITEMS = 8;
 const MAX_PRIORITY_ITEMS = 6;

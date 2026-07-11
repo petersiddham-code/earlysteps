@@ -231,10 +231,71 @@ describe('AI results summary — caching (issue #104)', () => {
   });
 });
 
-describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () => {
-  it('returns null and caches nothing for malformed model output', async () => {
+// Live-verified gap (2026-07-11, retest of PR #105 after Codex QA reported the AI
+// assessment card intermittently never rendering): with v2's much larger free-text
+// surface, a real generation occasionally drops one stray soft-referral phrase (observed:
+// "...useful for future conversations with any professional" inside home_recommendations,
+// well outside the professionalAssessmentPriorities carve-out) and the WHOLE narrative was
+// discarded over it (fail-closed, correct) — but with no retry, that single roll of the
+// dice decided whether the caregiver ever saw the section at all.
+describe('AI results summary — retries a rejected generation before failing closed (2026-07-11)', () => {
+  it('retries once when the first generation is rejected and returns the second, valid one', async () => {
+    const unsafeFirstAttempt = buildOutput({
+      home_recommendations: [
+        'Keep a log — useful for future conversations with any professional.',
+      ],
+    });
     const { analysisService, screeningService, familiesRepository, aiSummaryClient } =
-      await buildStack(['not json at all']);
+      await buildStack([unsafeFirstAttempt, VALID_OUTPUT]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(aiSummaryClient.calls).toHaveLength(2);
+  });
+
+  it('still fails closed (returns null) when every attempt is rejected', async () => {
+    const unsafeOutput = buildOutput({
+      reasoning: 'A specialist could offer more guidance here.',
+    });
+    const { analysisService, screeningService, familiesRepository, aiSummaryClient } =
+      await buildStack([unsafeOutput, unsafeOutput, unsafeOutput]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).toBeNull();
+    expect(aiSummaryClient.calls).toHaveLength(3);
+  });
+
+  it('does not retry a transport failure (null from the client)', async () => {
+    const { analysisService, screeningService, familiesRepository, aiSummaryClient } =
+      await buildStack([null]);
     const { child } = await familiesRepository.seedChildWithConsent([
       'data_storage',
       'ai_analysis',
@@ -253,6 +314,31 @@ describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () =>
 
     expect(result).toBeNull();
     expect(aiSummaryClient.calls).toHaveLength(1);
+  });
+});
+
+describe('AI results summary — fail closed (issue #104, CLAUDE.md §8)', () => {
+  it('returns null and caches nothing for malformed model output that stays malformed on every retry', async () => {
+    const { analysisService, screeningService, familiesRepository, aiSummaryClient } =
+      await buildStack(['not json at all', 'still not json', 'nope']);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).toBeNull();
+    expect(aiSummaryClient.calls).toHaveLength(3);
   });
 
   it('returns null when the model uses a reserved result label', async () => {

@@ -68,6 +68,9 @@ import {
 import { parseAnalysisOutput } from './signal-schema.js';
 import { isSummaryStillSafe, parseAiSummaryOutput } from './ai-summary-schema.js';
 
+/** See generateSafeSummary()'s doc comment for why a single rejected generation retries. */
+const MAX_SUMMARY_GENERATION_ATTEMPTS = 3;
+
 function freeTextEntries(answer: IntakeResponse['answer']): string[] {
   const entries = Array.isArray(answer)
     ? answer
@@ -216,18 +219,40 @@ export class AnalysisService {
       return cached.content;
     }
 
-    const rawOutput = await this.aiSummaryClient.generateSummary({
-      ageBand: child.age_band,
-      gender: child.gender,
-      answers,
-    });
-    if (rawOutput === null) return null;
-
-    const summary = parseAiSummaryOutput(rawOutput);
+    const summary = await this.generateSafeSummary(child.age_band, child.gender, answers);
     if (summary === null) return null;
 
     await this.repository.saveAiSummary(childId, contentHash, summary);
     return summary;
+  }
+
+  /**
+   * v2's much larger free-text surface (reasoning/developmental profile/uncertainty/
+   * evidence summary/tiered support priorities, on top of v1's four short fields) gives an
+   * LLM generation far more chances to drift into a single soft phrase that trips the
+   * content-safety check (observed live: "...useful for future conversations with any
+   * professional" inside `home_recommendations`, well outside the
+   * `professionalAssessmentPriorities` carve-out) — discarding an otherwise-good narrative
+   * over one stray word is a real usability cost, not a safety trade-off, since a retried
+   * generation is validated by the exact same fail-closed check (CLAUDE.md §8). Still fails
+   * closed (returns null) if every attempt is rejected.
+   */
+  private async generateSafeSummary(
+    ageBand: string,
+    gender: string | undefined,
+    answers: AiSummaryAnsweredQuestion[],
+  ): Promise<AiResultsSummary | null> {
+    for (let attempt = 0; attempt < MAX_SUMMARY_GENERATION_ATTEMPTS; attempt++) {
+      const rawOutput = await this.aiSummaryClient.generateSummary({
+        ageBand,
+        gender,
+        answers,
+      });
+      if (rawOutput === null) return null; // transport failure: retrying won't help
+      const summary = parseAiSummaryOutput(rawOutput);
+      if (summary !== null) return summary;
+    }
+    return null;
   }
 
   /**
