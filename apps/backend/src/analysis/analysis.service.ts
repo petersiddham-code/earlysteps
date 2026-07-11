@@ -21,6 +21,7 @@
  * into weighted scoring needs clinically-authored questions/weights first (see
  * docs/clinical-review/content-gaps.md and issue #22 coordination).
  */
+import { createHash } from 'node:crypto';
 import {
   ForbiddenException,
   Inject,
@@ -31,6 +32,7 @@ import {
 import {
   isFreeTextAnswer,
   stripFreeTextPrefix,
+  type AiResultsSummary,
   type FollowUpAnswer,
   type FollowUpSuggestion,
   type IntakeResponse,
@@ -40,6 +42,7 @@ import {
   allQuestions,
   getFollowUp,
 } from '@earlysteps/content';
+import { dedupeLatestByQuestion } from '@earlysteps/scoring-engine';
 import {
   FAMILIES_REPOSITORY,
   type FamiliesRepository,
@@ -55,7 +58,13 @@ import {
   RESPONSE_ANALYSIS_CLIENT,
   type ResponseAnalysisClient,
 } from './analysis-client.js';
+import {
+  AI_RESULTS_SUMMARY_CLIENT,
+  type AiResultsSummaryClient,
+  type AiSummaryAnsweredQuestion,
+} from './ai-summary-client.js';
 import { parseAnalysisOutput } from './signal-schema.js';
+import { parseAiSummaryOutput } from './ai-summary-schema.js';
 
 function freeTextEntries(answer: IntakeResponse['answer']): string[] {
   const entries = Array.isArray(answer)
@@ -73,6 +82,8 @@ export class AnalysisService {
   constructor(
     @Inject(ANALYSIS_REPOSITORY) private readonly repository: AnalysisRepository,
     @Inject(RESPONSE_ANALYSIS_CLIENT) private readonly client: ResponseAnalysisClient,
+    @Inject(AI_RESULTS_SUMMARY_CLIENT)
+    private readonly aiSummaryClient: AiResultsSummaryClient,
     @Inject(FAMILIES_REPOSITORY) private readonly familiesRepository: FamiliesRepository,
     // Explicit token: vitest's esbuild transform emits no decorator design:paramtypes
     // metadata, so class-typed constructor injection resolves to undefined in tests.
@@ -165,6 +176,94 @@ export class AnalysisService {
     const view = await this.screeningService.submitIntakeResponses(childId, [response]);
     await this.repository.markSuggestionAnswered(childId, suggestionId);
     return view;
+  }
+
+  /**
+   * The independent AI results summary (issue #104): a plain-language narrative built
+   * purely from the caregiver's raw answers, never the deterministic engine's computed
+   * levels/estimate/recommendation/red flags (CLAUDE.md §2 rule 7). Same ai_analysis
+   * consent gate as the free-text stage. Cached per child and only regenerated when the
+   * answered-question set has actually changed since the last generation — a Results
+   * visit with no new answers reuses the cached narrative rather than calling the LLM
+   * again. Returns null (section doesn't render) for: no answers yet, no API key,
+   * transport failure, or a malformed/unsafe model response (fail closed, CLAUDE.md §8).
+   */
+  async getResultsSummary(childId: string): Promise<AiResultsSummary | null> {
+    await this.ensureAiAnalysisConsent(childId);
+
+    const child = await this.familiesRepository.getChild(childId);
+    if (!child) return null;
+
+    const responses = dedupeLatestByQuestion(
+      await this.screeningService.getIntakeResponses(childId),
+    );
+    const answers = this.toAnsweredQuestions(responses);
+    if (answers.length === 0) return null;
+
+    const contentHash = this.hashAnsweredQuestions(child.age_band, child.gender, answers);
+    const cached = await this.repository.getCachedAiSummary(childId);
+    if (cached && cached.contentHash === contentHash) return cached.content;
+
+    const rawOutput = await this.aiSummaryClient.generateSummary({
+      ageBand: child.age_band,
+      gender: child.gender,
+      answers,
+    });
+    if (rawOutput === null) return null;
+
+    const summary = parseAiSummaryOutput(rawOutput);
+    if (summary === null) return null;
+
+    await this.repository.saveAiSummary(childId, contentHash, summary);
+    return summary;
+  }
+
+  /**
+   * Reduces this session's questionnaire responses to what the results-summary prompt
+   * needs: question text, selected option labels, and any typed note (PII minimization,
+   * CLAUDE.md §8). Responses whose question_id isn't a real questionnaire question (e.g.
+   * a follow-up confirmation) are skipped, same as ResultsScreen's own strengths
+   * derivation — this narrative covers the questionnaire itself, not its confirmations.
+   */
+  private toAnsweredQuestions(responses: IntakeResponse[]): AiSummaryAnsweredQuestion[] {
+    const questionsById = new Map(allQuestions().map((q) => [q.id, q]));
+    const answers: AiSummaryAnsweredQuestion[] = [];
+    for (const response of responses) {
+      const question = questionsById.get(response.question_id);
+      if (!question) continue;
+      const selectedIds = Array.isArray(response.answer)
+        ? response.answer
+        : [String(response.answer)];
+      const selectedLabels: string[] = [];
+      let freeText: string | undefined;
+      for (const id of selectedIds) {
+        if (isFreeTextAnswer(id)) {
+          freeText = stripFreeTextPrefix(id);
+          continue;
+        }
+        const option = question.options.find((o) => o.id === id);
+        if (option) selectedLabels.push(option.label);
+      }
+      answers.push({
+        questionText: question.text,
+        selectedLabels,
+        ...(freeText ? { freeText } : {}),
+      });
+    }
+    return answers;
+  }
+
+  /** Stable hash of the answered-question set, sorted so storage order never matters. */
+  private hashAnsweredQuestions(
+    ageBand: string,
+    gender: string | undefined,
+    answers: AiSummaryAnsweredQuestion[],
+  ): string {
+    const sorted = [...answers].sort((a, b) =>
+      a.questionText.localeCompare(b.questionText),
+    );
+    const stable = JSON.stringify({ ageBand, gender: gender ?? null, answers: sorted });
+    return createHash('sha256').update(stable).digest('hex');
   }
 
   private async ensureAiAnalysisConsent(childId: string): Promise<void> {

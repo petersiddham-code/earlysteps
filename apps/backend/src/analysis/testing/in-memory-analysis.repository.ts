@@ -4,11 +4,16 @@
  * InMemoryScreeningRepository so the analysis pipeline can be integration-tested
  * against the same stored answers the scoring pipeline sees.
  */
-import { isFreeTextAnswer, type IntakeResponse } from '@earlysteps/shared-types';
+import {
+  isFreeTextAnswer,
+  type AiResultsSummary,
+  type IntakeResponse,
+} from '@earlysteps/shared-types';
 import type { InMemoryScreeningRepository } from '../../screening/testing/in-memory-screening.repository.js';
 import type {
   AnalysisRepository,
   CreateSuggestionInput,
+  StoredAiSummary,
   StoredFollowUpSuggestion,
 } from '../analysis.repository.js';
 
@@ -30,6 +35,7 @@ function containsFreeText(answer: IntakeResponse['answer']): boolean {
 export class InMemoryAnalysisRepository implements AnalysisRepository {
   private readonly analyzedKeysByChild = new Map<string, Set<string>>();
   private readonly suggestions: StoredFollowUpSuggestion[] = [];
+  private readonly aiSummaries = new Map<string, StoredAiSummary>();
 
   constructor(private readonly screeningRepository: InMemoryScreeningRepository) {}
 
@@ -78,5 +84,17 @@ export class InMemoryAnalysisRepository implements AnalysisRepository {
       (s) => s.childId === childId && s.id === suggestionId && s.status === 'pending',
     );
     if (suggestion) suggestion.status = 'answered';
+  }
+
+  async getCachedAiSummary(childId: string): Promise<StoredAiSummary | null> {
+    return this.aiSummaries.get(childId) ?? null;
+  }
+
+  async saveAiSummary(
+    childId: string,
+    contentHash: string,
+    content: AiResultsSummary,
+  ): Promise<void> {
+    this.aiSummaries.set(childId, { contentHash, content });
   }
 }

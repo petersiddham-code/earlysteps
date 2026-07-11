@@ -244,6 +244,29 @@ export const consentCopySchema = z.object({
   ),
 });
 
+/**
+ * Copy shell around the LLM-generated AI results summary (issue #104, product plan §9.3):
+ * section headings and the fixed framing sentence separating this independent AI read
+ * from the official deterministic result. The narrative CONTENT itself is never authored
+ * here — it's generated per-child at runtime and validated against the same
+ * banned-word/reserved-label rules (CLAUDE.md §2 rules 1–4) before ever reaching a
+ * screen. There is no unavailable/error copy: a missing or invalid narrative means the
+ * section just doesn't render (fail closed, CLAUDE.md §8).
+ */
+export const aiResultsSummaryCopySchema = z.object({
+  version: z.string(),
+  locale: z.string(),
+  needs_clinical_signoff: z.boolean(),
+  note: z.string(),
+  section_headings: z.object({
+    overview: safeCopyNonEmpty,
+    strengths: safeCopyNonEmpty,
+    areas_to_watch: safeCopyNonEmpty,
+    noted_by_caregiver: safeCopyNonEmpty,
+  }),
+  framing_note: safeCopyNonEmpty,
+});
+
 export type FollowUp = z.infer<typeof followUpSchema>;
 export type FollowUpsFile = z.infer<typeof followUpsFileSchema>;
 export type WeightsTable = z.infer<typeof weightsTableSchema>;
@@ -255,3 +278,4 @@ export type UrgentResource = z.infer<typeof urgentResourceSchema>;
 export type ConsentCopy = z.infer<typeof consentCopySchema>;
 export type DomainResource = z.infer<typeof domainResourceSchema>;
 export type DomainResourcesFile = z.infer<typeof domainResourcesFileSchema>;
+export type AiResultsSummaryCopy = z.infer<typeof aiResultsSummaryCopySchema>;

@@ -11,6 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import type { AiSummaryAnsweredQuestion } from './ai-summary-client.js';
 
 const PROMPTS_DIR = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -52,5 +53,45 @@ export function buildAnalysisUserMessage(questionText: string, freeText: string)
     'Analyze this caregiver note.',
     `<question_text>${questionText}</question_text>`,
     `<free_text_answer>${freeText}</free_text_answer>`,
+  ].join('\n');
+}
+
+let cachedResultsSummarySystemPrompt: string | null = null;
+
+/** Guardrail block + results-summary task block, in that order (guardrails first). */
+export function getResultsSummarySystemPrompt(): string {
+  if (cachedResultsSummarySystemPrompt === null) {
+    const guardrails = loadPromptFile('_guardrails.md');
+    const task = loadPromptFile('results-summary.md');
+    cachedResultsSummarySystemPrompt = `${guardrails}\n\n${task}`;
+  }
+  return cachedResultsSummarySystemPrompt;
+}
+
+/** One answered question rendered as plain text for the results-summary prompt. */
+function formatAnsweredQuestion(answer: AiSummaryAnsweredQuestion): string {
+  const parts = [
+    `Q: ${answer.questionText}`,
+    `Selected: ${answer.selectedLabels.join(', ') || '(none)'}`,
+  ];
+  if (answer.freeText) parts.push(`Note: ${answer.freeText}`);
+  return parts.join(' | ');
+}
+
+/**
+ * Substitutes the input into the results-summary task template's tagged placeholders.
+ * The template instructs the model to treat tag contents as data, never instructions —
+ * belt and suspenders against prompt injection via a typed answer.
+ */
+export function buildResultsSummaryUserMessage(
+  ageBand: string,
+  gender: string | undefined,
+  answers: AiSummaryAnsweredQuestion[],
+): string {
+  return [
+    'Write the independent AI results summary for this raw questionnaire.',
+    `<age_band>${ageBand}</age_band>`,
+    `<gender>${gender ?? 'not given'}</gender>`,
+    `<answers>\n${answers.map(formatAnsweredQuestion).join('\n')}\n</answers>`,
   ].join('\n');
 }

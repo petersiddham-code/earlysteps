@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { analyzeResponses } from './analysis';
+import { analyzeResponses, getAiResultsSummary } from './analysis';
 import { createGuestChild } from '../guest/guestStore';
 
 jest.mock('./client', () => ({
@@ -28,6 +28,28 @@ describe('analysis API wrappers', () => {
     const result = await analyzeResponses(guestChild.id);
 
     expect(result).toEqual([]);
+    expect(apiClient.post).not.toHaveBeenCalled();
+  });
+
+  it('getAiResultsSummary posts to the results-summary route for a connected child (issue #104)', async () => {
+    (apiClient.post as jest.Mock).mockResolvedValue(null);
+    await getAiResultsSummary('c1');
+    expect(apiClient.post).toHaveBeenCalledWith('/children/c1/results-summary');
+  });
+
+  it('a guest child (#63) never reaches the network for the AI summary either', async () => {
+    const guestChild = createGuestChild({
+      family_id: 'f1',
+      nickname: 'Alex',
+      birth_month: 6,
+      birth_year: 2024,
+      age_band: 'toddler',
+      languages: ['English'],
+    });
+
+    const result = await getAiResultsSummary(guestChild.id);
+
+    expect(result).toBeNull();
     expect(apiClient.post).not.toHaveBeenCalled();
   });
 });

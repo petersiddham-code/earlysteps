@@ -5,6 +5,7 @@
  *    AppModule), mirroring the screening/families repository pattern.
  */
 import type {
+  AiResultsSummary,
   IntakeResponse,
   RedFlagType,
   SignalSalience,
@@ -31,6 +32,13 @@ export interface CreateSuggestionInput {
   salience: SignalSalience;
 }
 
+/** Cached independent AI results summary (issue #104) — one per child, overwritten in place. */
+export interface StoredAiSummary {
+  /** Hash of the answered-question set this narrative was generated from. */
+  contentHash: string;
+  content: AiResultsSummary;
+}
+
 export const ANALYSIS_REPOSITORY = Symbol('ANALYSIS_REPOSITORY');
 
 export interface AnalysisRepository {
@@ -53,4 +61,13 @@ export interface AnalysisRepository {
     suggestionId: string,
   ): Promise<StoredFollowUpSuggestion | null>;
   markSuggestionAnswered(childId: string, suggestionId: string): Promise<void>;
+
+  /** Issue #104: the cached AI results-summary narrative for this child, if any. */
+  getCachedAiSummary(childId: string): Promise<StoredAiSummary | null>;
+  /** Upserts the cached narrative — one row per child, overwritten in place. */
+  saveAiSummary(
+    childId: string,
+    contentHash: string,
+    content: AiResultsSummary,
+  ): Promise<void>;
 }

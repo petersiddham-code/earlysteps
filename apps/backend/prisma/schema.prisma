@@ -73,6 +73,7 @@ model Child {
   progressLogs     ProgressLogRecord[]
   mediaAssets      MediaAssetRecord[]
   reports          ReportRecord[]
+  aiResultsSummary AiResultsSummaryRecord?
 
   @@index([familyId])
 }
@@ -226,4 +227,20 @@ model ReportRecord {
   sharedWith  String[]
 
   @@index([childId])
+}
+
+/// Cached independent AI results summary (issue #104). One row per child (unique childId) —
+/// this is a narrative cache, not a scoring snapshot, so it's overwritten in place rather
+/// than retaining history (contrast DomainProfileRecord, CLAUDE.md §7 only requires history
+/// for the deterministic engine's own findings). contentHash is a hash of the answered
+/// questions the narrative was generated from; a Results visit reuses this row unless the
+/// hash no longer matches the child's current answers, avoiding a live LLM call every visit.
+model AiResultsSummaryRecord {
+  id          String   @id @default(cuid())
+  childId     String   @unique
+  child       Child    @relation(fields: [childId], references: [id])
+  contentHash String
+  /// AiResultsSummary shape minus generatedAt (stored separately below).
+  content     Json
+  generatedAt DateTime
 }

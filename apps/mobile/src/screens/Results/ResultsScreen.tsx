@@ -13,6 +13,7 @@ import {
   DOMAIN_DISPLAY_NAMES,
   isFreeTextAnswer,
   stripFreeTextPrefix,
+  type AiResultsSummary,
   type Domain,
   type FollowUpAnswer,
   type FollowUpSuggestion,
@@ -23,6 +24,7 @@ import {
 } from '@earlysteps/shared-types';
 import {
   answerFollowUpSuggestion,
+  getAiResultsSummary,
   getChild,
   getIntakeResponses,
   getFollowUpSuggestions,
@@ -32,6 +34,7 @@ import { ApiError } from '../../api/client.js';
 import { canUseAiFeatures, useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import {
+  AiResultsSummaryCard,
   FollowUpSuggestions,
   PrimaryButton,
   ScreeningDisclaimer,
@@ -125,6 +128,7 @@ export function ResultsScreen({ navigation, route }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [followUps, setFollowUps] = useState<FollowUpSuggestion[]>([]);
+  const [aiSummary, setAiSummary] = useState<AiResultsSummary | null>(null);
   const [childName, setChildName] = useState('your child');
   const [answeringId, setAnsweringId] = useState<string | null>(null);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
@@ -171,6 +175,17 @@ export function ResultsScreen({ navigation, route }: Props) {
       getFollowUpSuggestions(childId)
         .then((suggestions) => {
           if (!cancelled) setFollowUps(suggestions);
+        })
+        .catch(() => {});
+
+      // Issue #104: kicked off as soon as Results loads, not when the collapsible AI
+      // section is expanded, so the narrative is usually already there by the time the
+      // caregiver taps it open. A slower background fetch on top of the deterministic
+      // content already on screen — any failure (offline, no ai_analysis consent -> 403,
+      // malformed/unsafe model output) just means the card never appears.
+      getAiResultsSummary(childId)
+        .then((summary) => {
+          if (!cancelled) setAiSummary(summary);
         })
         .catch(() => {});
     }
@@ -449,6 +464,12 @@ export function ResultsScreen({ navigation, route }: Props) {
         error={followUpError}
         onAnswer={handleFollowUpAnswer}
       />
+
+      {/* Issue #104: independent AI read of the raw answers, below every deterministic
+          finding above and visually its own card — never a second official finding, just
+          another way for the caregiver to reflect on what they shared. Renders nothing
+          until (and unless) a narrative actually comes back. */}
+      <AiResultsSummaryCard summary={aiSummary} />
 
       {/* Issue #20: results must never be a dead end. Splash replace()s straight here for
           a returning session, so without these the caregiver has no path back into the

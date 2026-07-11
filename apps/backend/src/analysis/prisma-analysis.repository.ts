@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { isFreeTextAnswer, type IntakeResponse } from '@earlysteps/shared-types';
+import {
+  isFreeTextAnswer,
+  type AiResultsSummary,
+  type IntakeResponse,
+} from '@earlysteps/shared-types';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
   AnalysisRepository,
   CreateSuggestionInput,
+  StoredAiSummary,
   StoredFollowUpSuggestion,
 } from './analysis.repository.js';
 
@@ -93,6 +98,33 @@ export class PrismaAnalysisRepository implements AnalysisRepository {
     await this.prisma.followUpSuggestionRecord.updateMany({
       where: { id: suggestionId, childId, status: 'pending' },
       data: { status: 'answered', answeredAt: new Date() },
+    });
+  }
+
+  async getCachedAiSummary(childId: string): Promise<StoredAiSummary | null> {
+    const row = await this.prisma.aiResultsSummaryRecord.findUnique({
+      where: { childId },
+    });
+    if (!row) return null;
+    return {
+      contentHash: row.contentHash,
+      content: {
+        ...(row.content as Omit<AiResultsSummary, 'generatedAt'>),
+        generatedAt: row.generatedAt.toISOString(),
+      },
+    };
+  }
+
+  async saveAiSummary(
+    childId: string,
+    contentHash: string,
+    content: AiResultsSummary,
+  ): Promise<void> {
+    const { generatedAt, ...rest } = content;
+    await this.prisma.aiResultsSummaryRecord.upsert({
+      where: { childId },
+      create: { childId, contentHash, content: rest, generatedAt: new Date(generatedAt) },
+      update: { contentHash, content: rest, generatedAt: new Date(generatedAt) },
     });
   }
 

@@ -107,6 +107,34 @@ export const APPROVED_DIFFERENCE_TERMS = [
   'learning style',
 ] as const;
 
+const BANNED_WORD_PATTERN = new RegExp(`\\b(${BANNED_WORDS.join('|')})\\b`, 'i');
+
+/**
+ * Reserved strings that must only ever come from the deterministic scoring engine (CLAUDE.md
+ * §2 rule 7) — a freely-generated LLM narrative (issue #104's independent AI results
+ * summary) must never use any of these, since doing so would read as a second, competing
+ * verdict about the child rather than the engine's own official finding.
+ */
+const RESERVED_RESULT_PHRASES: readonly string[] = [
+  ...SIGN_LEVEL_LABELS,
+  ...RECOMMENDATION_TIERS,
+  ...SUPPORT_LEVEL_TERMS,
+];
+
+/**
+ * Runtime, fail-closed content-safety check for LLM-generated caregiver-facing text
+ * (CLAUDE.md §8: "parse defensively and fail closed"). Mirrors the banned-word rule
+ * scripts/lint-content.mjs enforces on static content, applied instead to ephemeral
+ * generated narrative text the lint script never sees. Deliberately stricter than the
+ * static-content check — no allowlisted phrases — since generated text can't be
+ * human-audited the way shipped content JSON is.
+ */
+export function containsUnsafeResultLanguage(text: string): boolean {
+  if (BANNED_WORD_PATTERN.test(text)) return true;
+  const lower = text.toLowerCase();
+  return RESERVED_RESULT_PHRASES.some((phrase) => lower.includes(phrase.toLowerCase()));
+}
+
 /**
  * Option ids that mean "the caregiver doesn't know / prefers not to say" rather than an
  * observation about the child. Product plan §4.1b: "I'm not sure is always an option, never
