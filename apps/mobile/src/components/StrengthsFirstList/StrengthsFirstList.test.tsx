@@ -36,4 +36,26 @@ describe('StrengthsFirstList', () => {
     const { toJSON } = render(<StrengthsFirstList strengths={[]} needs={[]} />);
     expect(toJSON()).toBeNull();
   });
+
+  it('renders duplicate strengths/needs text without a React duplicate-key warning (#106)', () => {
+    const warnSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    render(
+      <StrengthsFirstList
+        strengths={[
+          'She sometimes bites her arm when overwhelmed.',
+          'She sometimes bites her arm when overwhelmed.',
+        ]}
+        needs={['Same note', 'Same note']}
+      />,
+    );
+    const keyWarnings = warnSpy.mock.calls.filter((call) =>
+      String(call[0]).includes('same key'),
+    );
+    expect(keyWarnings).toHaveLength(0);
+    expect(
+      screen.getAllByText('She sometimes bites her arm when overwhelmed.'),
+    ).toHaveLength(2);
+    expect(screen.getAllByText('Same note')).toHaveLength(2);
+    warnSpy.mockRestore();
+  });
 });
