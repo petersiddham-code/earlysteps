@@ -176,9 +176,16 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <Text style={styles.eyebrow}>GETTING STARTED</Text>
       <Text style={styles.heading}>Tell us about your child</Text>
+      <Text style={styles.intro}>
+        A few quick details help us show questions and activities made for their age.
+      </Text>
 
-      <Text style={styles.label}>What should we call them?</Text>
+      <View style={styles.labelRow}>
+        <Ionicons name="person-outline" size={16} color={colors.primary} />
+        <Text style={styles.label}>What should we call them?</Text>
+      </View>
       <TextInput
         style={styles.input}
         value={nickname}
@@ -189,7 +196,11 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
         accessibilityLabel="Child's nickname"
       />
 
-      <Text style={styles.label}>When were they born?</Text>
+      <View style={styles.divider} />
+      <View style={styles.labelRow}>
+        <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+        <Text style={styles.label}>When were they born?</Text>
+      </View>
       <Text style={styles.hint}>
         Just the month and year — we use it to show questions made for their age.
       </Text>
@@ -238,7 +249,11 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
         </Text>
       )}
 
-      <Text style={styles.label}>Their gender (optional)</Text>
+      <View style={styles.divider} />
+      <View style={styles.labelRow}>
+        <Ionicons name="people-outline" size={16} color={colors.primary} />
+        <Text style={styles.label}>Their gender (optional)</Text>
+      </View>
       <Text style={styles.hint}>
         Skip this if you'd rather — it's entirely up to you.
       </Text>
@@ -271,7 +286,11 @@ export function ChildProfileSetupScreen({ navigation }: Props) {
         />
       )}
 
-      <Text style={styles.label}>Which language(s) does your family mainly speak?</Text>
+      <View style={styles.divider} />
+      <View style={styles.labelRow}>
+        <Ionicons name="globe-outline" size={16} color={colors.primary} />
+        <Text style={styles.label}>Which language(s) does your family mainly speak?</Text>
+      </View>
       <Text style={styles.hint}>Pick all that apply.</Text>
       <View style={styles.chipRow}>
         {LANGUAGE_OPTIONS.map((lang) => (
@@ -345,12 +364,28 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxxl + spacing.xxl,
     paddingBottom: spacing.xxxl,
   },
-  heading: { ...type.title, color: colors.ink, marginBottom: spacing.xl },
+  eyebrow: {
+    ...type.eyebrow,
+    color: colors.inkSoft,
+    marginBottom: spacing.sm,
+  },
+  heading: { ...type.title, color: colors.ink, marginBottom: spacing.xs },
+  intro: { ...type.body, color: colors.inkSoft, marginBottom: spacing.lg },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginTop: spacing.xl,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
   label: {
     ...type.bodyStrong,
     color: colors.ink,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
   },
   hint: { ...type.caption, color: colors.inkSoft, marginBottom: spacing.sm },
   input: {

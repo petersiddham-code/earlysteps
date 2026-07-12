@@ -14,7 +14,7 @@ import { register } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
-import { PrimaryButton } from '../../components/index.js';
+import { AppWordmark, PrimaryButton } from '../../components/index.js';
 import { cardShadow, colors, radius, spacing, type } from '../../theme/index.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Signup'>;
@@ -65,52 +65,56 @@ export function SignupScreen({ navigation }: Props) {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
+        <AppWordmark variant="inline" />
+
         <Text style={styles.heading}>Create your account</Text>
         <Text style={styles.subheading}>
           One account keeps your family's progress safe across visits.
         </Text>
 
-        <Text style={styles.label}>Username</Text>
-        <Text style={styles.hint}>
-          At least 3 characters — letters, numbers, dots, underscores, or hyphens.
-        </Text>
-        <TextInput
-          style={styles.input}
-          value={username}
-          onChangeText={setUsername}
-          placeholder="Username"
-          placeholderTextColor={colors.inkSoft}
-          autoCapitalize="none"
-          autoCorrect={false}
-          accessibilityLabel="Username"
-          testID="signup-username-input"
-        />
-
-        <Text style={styles.label}>Password</Text>
-        <Text style={styles.hint}>At least 8 characters.</Text>
-        <TextInput
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Password"
-          placeholderTextColor={colors.inkSoft}
-          secureTextEntry
-          autoCapitalize="none"
-          autoCorrect={false}
-          accessibilityLabel="Password"
-          testID="signup-password-input"
-        />
-
-        {error && <Text style={styles.errorText}>{error}</Text>}
-
-        <View style={styles.submitButton}>
-          <PrimaryButton
-            testID="signup-submit-button"
-            label="Sign up"
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            loading={submitting}
+        <View style={styles.card}>
+          <Text style={styles.label}>Username</Text>
+          <Text style={styles.hint}>
+            At least 3 characters — letters, numbers, dots, underscores, or hyphens.
+          </Text>
+          <TextInput
+            style={styles.input}
+            value={username}
+            onChangeText={setUsername}
+            placeholder="Username"
+            placeholderTextColor={colors.inkSoft}
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Username"
+            testID="signup-username-input"
           />
+
+          <Text style={styles.label}>Password</Text>
+          <Text style={styles.hint}>At least 8 characters.</Text>
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Password"
+            placeholderTextColor={colors.inkSoft}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Password"
+            testID="signup-password-input"
+          />
+
+          {error && <Text style={styles.errorText}>{error}</Text>}
+
+          <View style={styles.submitButton}>
+            <PrimaryButton
+              testID="signup-submit-button"
+              label="Sign up"
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              loading={submitting}
+            />
+          </View>
         </View>
 
         <Pressable
@@ -132,8 +136,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xl,
   },
-  heading: { ...type.title, color: colors.ink, marginBottom: spacing.xs },
+  heading: {
+    ...type.title,
+    color: colors.ink,
+    marginTop: spacing.xxl,
+    marginBottom: spacing.xs,
+  },
   subheading: { ...type.body, color: colors.inkSoft, marginBottom: spacing.xl },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    ...cardShadow,
+  },
   label: {
     ...type.bodyStrong,
     color: colors.ink,
@@ -149,8 +164,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     fontSize: 16,
     color: colors.ink,
-    backgroundColor: colors.card,
-    ...cardShadow,
+    backgroundColor: colors.background,
   },
   errorText: { ...type.body, color: colors.error, marginTop: spacing.lg },
   submitButton: { marginTop: spacing.xxl },
