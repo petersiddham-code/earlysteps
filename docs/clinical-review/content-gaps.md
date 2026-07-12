@@ -189,6 +189,11 @@ preschool/primary/teen/young_adult (the priority-1 batch below) — see
 | emotional_regulation | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
 | learning | — (intentional) | **1 •** | **1 •** | **1 •** | 3 ✅ (closed by #92) |
 | daily_living | — (intentional) | — (intentional) | **1 •** | **1 •** | **1 •** |
+| motor | **0 •** | **0 •** | **0 •** | **0 •** | **0 •** |
+
+Motor wasn't part of this matrix until the issue #66 coverage audit found it — unlike the
+`•`/`—` cells above, it's zero in *every* band, not a per-band gap. See §12 for detail;
+authoring filed as issue #113.
 
 `•` = below the floor of 3. `—` = domain not asked in that band at all. Issue #83 asked the
 advisor to resolve each `—` cell — is the domain developmentally inapplicable to that band,
@@ -236,6 +241,10 @@ be masking-aware in their hints, the precedent set by TE13.
    pre-existing thin cells for learning (preschool/primary/teen) and daily_living
    (primary/teen/young_adult) remain open, unaddressed gaps — out of scope for #83, still
    need their own batch.
+7. **Motor** (toddler +3, preschool +3, primary +3, teen +3, young_adult +3 = 15 items) —
+   net-new domain coverage in every band, found by the issue #66 audit, not part of the
+   original #52 matrix. Scope resolved by issue #109 (2026-07-13): real gap, not
+   intentional — see §12. Authoring filed as issue #113.
 7. ~~**Attention** (teen +3, young_adult +3 = 6 items) — net-new domain coverage per #83's
    scope resolution, not a top-up.~~ **Closed by issue #91** — TE18/TE19/TE20,
    YA17/YA18/YA19, see `2026-07-10-attention-coverage-teen-young-adult.md`.
@@ -279,10 +288,15 @@ Found during the issue #66 coverage audit (`2026-07-12-issue66-coverage-audit.md
 `DomainProfile`'s ninth domain, `motor` (`packages/shared-types/src/domains.ts`), has no
 question in any shipped bank — confirmed by scanning every age band. `domain-resources.json`
 (issue #71) already has a motor support-resource entry, so the domain was clearly meant to
-be reachable, but nothing in the intake can ever produce a motor `DomainFinding`. Needs a
-scope decision first (real gap needing authoring, like #91/#92 were, vs. intentionally
-out of scope, like toddler learning / toddler+preschool daily_living), then the same
-authoring process as §10's batches if it's a real gap. Open, unaddressed.
+be reachable, but nothing in the intake can ever produce a motor `DomainFinding`.
+
+**Resolved 2026-07-13:** confirmed a real gap, not intentional — the product plan itself
+lists "motor skill development" as one of the nine screened domains (line 51), same
+resolution shape as #83's attention/learning cells. Unlike #83's cells, motor is missing
+in *every* band, so this is net-new domain coverage across the board rather than a top-up
+in one or two bands. Authoring filed as **issue #113** (all five bands, 3 items each = 15
+items), same process as §10's batches — see
+`2026-07-13-issue109-motor-scope-decision.md`.
 
 ## 13. Severe-feeding red flag can't fire for primary/teen/young_adult (issue #110)
 
