@@ -1,5 +1,5 @@
 {
-  "version": "1.8.0",
+  "version": "1.9.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -423,6 +423,36 @@
         }
       ],
       "hint": "This is about how much pain or temperature registers — not about how tolerant they choose to be."
+    },
+    {
+      "id": "YA23",
+      "domain": "sensory",
+      "age_band": "young_adult",
+      "text": "How has [child]'s eating been lately?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "wide_variety",
+          "label": "Eats a wide variety"
+        },
+        {
+          "id": "somewhat_picky",
+          "label": "Somewhat picky"
+        },
+        {
+          "id": "very_picky",
+          "label": "Very picky / few accepted foods"
+        },
+        {
+          "id": "so_few_worried_growth",
+          "label": "So few foods I worry about their growth or health"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Pick what feels typical, not just a rough patch."
     },
     {
       "id": "YA15",

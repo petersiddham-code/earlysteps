@@ -89,17 +89,20 @@ export function checkSelfInjuryRisk(responses: IntakeResponse[]): EvidenceRef[] 
   return answerEquals(r, 'yes') ? [evidence(r!)] : [];
 }
 
+/** Universal feeding/eating question ids, one per age band (issue #110 — was toddler/preschool-only). */
+const SEVERE_FEEDING_QS = ['T14', 'P16', 'PR23', 'TE21', 'YA23'];
+
 /**
  * Severe feeding / growth concern. Triggers only on the explicit "so few foods I worry
  * about their growth or health" option — ordinary picky eating ("very picky") is extremely
  * common and stays a weighted sensory signal, not an escalation (product plan §4.8 "severe").
  */
 export function checkSevereFeeding(responses: IntakeResponse[]): EvidenceRef[] {
-  const t14 = find(responses, 'T14');
-  const p16 = find(responses, 'P16');
   const refs: EvidenceRef[] = [];
-  if (answerEquals(t14, 'so_few_worried_growth')) refs.push(evidence(t14!));
-  if (answerEquals(p16, 'so_few_worried_growth')) refs.push(evidence(p16!));
+  for (const questionId of SEVERE_FEEDING_QS) {
+    const r = find(responses, questionId);
+    if (answerEquals(r, 'so_few_worried_growth')) refs.push(evidence(r!));
+  }
   return refs;
 }
 

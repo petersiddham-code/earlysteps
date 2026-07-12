@@ -76,8 +76,12 @@ describe('every red-flag rule references real shipped questions and options', ()
     expectQuestionWithOptions('T2', 'none_yet'); // no functional communication (toddler)
     expectQuestionWithOptions('T3', 'rarely');
     expectQuestionWithOptions('P1', 'not_yet_talking'); // no functional communication (preschool)
-    expectQuestionWithOptions('T14', 'so_few_worried_growth'); // severe feeding
+    // severe feeding — one question per age band (issue #110)
+    expectQuestionWithOptions('T14', 'so_few_worried_growth');
     expectQuestionWithOptions('P16', 'so_few_worried_growth');
+    expectQuestionWithOptions('PR23', 'so_few_worried_growth');
+    expectQuestionWithOptions('TE21', 'so_few_worried_growth');
+    expectQuestionWithOptions('YA23', 'so_few_worried_growth');
     // severe sleep — one question per age band (issue #65)
     expectQuestionWithOptions('T15', 'significant_struggles');
     expectQuestionWithOptions('P21', 'significant_struggles');
