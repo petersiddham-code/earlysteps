@@ -177,7 +177,7 @@ young_adult as a side effect of the sleep-question work. Issue #78 closed sensor
 preschool/primary/teen/young_adult (the priority-1 batch below) — see
 `2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`. The rest remain open.
 
-### Current state (post #92)
+### Current state (post #113)
 
 | Domain | toddler | preschool | primary | teen | young_adult |
 |---|---|---|---|---|---|
@@ -189,11 +189,12 @@ preschool/primary/teen/young_adult (the priority-1 batch below) — see
 | emotional_regulation | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
 | learning | — (intentional) | **1 •** | **1 •** | **1 •** | 3 ✅ (closed by #92) |
 | daily_living | — (intentional) | — (intentional) | **1 •** | **1 •** | **1 •** |
-| motor | **0 •** | **0 •** | **0 •** | **0 •** | **0 •** |
+| motor | 3 ✅ (closed by #113) | 3 ✅ (closed by #113) | 3 ✅ (closed by #113) | 3 ✅ (closed by #113) | 3 ✅ (closed by #113) |
 
 Motor wasn't part of this matrix until the issue #66 coverage audit found it — unlike the
-`•`/`—` cells above, it's zero in *every* band, not a per-band gap. See §12 for detail;
-authoring filed as issue #113.
+`•`/`—` cells above, it was zero in *every* band, not a per-band gap. Scope resolved by
+issue #109; closed by issue #113 (T27-29/P27-29/PR24-26/TE22-24/YA24-26) — see
+`2026-07-13-motor-coverage-all-bands.md`.
 
 `•` = below the floor of 3. `—` = domain not asked in that band at all. Issue #83 asked the
 advisor to resolve each `—` cell — is the domain developmentally inapplicable to that band,
@@ -241,10 +242,11 @@ be masking-aware in their hints, the precedent set by TE13.
    pre-existing thin cells for learning (preschool/primary/teen) and daily_living
    (primary/teen/young_adult) remain open, unaddressed gaps — out of scope for #83, still
    need their own batch.
-7. **Motor** (toddler +3, preschool +3, primary +3, teen +3, young_adult +3 = 15 items) —
+7. ~~**Motor** (toddler +3, preschool +3, primary +3, teen +3, young_adult +3 = 15 items) —
    net-new domain coverage in every band, found by the issue #66 audit, not part of the
    original #52 matrix. Scope resolved by issue #109 (2026-07-13): real gap, not
-   intentional — see §12. Authoring filed as issue #113.
+   intentional — see §12.~~ **Closed by issue #113** — T27-29, P27-29, PR24-26, TE22-24,
+   YA24-26, see `2026-07-13-motor-coverage-all-bands.md`.
 7. ~~**Attention** (teen +3, young_adult +3 = 6 items) — net-new domain coverage per #83's
    scope resolution, not a top-up.~~ **Closed by issue #91** — TE18/TE19/TE20,
    YA17/YA18/YA19, see `2026-07-10-attention-coverage-teen-young-adult.md`.
@@ -297,6 +299,12 @@ in *every* band, so this is net-new domain coverage across the board rather than
 in one or two bands. Authoring filed as **issue #113** (all five bands, 3 items each = 15
 items), same process as §10's batches — see
 `2026-07-13-issue109-motor-scope-decision.md`.
+
+**Closed 2026-07-13 by issue #113:** fifteen newly authored questions (T27-29, P27-29,
+PR24-26, TE22-24, YA24-26 — one gross-motor, one fine-motor, one coordination/motor-planning
+item per band) bring motor to the 3-item evidence floor in every band. `domain-resources.json`'s
+existing motor entry (issue #71) is now reachable for the first time. See
+`2026-07-13-motor-coverage-all-bands.md`.
 
 ## 13. ~~Severe-feeding red flag can't fire for primary/teen/young_adult~~ — CLOSED (pending sign-off) 2026-07-13 (issue #110)
 

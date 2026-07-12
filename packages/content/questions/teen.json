@@ -1,5 +1,5 @@
 {
-  "version": "1.8.0",
+  "version": "1.9.0",
   "locale": "en",
   "age_band": "teen",
   "questions": [
@@ -568,6 +568,84 @@
         }
       ],
       "hint": "This is about wanting to share something because it interests them, not asking for help or approval."
+    },
+    {
+      "id": "TE22",
+      "domain": "motor",
+      "age_band": "teen",
+      "text": "In sports or PE, does [child] feel physically coordinated compared to their peers — or does it feel like extra effort to keep up?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "about_the_same",
+          "label": "Feels about the same as peers"
+        },
+        {
+          "id": "more_effort",
+          "label": "Takes noticeably more effort"
+        },
+        {
+          "id": "avoids_or_struggles",
+          "label": "Avoids these, or struggles a lot"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Many teens push through and don't mention this unless asked directly — go with how it actually feels, not how it looks from outside."
+    },
+    {
+      "id": "TE23",
+      "domain": "motor",
+      "age_band": "teen",
+      "text": "Do everyday fine-motor tasks — like handwriting, tying laces, or using tools — feel harder or slower for [child] than for most people their age?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "about_the_same",
+          "label": "No, feels about the same"
+        },
+        {
+          "id": "somewhat_harder",
+          "label": "Somewhat harder or slower"
+        },
+        {
+          "id": "much_harder",
+          "label": "Much harder or slower"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about how it feels day to day, even if [child] has found workarounds nobody else notices."
+    },
+    {
+      "id": "TE24",
+      "domain": "motor",
+      "age_band": "teen",
+      "text": "When learning a new physical skill or movement sequence — like a sport, dance, or driving — does [child] need noticeably more practice than others to get it smooth?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "about_the_same",
+          "label": "About the same as others"
+        },
+        {
+          "id": "a_bit_more_practice",
+          "label": "A bit more practice"
+        },
+        {
+          "id": "a_lot_more_practice",
+          "label": "A lot more practice"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about learning the sequence of movements, not physical fitness or strength."
     }
   ]
 }

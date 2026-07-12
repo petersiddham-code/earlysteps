@@ -1,5 +1,5 @@
 {
-  "version": "0.12.0-placeholder",
+  "version": "0.13.0-placeholder",
   "needs_clinical_signoff": true,
   "note": "PLACEHOLDER WEIGHTS — NOT CLINICALLY VALIDATED. Product plan §8 says weights are 'derived from CDC/AAP milestone importance and NICE red-flag weighting' but provides no numbers. These values exist only to exercise the deterministic scoring engine and MUST be replaced under the docs/clinical-review/ gate (CLAUDE.md §9) before any real family uses the app. `combine` = 'max' for single-select questions (score = weight of the chosen option), 'sum' for multi-select (score = sum of chosen chip weights). Per-question max is derived from these same weights, so the engine needs no other input to normalize 0–100.",
   "indicators": [
@@ -1112,6 +1112,141 @@
         "so_few_worried_growth": 10,
         "very_picky": 8,
         "somewhat_picky": 4
+      }
+    },
+    {
+      "question_id": "T27",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "very_unsteady": 10,
+        "some_stumbling": 5
+      }
+    },
+    {
+      "question_id": "T28",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "struggles_with_most": 10,
+        "some_of_these": 5
+      }
+    },
+    {
+      "question_id": "T29",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "rarely_copies": 10,
+        "copies_sometimes": 5
+      }
+    },
+    {
+      "question_id": "P27",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "struggles_with_most": 10,
+        "some_or_awkwardly": 5
+      }
+    },
+    {
+      "question_id": "P28",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "struggles_with_most": 10,
+        "some_or_awkwardly": 5
+      }
+    },
+    {
+      "question_id": "P29",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "often": 10,
+        "sometimes": 5
+      }
+    },
+    {
+      "question_id": "PR24",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "struggles_with_both": 10,
+        "one_or_awkwardly": 5
+      }
+    },
+    {
+      "question_id": "PR25",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "much_harder": 10,
+        "somewhat_harder": 5
+      }
+    },
+    {
+      "question_id": "PR26",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "a_lot_more_practice": 10,
+        "a_bit_more_practice": 5
+      }
+    },
+    {
+      "question_id": "TE22",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "avoids_or_struggles": 10,
+        "more_effort": 5
+      }
+    },
+    {
+      "question_id": "TE23",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "much_harder": 10,
+        "somewhat_harder": 5
+      }
+    },
+    {
+      "question_id": "TE24",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "a_lot_more_practice": 10,
+        "a_bit_more_practice": 5
+      }
+    },
+    {
+      "question_id": "YA24",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "avoids_or_struggles": 10,
+        "more_effort": 5
+      }
+    },
+    {
+      "question_id": "YA25",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "much_harder": 10,
+        "somewhat_harder": 5
+      }
+    },
+    {
+      "question_id": "YA26",
+      "domain": "motor",
+      "combine": "max",
+      "option_weights": {
+        "a_lot_more_practice": 10,
+        "a_bit_more_practice": 5
       }
     }
   ]

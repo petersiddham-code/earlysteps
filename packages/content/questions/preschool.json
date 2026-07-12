@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "locale": "en",
   "age_band": "preschool",
   "questions": [
@@ -729,6 +729,84 @@
         }
       ],
       "hint": "This is about wanting to share something exciting with you, not asking for help."
+    },
+    {
+      "id": "P27",
+      "domain": "motor",
+      "age_band": "preschool",
+      "text": "Can [child] jump with both feet off the ground, or pedal a tricycle?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "manages_these",
+          "label": "Yes, manages these"
+        },
+        {
+          "id": "some_or_awkwardly",
+          "label": "Can do some, or it looks awkward"
+        },
+        {
+          "id": "struggles_with_most",
+          "label": "Struggles with most of these"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "It's fine if it's not smooth yet — think about whether they can attempt it at all."
+    },
+    {
+      "id": "P28",
+      "domain": "motor",
+      "age_band": "preschool",
+      "text": "Can [child] use child-safe scissors to cut along a line, or copy a simple shape like a circle or cross?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "manages_these",
+          "label": "Yes, manages these"
+        },
+        {
+          "id": "some_or_awkwardly",
+          "label": "Can do some, or it looks awkward"
+        },
+        {
+          "id": "struggles_with_most",
+          "label": "Struggles with most of these"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "It doesn't need to be neat — attempting it is what counts."
+    },
+    {
+      "id": "P29",
+      "domain": "motor",
+      "age_band": "preschool",
+      "text": "Does [child] bump into furniture or people, trip, or lose their balance more often than other children their age?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "rarely",
+          "label": "Rarely"
+        },
+        {
+          "id": "sometimes",
+          "label": "Sometimes"
+        },
+        {
+          "id": "often",
+          "label": "Often"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about everyday moving around, not just one stumble."
     }
   ]
 }

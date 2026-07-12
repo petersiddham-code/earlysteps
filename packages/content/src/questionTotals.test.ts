@@ -100,6 +100,17 @@ describe('domainQuestionTotalsForBand (issue #52)', () => {
     expect(domainQuestionTotalsForBand('young_adult').learning).toBeGreaterThanOrEqual(3);
   });
 
+  it('pins issue #113: motor reaches the 3-item evidence floor in every band', () => {
+    // Before #113, motor asked zero items in every band — the only domain with zero
+    // coverage everywhere, not a per-band gap like the other cells in this matrix (found by
+    // the #66 audit, scope resolved by #109). Three newly authored items per band close it
+    // to the floor of 3. If any of these regress, that's a clinical-content decision, so a
+    // conscious test update is the point.
+    for (const band of AGE_BANDS) {
+      expect(domainQuestionTotalsForBand(band).motor).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it('every band total is at most the all-bank total for that domain', () => {
     const allBank: Record<string, number> = {};
     for (const ind of Object.values(INDICATORS_BY_QUESTION)) {

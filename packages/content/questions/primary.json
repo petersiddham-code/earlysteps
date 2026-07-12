@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "locale": "en",
   "age_band": "primary",
   "questions": [
@@ -633,6 +633,84 @@
         }
       ],
       "hint": "Sharing something because it's interesting to them, not just to get help, is what we're asking about."
+    },
+    {
+      "id": "PR24",
+      "domain": "motor",
+      "age_band": "primary",
+      "text": "Can [child] catch a ball thrown gently to them, or ride a bike (with or without training wheels)?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "manages_these",
+          "label": "Yes, manages these"
+        },
+        {
+          "id": "one_or_awkwardly",
+          "label": "Can do one, or it looks awkward"
+        },
+        {
+          "id": "struggles_with_both",
+          "label": "Struggles with both of these"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about how things go most of the time, not a single best or worst attempt."
+    },
+    {
+      "id": "PR25",
+      "domain": "motor",
+      "age_band": "primary",
+      "text": "Is [child]'s handwriting, or their use of scissors and cutlery, noticeably harder for them than for classmates their age?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "not_noticeably_harder",
+          "label": "Not noticeably harder"
+        },
+        {
+          "id": "somewhat_harder",
+          "label": "Somewhat harder"
+        },
+        {
+          "id": "much_harder",
+          "label": "Much harder"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about how it compares to classmates or siblings around the same age, not adult standards."
+    },
+    {
+      "id": "PR26",
+      "domain": "motor",
+      "age_band": "primary",
+      "text": "When learning a new physical skill — like a dance move, sports skill, or new playground game — does [child] need a lot more practice than other kids to get the sequence right?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "about_the_same",
+          "label": "About the same as other kids"
+        },
+        {
+          "id": "a_bit_more_practice",
+          "label": "A bit more practice"
+        },
+        {
+          "id": "a_lot_more_practice",
+          "label": "A lot more practice"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about learning the order of movements, not fitness or strength."
     }
   ]
 }
