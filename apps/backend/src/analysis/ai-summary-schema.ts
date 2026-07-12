@@ -180,9 +180,22 @@ function toSummaryOutput(summary: AiResultsSummary): SummaryOutput {
  * gain new rules over time, so a narrative cached under an older, weaker check must never
  * keep serving unsafe content indefinitely just because the caregiver's answers haven't
  * changed since it was generated. The caller treats `false` as a cache miss and regenerates.
+ *
+ * Live-verified 2026-07-12: a row cached under the pre-v2 shape (`overview`/`areasToWatch`/
+ * `notedByCaregiver`, no `supportPriorities`) crashed this with an uncaught TypeError instead
+ * of failing closed — `PrismaAnalysisRepository.getCachedAiSummary` trusts the DB's JSON blob
+ * shape without validating it, so any legacy or otherwise malformed cached row reached here
+ * unchecked. Wrapped in try/catch so a shape mismatch is treated the same as "unsafe" (cache
+ * miss, regenerate fresh) rather than a 500 — consistent with this whole module's fail-closed
+ * design (CLAUDE.md §8), just extended to cover a corrupt/outdated CACHE read, not only a
+ * fresh LLM response.
  */
 export function isSummaryStillSafe(summary: AiResultsSummary): boolean {
-  return !isUnsafe(toSummaryOutput(summary));
+  try {
+    return !isUnsafe(toSummaryOutput(summary));
+  } catch {
+    return false;
+  }
 }
 
 /**

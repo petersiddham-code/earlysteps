@@ -1,9 +1,16 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '@testing-library/react-native';
 import { ResultsScreen } from './ResultsScreen';
 import {
   answerFollowUpSuggestion,
   getAiResultsSummary,
   getChild,
+  getComparisonResult,
   getFollowUpSuggestions,
   getIntakeResponses,
   getResults,
@@ -18,6 +25,7 @@ jest.mock('../../api/index.js', () => ({
   getFollowUpSuggestions: jest.fn(),
   answerFollowUpSuggestion: jest.fn(),
   getAiResultsSummary: jest.fn(),
+  getComparisonResult: jest.fn(),
   getChild: jest.fn(),
 }));
 jest.mock('../../session/index.js', () => ({
@@ -532,7 +540,7 @@ describe('ResultsScreen', () => {
   });
 });
 
-describe('ResultsScreen — AI results summary (issue #104)', () => {
+describe('ResultsScreen — AI assessment / Assessment B (issue #104, dual-assessment update)', () => {
   const AI_SUMMARY = {
     likelihood: 'Moderate',
     confidence: 'medium',
@@ -551,6 +559,17 @@ describe('ResultsScreen — AI results summary (issue #104)', () => {
     generatedAt: '2026-07-11T00:00:00.000Z',
   };
 
+  const COMPARISON = {
+    status: 'agreement',
+    reasons: [],
+    assessmentABand: 'medium',
+    assessmentBBand: 'medium',
+    bandDistance: 0,
+    narrative:
+      'The official screening result and this independent AI read point in the same general direction.',
+    computedAt: '2026-07-11T00:00:00.000Z',
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     clearChildId.mockResolvedValue(undefined);
@@ -565,6 +584,7 @@ describe('ResultsScreen — AI results summary (issue #104)', () => {
     (getIntakeResponses as jest.Mock).mockResolvedValue([]);
     (getFollowUpSuggestions as jest.Mock).mockResolvedValue([]);
     (getAiResultsSummary as jest.Mock).mockResolvedValue(null);
+    (getComparisonResult as jest.Mock).mockResolvedValue(null);
     (getChild as jest.Mock).mockResolvedValue({
       id: 'c1',
       family_id: 'f1',
@@ -582,16 +602,16 @@ describe('ResultsScreen — AI results summary (issue #104)', () => {
 
     expect(getAiResultsSummary).toHaveBeenCalledWith('c1');
     // Renders collapsed by default: the toggle is present, the narrative text is not.
-    expect(await screen.findByTestId('ai-results-summary-card')).toBeTruthy();
-    expect(screen.queryByTestId('ai-results-summary-content')).toBeNull();
+    expect(await screen.findByTestId('ai-assessment-card')).toBeTruthy();
+    expect(screen.queryByTestId('ai-assessment-content')).toBeNull();
   });
 
   it('expands to show the narrative and framing note on tap', async () => {
     (getAiResultsSummary as jest.Mock).mockResolvedValue(AI_SUMMARY);
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
-    await screen.findByTestId('ai-results-summary-card');
+    await screen.findByTestId('ai-assessment-card');
 
-    fireEvent.press(screen.getByTestId('ai-results-summary-toggle'));
+    fireEvent.press(screen.getByTestId('ai-assessment-toggle'));
 
     expect(screen.getByText(AI_SUMMARY.reasoning)).toBeTruthy();
     expect(
@@ -604,7 +624,7 @@ describe('ResultsScreen — AI results summary (issue #104)', () => {
     render(<ResultsScreen navigation={navProp()} route={{} as never} />);
     await screen.findByText(SCREENING_DISCLAIMER);
 
-    expect(screen.queryByTestId('ai-results-summary-card')).toBeNull();
+    expect(screen.queryByTestId('ai-assessment-card')).toBeNull();
   });
 
   it('never calls getAiResultsSummary for a guest session (issue #99)', async () => {
@@ -633,6 +653,84 @@ describe('ResultsScreen — AI results summary (issue #104)', () => {
     await screen.findByText(SCREENING_DISCLAIMER);
 
     expect(getAiResultsSummary).not.toHaveBeenCalled();
+  });
+
+  // Section separation (CLAUDE.md §10/§14): Assessment A and Assessment B must never
+  // visually merge into one block — verified structurally via distinct, non-nested testIDs.
+  it('renders Section A, Section B, and the Comparison Section as three distinct, non-nested regions', async () => {
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(AI_SUMMARY);
+    (getComparisonResult as jest.Mock).mockResolvedValue(COMPARISON);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    const sectionA = await screen.findByTestId('section-a-deterministic');
+    const sectionB = await screen.findByTestId('section-b-ai-assessment');
+    const sectionComparison = await screen.findByTestId('section-comparison');
+
+    expect(sectionA).toBeTruthy();
+    expect(sectionB).toBeTruthy();
+    expect(sectionComparison).toBeTruthy();
+    // None nests inside another — each is reachable independently and none contains the
+    // others' testID in its own subtree.
+    expect(within(sectionA).queryByTestId('section-b-ai-assessment')).toBeNull();
+    expect(within(sectionA).queryByTestId('section-comparison')).toBeNull();
+    expect(within(sectionB).queryByTestId('section-a-deterministic')).toBeNull();
+    expect(within(sectionB).queryByTestId('section-comparison')).toBeNull();
+    expect(within(sectionComparison).queryByTestId('section-a-deterministic')).toBeNull();
+    expect(within(sectionComparison).queryByTestId('section-b-ai-assessment')).toBeNull();
+  });
+
+  it('fetches the comparison result only after the AI summary resolves with content', async () => {
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(AI_SUMMARY);
+    (getComparisonResult as jest.Mock).mockResolvedValue(COMPARISON);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByTestId('section-comparison');
+
+    expect(getComparisonResult).toHaveBeenCalledWith('c1');
+    expect(screen.getByText('Agreement')).toBeTruthy();
+  });
+
+  it('never fetches the comparison result when there is no AI summary', async () => {
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(null);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(getComparisonResult).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('section-comparison')).toBeNull();
+  });
+
+  it('renders no Comparison Section when the comparison call resolves null (fail closed)', async () => {
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(AI_SUMMARY);
+    (getComparisonResult as jest.Mock).mockResolvedValue(null);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByTestId('ai-assessment-card');
+
+    await waitFor(() => expect(getComparisonResult).toHaveBeenCalled());
+    expect(screen.queryByTestId('section-comparison')).toBeNull();
+  });
+
+  it('never calls getComparisonResult for a guest session (issue #99)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'guest:c1',
+      isGuest: true,
+      tier: null,
+      clearChildId,
+    });
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(getComparisonResult).not.toHaveBeenCalled();
+  });
+
+  // §14's closing line: the disclaimer renders on this screen regardless of whether
+  // Section B/Comparison exist yet.
+  it('still renders the disclaimer when only Section A has content', async () => {
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(null);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    expect(await screen.findByText(SCREENING_DISCLAIMER)).toBeTruthy();
+    expect(screen.getByTestId('section-a-deterministic')).toBeTruthy();
   });
 });
 

@@ -7,6 +7,7 @@ import {
   type Domain,
   type SignLevel,
 } from '@earlysteps/shared-types';
+import { ConfidenceBadge } from '../ConfidenceBadge/ConfidenceBadge.js';
 
 /**
  * Either a real bucketed level (which must always come with its confidence, CLAUDE.md §2
@@ -33,12 +34,6 @@ const LEVEL_COLOR: Record<SignLevel, string> = {
 /** Deliberately OFF the traffic-light palette: "not enough info" is not a fourth severity. */
 const INSUFFICIENT_COLOR = '#9AA8A3';
 
-const CONFIDENCE_LABEL: Record<Confidence, string> = {
-  low: 'low confidence',
-  medium: 'medium confidence',
-  high: 'high confidence',
-};
-
 export function TrafficLightBar(props: TrafficLightBarProps) {
   const insufficient = props.level === 'insufficient_evidence';
   const color = insufficient ? INSUFFICIENT_COLOR : LEVEL_COLOR[props.level];
@@ -50,8 +45,12 @@ export function TrafficLightBar(props: TrafficLightBarProps) {
         <Text style={styles.levelLabel}>
           {props.level === 'insufficient_evidence'
             ? INSUFFICIENT_EVIDENCE_LABEL
-            : `${SIGN_LEVEL_TO_LABEL[props.level]} · ${CONFIDENCE_LABEL[props.confidence]}`}
+            : SIGN_LEVEL_TO_LABEL[props.level]}
         </Text>
+        {/* Confidence rendering shared with Assessment B (CLAUDE.md §6) — extracted into
+            <ConfidenceBadge/> so both engines report confidence with the same visual
+            language, even though the two values are never merged (rule 3, §2). */}
+        {!insufficient && <ConfidenceBadge confidence={props.confidence} />}
       </View>
     </View>
   );

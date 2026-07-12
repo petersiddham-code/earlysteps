@@ -32,4 +32,12 @@ describe('TrafficLightBar', () => {
     expect(screen.queryByText(/signs observed/i)).toBeNull();
     expect(screen.queryByText(/confidence/i)).toBeNull();
   });
+
+  // CLAUDE.md §6: confidence rendering was extracted into <ConfidenceBadge/> once Assessment
+  // B shipped, so both engines report confidence with the same visual language. Regression
+  // guard that the delegation didn't silently drop the confidence text.
+  it('delegates confidence rendering to ConfidenceBadge', () => {
+    render(<TrafficLightBar domain="attention" level="some" confidence="high" />);
+    expect(screen.getByText('high confidence')).toBeTruthy();
+  });
 });

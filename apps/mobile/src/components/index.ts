@@ -1,4 +1,5 @@
 export * from './ScreeningDisclaimer/ScreeningDisclaimer';
+export * from './ConfidenceBadge/ConfidenceBadge';
 export * from './TrafficLightBar/TrafficLightBar';
 export * from './StrengthsFirstList/StrengthsFirstList';
 export * from './RedFlagBanner/RedFlagBanner';
@@ -10,4 +11,6 @@ export * from './PrimaryButton/PrimaryButton';
 export * from './PersonalizedText/PersonalizedText';
 export * from './DomainIcon/DomainIcon';
 export * from './FollowUpSuggestions/FollowUpSuggestions';
-export * from './AiResultsSummaryCard/AiResultsSummaryCard';
+export * from './SupportPrioritiesCard/SupportPrioritiesCard';
+export * from './AIAssessmentCard/AIAssessmentCard';
+export * from './ComparisonCard/ComparisonCard';

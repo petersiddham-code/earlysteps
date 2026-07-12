@@ -14,6 +14,7 @@ import {
   isFreeTextAnswer,
   stripFreeTextPrefix,
   type AiResultsSummary,
+  type ComparisonResult,
   type Domain,
   type FollowUpAnswer,
   type FollowUpSuggestion,
@@ -26,6 +27,7 @@ import {
   answerFollowUpSuggestion,
   getAiResultsSummary,
   getChild,
+  getComparisonResult,
   getIntakeResponses,
   getFollowUpSuggestions,
   getResults,
@@ -34,7 +36,8 @@ import { ApiError } from '../../api/client.js';
 import { canUseAiFeatures, useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import {
-  AiResultsSummaryCard,
+  AIAssessmentCard,
+  ComparisonCard,
   FollowUpSuggestions,
   PrimaryButton,
   ScreeningDisclaimer,
@@ -129,6 +132,7 @@ export function ResultsScreen({ navigation, route }: Props) {
   const [attempt, setAttempt] = useState(0);
   const [followUps, setFollowUps] = useState<FollowUpSuggestion[]>([]);
   const [aiSummary, setAiSummary] = useState<AiResultsSummary | null>(null);
+  const [comparison, setComparison] = useState<ComparisonResult | null>(null);
   const [childName, setChildName] = useState('your child');
   const [answeringId, setAnsweringId] = useState<string | null>(null);
   const [followUpError, setFollowUpError] = useState<string | null>(null);
@@ -183,9 +187,22 @@ export function ResultsScreen({ navigation, route }: Props) {
       // caregiver taps it open. A slower background fetch on top of the deterministic
       // content already on screen — any failure (offline, no ai_analysis consent -> 403,
       // malformed/unsafe model output) just means the card never appears.
+      //
+      // The Comparison Section (CLAUDE.md §13/§14, dual-assessment update) is chained
+      // off the summary fetch rather than fired in parallel: it needs Assessment B's
+      // output to exist first (the backend recomputes it from the same cached/just-
+      // generated summary), and sequencing this way means a Results visit never causes
+      // two independent LLM-adjacent calls to race each other for no reason. No
+      // comparison is fetched when there's no summary to compare — same fail-closed
+      // "no section" contract as everything else here.
       getAiResultsSummary(childId)
         .then((summary) => {
-          if (!cancelled) setAiSummary(summary);
+          if (cancelled) return;
+          setAiSummary(summary);
+          if (!summary) return;
+          return getComparisonResult(childId).then((result) => {
+            if (!cancelled) setComparison(result);
+          });
         })
         .catch(() => {});
     }
@@ -316,160 +333,187 @@ export function ResultsScreen({ navigation, route }: Props) {
       </Text>
       <ScreeningDisclaimer />
 
-      {/* One-tap crisis resources (issue #50, product plan §10 rule 10): when a
-          self-injury or safety flag is present this must be immediately visible — above
-          the fold, before anything the caregiver has to scroll for. Non-urgent flags
-          (e.g. loss of skills) don't render this; they keep the calmer RedFlagBanner
-          below, so the two urgency levels are visually distinct. */}
-      <CrisisSupportCard redFlagTypes={results.redFlagTypes} />
+      {/* Section A — Assessment A, the deterministic screening engine (CLAUDE.md §14).
+          Everything below through the follow-up safety net is this section: a single,
+          visually and structurally distinct region (testID-verified) that never merges
+          with Assessment B or the Comparison Section below it. This is exactly what the
+          screen already rendered before the dual-assessment update — only the wrapping
+          is new. */}
+      <View style={styles.section} testID="section-a-deterministic">
+        {/* One-tap crisis resources (issue #50, product plan §10 rule 10): when a
+            self-injury or safety flag is present this must be immediately visible — above
+            the fold, before anything the caregiver has to scroll for. Non-urgent flags
+            (e.g. loss of skills) don't render this; they keep the calmer RedFlagBanner
+            below, so the two urgency levels are visually distinct. */}
+        <CrisisSupportCard redFlagTypes={results.redFlagTypes} />
 
-      {/* Strengths stay first — enforced by the component, honoured by the layout.
+        {/* Strengths stay first — enforced by the component, honoured by the layout.
           With nothing on either side (everything skipped, #32) the card disappears —
           two bare headings read as a broken screen, not as honesty. */}
-      {(strengths.length > 0 || needs.length > 0) && (
-        <View style={styles.card}>
-          <StrengthsFirstList strengths={strengths} needs={needs} />
-        </View>
-      )}
+        {(strengths.length > 0 || needs.length > 0) && (
+          <View style={styles.card}>
+            <StrengthsFirstList strengths={strengths} needs={needs} />
+          </View>
+        )}
 
-      {/* Trusted resource links alongside support needs (issue #71): curated, static content
+        {/* Trusted resource links alongside support needs (issue #71): curated, static content
           keyed off the same needs domains as the list above — never LLM-selected (that's a
           deliberate future paid-tier feature per the issue, out of scope here). Renders
           nothing on its own if there are no needs domains or none ship a resource yet. */}
-      <DomainResourcesCard domains={needsDomains(results)} />
+        <DomainResourcesCard domains={needsDomains(results)} />
 
-      {/* No domains at all (0 scored answers, #32): drop the card rather than render an
+        {/* No domains at all (0 scored answers, #32): drop the card rather than render an
           empty white box — the recommendation card below says "not enough information". */}
-      {results.domains.length > 0 && (
+        {results.domains.length > 0 && (
+          <View style={styles.card}>
+            {results.domains.map((domain) =>
+              // Minimum-evidence gate (issue #22): a gated domain has NO label/confidence on
+              // the wire — it renders as "not enough information yet", never a traffic light.
+              domain.status === 'scored' ? (
+                <TrafficLightBar
+                  key={domain.domain}
+                  domain={domain.domain}
+                  level={LABEL_TO_SIGN_LEVEL[domain.label]}
+                  confidence={domain.confidence}
+                />
+              ) : (
+                <TrafficLightBar
+                  key={domain.domain}
+                  domain={domain.domain}
+                  level="insufficient_evidence"
+                />
+              ),
+            )}
+            {results.domains.some((d) => d.status === 'insufficient_evidence') && (
+              <Text style={styles.insufficientDetail} testID="insufficient-domain-detail">
+                {RESULT_COPY.insufficient_evidence.domain_detail}
+              </Text>
+            )}
+          </View>
+        )}
+
+        <RedFlagBanner redFlagTypes={results.redFlagTypes} />
+
         <View style={styles.card}>
-          {results.domains.map((domain) =>
-            // Minimum-evidence gate (issue #22): a gated domain has NO label/confidence on
-            // the wire — it renders as "not enough information yet", never a traffic light.
-            domain.status === 'scored' ? (
-              <TrafficLightBar
-                key={domain.domain}
-                domain={domain.domain}
-                level={LABEL_TO_SIGN_LEVEL[domain.label]}
-                confidence={domain.confidence}
-              />
-            ) : (
-              <TrafficLightBar
-                key={domain.domain}
-                domain={domain.domain}
-                level="insufficient_evidence"
-              />
-            ),
-          )}
-          {results.domains.some((d) => d.status === 'insufficient_evidence') && (
-            <Text style={styles.insufficientDetail} testID="insufficient-domain-detail">
-              {RESULT_COPY.insufficient_evidence.domain_detail}
+          {results.supportLevel && (
+            <Text style={styles.supportLevelText}>
+              {results.supportLevel.term} ({results.supportLevel.confidence} confidence)
             </Text>
           )}
-        </View>
-      )}
-
-      <RedFlagBanner redFlagTypes={results.redFlagTypes} />
-
-      <View style={styles.card}>
-        {results.supportLevel && (
-          <Text style={styles.supportLevelText}>
-            {results.supportLevel.term} ({results.supportLevel.confidence} confidence)
-          </Text>
-        )}
-        {/* A null tier means "not enough information yet" AND no red flag (flags always
+          {/* A null tier means "not enough information yet" AND no red flag (flags always
             force a tier — they're exempt from the evidence gate). Say so honestly instead
             of implying "we checked, support can begin now" off a couple of answers. The
             approved gate label heads the card so the empty state reads as a state, not a
             glitch (#32). */}
-        {results.recommendationTier ? (
-          <>
-            <Text style={styles.recommendationText}>{results.recommendationTier}</Text>
-            {/* Issue #64: a recommendation with no confidence beside it can overstate
+          {results.recommendationTier ? (
+            <>
+              <Text style={styles.recommendationText}>{results.recommendationTier}</Text>
+              {/* Issue #64: a recommendation with no confidence beside it can overstate
                 certainty — this always travels 1:1 with recommendationTier (never
                 rendered without it). */}
-            {results.recommendationConfidence && (
-              <Text
-                style={styles.recommendationConfidenceText}
-                testID="recommendation-confidence"
-              >
-                Confidence: {results.recommendationConfidence}
-              </Text>
-            )}
-            {/* Issue #70: a red flag forces this confidence to "high" regardless of how
+              {results.recommendationConfidence && (
+                <Text
+                  style={styles.recommendationConfidenceText}
+                  testID="recommendation-confidence"
+                >
+                  Confidence: {results.recommendationConfidence}
+                </Text>
+              )}
+              {/* Issue #70: a red flag forces this confidence to "high" regardless of how
                 sparse the domain evidence is (by design — CLAUDE.md §2 rule 8, a red flag
                 is a direct answer, not an average) — which can otherwise read as
                 contradicting a lower confidence shown next to a domain above. Only shown
                 in that one case; the non-red-flag path already borrows the domain
                 estimate's own confidence, so there's nothing to reconcile there. */}
-            {results.redFlagTypes.length > 0 && (
-              <Text
-                style={styles.recommendationConfidenceNote}
-                testID="red-flag-confidence-note"
-              >
-                {RESULT_COPY.red_flag_confidence_note}
+              {results.redFlagTypes.length > 0 && (
+                <Text
+                  style={styles.recommendationConfidenceNote}
+                  testID="red-flag-confidence-note"
+                >
+                  {RESULT_COPY.red_flag_confidence_note}
+                </Text>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={styles.supportLevelText} testID="insufficient-overall-label">
+                {RESULT_COPY.insufficient_evidence.label}
               </Text>
-            )}
-          </>
-        ) : (
-          <>
-            <Text style={styles.supportLevelText} testID="insufficient-overall-label">
-              {RESULT_COPY.insufficient_evidence.label}
-            </Text>
-            {/* Issue #64: explicit rather than implied — too little evidence to
+              {/* Issue #64: explicit rather than implied — too little evidence to
                 recommend anything IS a low-confidence state, said plainly. */}
-            <Text
-              style={styles.recommendationConfidenceText}
-              testID="insufficient-overall-confidence"
-            >
-              Confidence: low
-            </Text>
-            {/* What the gate MEANS (#42) — a caregiver reading "not enough information"
+              <Text
+                style={styles.recommendationConfidenceText}
+                testID="insufficient-overall-confidence"
+              >
+                Confidence: low
+              </Text>
+              {/* What the gate MEANS (#42) — a caregiver reading "not enough information"
                 deserves to know it's a statement about the answer count, never about
                 their child. */}
-            <Text
-              style={styles.recommendationText}
-              testID="insufficient-overall-explanation"
-            >
-              {RESULT_COPY.insufficient_evidence.explanation}
-            </Text>
-            <Text style={styles.recommendationText} testID="insufficient-overall-detail">
-              {RESULT_COPY.insufficient_evidence.overall_detail}
-            </Text>
-          </>
-        )}
-        {/* The way OUT of the gated state (#42): back into the questionnaire for the SAME
+              <Text
+                style={styles.recommendationText}
+                testID="insufficient-overall-explanation"
+              >
+                {RESULT_COPY.insufficient_evidence.explanation}
+              </Text>
+              <Text
+                style={styles.recommendationText}
+                testID="insufficient-overall-detail"
+              >
+                {RESULT_COPY.insufficient_evidence.overall_detail}
+              </Text>
+            </>
+          )}
+          {/* The way OUT of the gated state (#42): back into the questionnaire for the SAME
             child — only unanswered questions are asked. Deliberately not the destructive
             "Start a new set of questions" below, which forgets the child. */}
-        {isGated && (
-          <View style={styles.answerMoreButton}>
-            <PrimaryButton
-              label="Answer more questions"
-              onPress={() => navigation.replace('Questionnaire')}
-              testID="answer-more-button"
-            />
-          </View>
-        )}
+          {isGated && (
+            <View style={styles.answerMoreButton}>
+              <PrimaryButton
+                label="Answer more questions"
+                onPress={() => navigation.replace('Questionnaire')}
+                testID="answer-more-button"
+              />
+            </View>
+          )}
+        </View>
+
+        {/* Issue #26: a safety net for any confirmation follow-up still pending (issue
+            #102 moved the normal path to FollowUpCheckScreen, before this screen ever
+            renders). The AI only proposed showing these content-authored questions — the
+            caregiver's structured answer goes through the normal deterministic pipeline,
+            which alone decides scores and red flags. Purely additive: nothing pending (or
+            AI consent is off) means this card simply isn't. */}
+        <FollowUpSuggestions
+          suggestions={followUps}
+          childName={childName}
+          answeringId={answeringId}
+          error={followUpError}
+          onAnswer={handleFollowUpAnswer}
+        />
       </View>
 
-      {/* Issue #26: a safety net for any confirmation follow-up still pending (issue
-          #102 moved the normal path to FollowUpCheckScreen, before this screen ever
-          renders). The AI only proposed showing these content-authored questions — the
-          caregiver's structured answer goes through the normal deterministic pipeline,
-          which alone decides scores and red flags. Purely additive: nothing pending (or
-          AI consent is off) means this card simply isn't. */}
-      <FollowUpSuggestions
-        suggestions={followUps}
-        childName={childName}
-        answeringId={answeringId}
-        error={followUpError}
-        onAnswer={handleFollowUpAnswer}
-      />
+      {/* Section B — Assessment B, the independent AI Assessment Engine (CLAUDE.md §13/§14):
+          a second, visually and structurally distinct region, never merged with Section A
+          above. Wrapped on `aiSummary` (not just left to AIAssessmentCard's own null
+          return) so the section is entirely absent from the tree — not an empty View —
+          when there's nothing to show (fail closed, CLAUDE.md §8). */}
+      {aiSummary && (
+        <View testID="section-b-ai-assessment">
+          <AIAssessmentCard summary={aiSummary} />
+        </View>
+      )}
 
-      {/* Issue #104: independent AI read of the raw answers, below every deterministic
-          finding above and visually its own card — never a second official finding, just
-          another way for the caregiver to reflect on what they shared. Renders nothing
-          until (and unless) a narrative actually comes back. */}
-      <AiResultsSummaryCard summary={aiSummary} />
+      {/* Comparison Section (CLAUDE.md §13/§14, rule 14 §2): agreement / partial agreement /
+          disagreement between Section A and Section B, computed as a third, standalone
+          step AFTER both have independently produced their own output — never merged,
+          averaged, or reconciled into either. Absent whenever there's no Assessment B
+          narrative to compare against (no summary means no comparison either). */}
+      {comparison && (
+        <View testID="section-comparison">
+          <ComparisonCard comparison={comparison} />
+        </View>
+      )}
 
       {/* Issue #20: results must never be a dead end. Splash replace()s straight here for
           a returning session, so without these the caregiver has no path back into the
@@ -506,6 +550,9 @@ export function ResultsScreen({ navigation, route }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
+  // Section A's own children need the same inter-card gap the ScrollView's
+  // contentContainer applies to its direct children (now including this wrapper).
+  section: { gap: spacing.lg },
   content: {
     padding: spacing.xl,
     paddingTop: spacing.xxxl + spacing.xxl,
