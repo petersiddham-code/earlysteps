@@ -1,8 +1,9 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "locale": "en",
   "needs_clinical_signoff": true,
-  "note": "Clinical content (CLAUDE.md §9, dual-assessment architecture 2026-07-11) — PLACEHOLDER COPY pending advisor sign-off, see docs/clinical-review/2026-07-11-dual-assessment-architecture.md. Templated into ComparisonResult.narrative by @earlysteps/comparison-engine — never LLM-generated. statuses/reasons cover the CLAUDE.md §13 vocabulary verbatim (agreement/partial_agreement/disagreement; unsupported_text_evidence/contradictory_responses/insufficient_evidence/missing_observations/low_confidence/conflicting_developmental_history). red_flag_safety_note is prepended whenever a red flag is present, regardless of computed status, so this section can never read as softening one (CLAUDE.md §2 rule 8).",
+  "note": "Clinical content (CLAUDE.md §9, dual-assessment architecture 2026-07-11) — PLACEHOLDER COPY pending advisor sign-off, see docs/clinical-review/2026-07-11-dual-assessment-architecture.md. Templated into ComparisonResult.narrative by @earlysteps/comparison-engine — never LLM-generated. statuses/reasons cover the CLAUDE.md §13 vocabulary verbatim (agreement/partial_agreement/disagreement; unsupported_text_evidence/contradictory_responses/insufficient_evidence/missing_observations/low_confidence/conflicting_developmental_history). red_flag_safety_note is prepended whenever a red flag is present, regardless of computed status, so this section can never read as softening one (CLAUDE.md §2 rule 8). card_heading titles the Comparison Section on Results (CLAUDE.md §14) — PR 2 of the dual-assessment architecture.",
+  "card_heading": "How these compare",
   "statuses": {
     "agreement": "The official screening result and this independent AI read point in the same general direction.",
     "partial_agreement": "The official screening result and this independent AI read are broadly in the same range, but not a close match.",

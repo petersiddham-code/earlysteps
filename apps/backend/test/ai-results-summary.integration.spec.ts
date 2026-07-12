@@ -229,6 +229,59 @@ describe('AI results summary — caching (issue #104)', () => {
 
     expect(aiSummaryClient.calls).toHaveLength(2);
   });
+
+  // Live-verified 2026-07-12 (PR 2 browser check): a row cached under the pre-v2 shape
+  // (overview/areasToWatch/notedByCaregiver, no supportPriorities) crashed the whole
+  // request with an uncaught TypeError instead of failing closed, because
+  // isSummaryStillSafe assumed every cached row already matched the current shape.
+  it('treats a legacy-shaped (pre-v2) cached row as a cache miss and regenerates, instead of throwing', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      analysisRepository,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT, VALID_OUTPUT]);
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'ai_analysis',
+    ]);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+
+    const first = await analysisService.getResultsSummary(child.id);
+    expect(first).not.toBeNull();
+
+    // Overwrite the cache (same content hash — the answers haven't changed) with a row
+    // shaped like a pre-v2 (issue #104 v1) narrative: overview/strengths/areasToWatch/
+    // notedByCaregiver, no likelihood/confidence/supportPriorities at all.
+    const cached = await analysisRepository.getCachedAiSummary(child.id);
+    const legacyShapedRow = {
+      overview: 'The answers describe a toddler who enjoys playing with others.',
+      strengths: ['Enjoys play'],
+      areasToWatch: [],
+      notedByCaregiver: [],
+      generatedAt: AT,
+    };
+    await analysisRepository.saveAiSummary(
+      child.id,
+      cached!.contentHash,
+      legacyShapedRow as never,
+    );
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result).toHaveProperty('likelihood');
+    expect(aiSummaryClient.calls).toHaveLength(2);
+  });
 });
 
 // Live-verified gap (2026-07-11, retest of PR #105 after Codex QA reported the AI

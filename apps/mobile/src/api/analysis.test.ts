@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { analyzeResponses, getAiResultsSummary } from './analysis';
+import { analyzeResponses, getAiResultsSummary, getComparisonResult } from './analysis';
 import { createGuestChild } from '../guest/guestStore';
 
 jest.mock('./client', () => ({
@@ -48,6 +48,28 @@ describe('analysis API wrappers', () => {
     });
 
     const result = await getAiResultsSummary(guestChild.id);
+
+    expect(result).toBeNull();
+    expect(apiClient.post).not.toHaveBeenCalled();
+  });
+
+  it('getComparisonResult posts to the comparison route for a connected child (dual-assessment update)', async () => {
+    (apiClient.post as jest.Mock).mockResolvedValue(null);
+    await getComparisonResult('c1');
+    expect(apiClient.post).toHaveBeenCalledWith('/children/c1/comparison');
+  });
+
+  it('a guest child (#63) never reaches the network for the comparison result either', async () => {
+    const guestChild = createGuestChild({
+      family_id: 'f1',
+      nickname: 'Alex',
+      birth_month: 6,
+      birth_year: 2024,
+      age_band: 'toddler',
+      languages: ['English'],
+    });
+
+    const result = await getComparisonResult(guestChild.id);
 
     expect(result).toBeNull();
     expect(apiClient.post).not.toHaveBeenCalled();

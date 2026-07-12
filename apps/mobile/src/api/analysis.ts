@@ -1,5 +1,6 @@
 import type {
   AiResultsSummary,
+  ComparisonResult,
   FollowUpAnswer,
   FollowUpSuggestion,
   ResultsView,
@@ -55,4 +56,16 @@ export function getAiResultsSummary(childId: string): Promise<AiResultsSummary |
   // server-side child record to key the cached narrative on.
   if (isGuestChildId(childId)) return Promise.resolve(null);
   return apiClient.post<AiResultsSummary | null>(`/children/${childId}/results-summary`);
+}
+
+/**
+ * The Comparison Section (CLAUDE.md §13/§14, dual-assessment update): agreement / partial
+ * agreement / disagreement between Assessment A and Assessment B, computed AFTER both have
+ * independently produced their own output. Same fail-closed contract as
+ * `getAiResultsSummary` — null means "no section", never a visible error.
+ */
+export function getComparisonResult(childId: string): Promise<ComparisonResult | null> {
+  // Guest/ephemeral child (issue #63): same reasoning as getAiResultsSummary above.
+  if (isGuestChildId(childId)) return Promise.resolve(null);
+  return apiClient.post<ComparisonResult | null>(`/children/${childId}/comparison`);
 }

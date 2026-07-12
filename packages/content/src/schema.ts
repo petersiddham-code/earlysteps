@@ -297,6 +297,7 @@ export const comparisonCopySchema = z.object({
   locale: z.string(),
   needs_clinical_signoff: z.boolean(),
   note: z.string(),
+  card_heading: safeCopyNonEmpty,
   statuses: z.object(
     Object.fromEntries(
       COMPARISON_STATUSES.map((status) => [status, safeCopyNonEmpty]),
