@@ -272,3 +272,26 @@ recommendationConfidence` (added in #64) is the only place this data currently r
 caregiver, via `apps/mobile`'s Results screen. Whoever builds any of those surfaces next
 must carry the same convention forward — confidence beside every finding/recommendation,
 never a bare label.
+
+## 12. Motor domain has zero question coverage in any age band (issue #109)
+
+Found during the issue #66 coverage audit (`2026-07-12-issue66-coverage-audit.md`).
+`DomainProfile`'s ninth domain, `motor` (`packages/shared-types/src/domains.ts`), has no
+question in any shipped bank — confirmed by scanning every age band. `domain-resources.json`
+(issue #71) already has a motor support-resource entry, so the domain was clearly meant to
+be reachable, but nothing in the intake can ever produce a motor `DomainFinding`. Needs a
+scope decision first (real gap needing authoring, like #91/#92 were, vs. intentionally
+out of scope, like toddler learning / toddler+preschool daily_living), then the same
+authoring process as §10's batches if it's a real gap. Open, unaddressed.
+
+## 13. Severe-feeding red flag can't fire for primary/teen/young_adult (issue #110)
+
+Found during the issue #66 coverage audit. `checkSevereFeeding` checks only `T14`
+(toddler) and `P16` (preschool) — primary/teen/young_adult have no feeding/eating
+question at all, so the flag structurally can never fire for those three bands. This is
+the same shape of gap issue #65 fixed for `severe_sleep` (which was toddler-only until
+one question was added per remaining band). `FU_severe_feeding` already exists in the
+follow-ups bank for every band (mirrors `FU_severe_sleep`'s pre-#65 state), so the
+free-text-confirmation path already works everywhere — only the base question is missing.
+Also worth resolving in the same pass: item 3 above's open question of whether mapping
+feeding to the `sensory` domain is clinically correct. Open, unaddressed.
