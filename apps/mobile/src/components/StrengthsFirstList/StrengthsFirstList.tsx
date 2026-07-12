@@ -20,16 +20,19 @@ export function StrengthsFirstList({ strengths, needs }: StrengthsFirstListProps
     <View>
       <View style={styles.section}>
         <Text style={styles.sectionHeading}>Strengths</Text>
-        {strengths.map((strength) => (
-          <Text key={strength} style={styles.item}>
+        {strengths.map((strength, index) => (
+          // Keyed by index, not text (issue #106): two different questions can produce
+          // the same free-text answer, and keying by content collides in that case.
+          // Safe here — this list is never reordered, just recomputed fresh per render.
+          <Text key={index} style={styles.item}>
             {strength}
           </Text>
         ))}
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionHeading}>Support needs</Text>
-        {needs.map((need) => (
-          <Text key={need} style={styles.item}>
+        {needs.map((need, index) => (
+          <Text key={index} style={styles.item}>
             {need}
           </Text>
         ))}
