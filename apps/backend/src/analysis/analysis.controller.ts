@@ -1,5 +1,9 @@
 import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
-import type { FollowUpSuggestion } from '@earlysteps/shared-types';
+import type {
+  AiResultsSummary,
+  ComparisonResult,
+  FollowUpSuggestion,
+} from '@earlysteps/shared-types';
 import { AnalysisService } from './analysis.service.js';
 import { AnswerFollowUpDto } from './dto/answer-follow-up.dto.js';
 import type { ResultsView } from '../screening/results-view.js';
@@ -53,5 +57,30 @@ export class AnalysisController {
     @Body() dto: AnswerFollowUpDto,
   ): Promise<ResultsView> {
     return this.analysisService.answerSuggestion(childId, suggestionId, dto.answer);
+  }
+
+  /**
+   * Independent AI results summary (issue #104): fired once when the caregiver navigates
+   * to Results, not when the collapsible section is expanded — so the narrative is
+   * already there (or in flight) by the time they open it. Returns the cached narrative
+   * unchanged if the answered questions haven't changed since it was last generated;
+   * null (403 aside) means "no section" — a caregiver-visible failure never happens.
+   */
+  @Post('results-summary')
+  getResultsSummary(@Param('childId') childId: string): Promise<AiResultsSummary | null> {
+    return this.analysisService.getResultsSummary(childId);
+  }
+
+  /**
+   * The Comparison Section (CLAUDE.md §13/§14, dual-assessment update 2026-07-11): agreement
+   * / partial agreement / disagreement between Assessment A and Assessment B, computed AFTER
+   * both have already independently produced their own output. Same gate/fail-closed
+   * contract as results-summary — null (403 aside) means "no section".
+   */
+  @Post('comparison')
+  getComparisonResult(
+    @Param('childId') childId: string,
+  ): Promise<ComparisonResult | null> {
+    return this.analysisService.getComparisonResult(childId);
   }
 }

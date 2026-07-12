@@ -8,6 +8,11 @@ import {
   RESPONSE_ANALYSIS_CLIENT,
 } from './analysis-client.js';
 import { ClaudeResponseAnalysisClient } from './claude-analysis.client.js';
+import {
+  AI_RESULTS_SUMMARY_CLIENT,
+  DisabledAiResultsSummaryClient,
+} from './ai-summary-client.js';
+import { ClaudeAiResultsSummaryClient } from './claude-ai-summary.client.js';
 import { FamiliesModule } from '../families/families.module.js';
 import { ScreeningModule } from '../screening/screening.module.js';
 import { AuthModule } from '../auth/auth.module.js';
@@ -31,6 +36,17 @@ import { AuthModule } from '../auth/auth.module.js';
           'ANTHROPIC_API_KEY not set — free-text response analysis is disabled',
         );
         return new DisabledResponseAnalysisClient();
+      },
+    },
+    {
+      // Same offline-first wiring as RESPONSE_ANALYSIS_CLIENT above (issue #104).
+      provide: AI_RESULTS_SUMMARY_CLIENT,
+      useFactory: () => {
+        if (process.env.ANTHROPIC_API_KEY) return new ClaudeAiResultsSummaryClient();
+        new Logger('AnalysisModule').log(
+          'ANTHROPIC_API_KEY not set — AI results summary is disabled',
+        );
+        return new DisabledAiResultsSummaryClient();
       },
     },
   ],

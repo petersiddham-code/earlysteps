@@ -11,3 +11,5 @@ export * from './analysis.js';
 export * from './family.js';
 export * from './resultsView.js';
 export * from './auth.js';
+export * from './aiResultsSummary.js';
+export * from './comparisonResult.js';

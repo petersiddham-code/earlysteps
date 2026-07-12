@@ -1,9 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { isFreeTextAnswer, type IntakeResponse } from '@earlysteps/shared-types';
+import type { Prisma } from '@prisma/client';
+import {
+  isFreeTextAnswer,
+  type AiResultsSummary,
+  type IntakeResponse,
+} from '@earlysteps/shared-types';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
   AnalysisRepository,
   CreateSuggestionInput,
+  StoredAiSummary,
   StoredFollowUpSuggestion,
 } from './analysis.repository.js';
 
@@ -93,6 +99,42 @@ export class PrismaAnalysisRepository implements AnalysisRepository {
     await this.prisma.followUpSuggestionRecord.updateMany({
       where: { id: suggestionId, childId, status: 'pending' },
       data: { status: 'answered', answeredAt: new Date() },
+    });
+  }
+
+  async getCachedAiSummary(childId: string): Promise<StoredAiSummary | null> {
+    const row = await this.prisma.aiResultsSummaryRecord.findUnique({
+      where: { childId },
+    });
+    if (!row) return null;
+    return {
+      contentHash: row.contentHash,
+      content: {
+        ...(row.content as unknown as Omit<AiResultsSummary, 'generatedAt'>),
+        generatedAt: row.generatedAt.toISOString(),
+      },
+    };
+  }
+
+  async saveAiSummary(
+    childId: string,
+    contentHash: string,
+    content: AiResultsSummary,
+  ): Promise<void> {
+    const { generatedAt, ...rest } = content;
+    // v2's nested supportPriorities shape isn't structurally an index-signature-compatible
+    // JSON object to TS by default (same reason findings/consentFlags need this elsewhere in
+    // this file's siblings) — it IS plain JSON-serializable data, so the cast is safe.
+    const jsonContent = rest as unknown as Prisma.InputJsonValue;
+    await this.prisma.aiResultsSummaryRecord.upsert({
+      where: { childId },
+      create: {
+        childId,
+        contentHash,
+        content: jsonContent,
+        generatedAt: new Date(generatedAt),
+      },
+      update: { contentHash, content: jsonContent, generatedAt: new Date(generatedAt) },
     });
   }
 

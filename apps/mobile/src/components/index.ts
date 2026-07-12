@@ -10,3 +10,4 @@ export * from './PrimaryButton/PrimaryButton';
 export * from './PersonalizedText/PersonalizedText';
 export * from './DomainIcon/DomainIcon';
 export * from './FollowUpSuggestions/FollowUpSuggestions';
+export * from './AiResultsSummaryCard/AiResultsSummaryCard';

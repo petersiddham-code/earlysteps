@@ -21,6 +21,7 @@ import { AnalysisController } from '../src/analysis/analysis.controller.js';
 import { AnalysisService } from '../src/analysis/analysis.service.js';
 import { ANALYSIS_REPOSITORY } from '../src/analysis/analysis.repository.js';
 import { RESPONSE_ANALYSIS_CLIENT } from '../src/analysis/analysis-client.js';
+import { AI_RESULTS_SUMMARY_CLIENT } from '../src/analysis/ai-summary-client.js';
 import { InMemoryAnalysisRepository } from '../src/analysis/testing/in-memory-analysis.repository.js';
 import { ScreeningService } from '../src/screening/screening.service.js';
 import { SCREENING_REPOSITORY } from '../src/screening/screening.repository.js';
@@ -59,6 +60,10 @@ async function buildApp(): Promise<{
       {
         provide: RESPONSE_ANALYSIS_CLIENT,
         useValue: { analyzeFreeText: async () => null },
+      },
+      {
+        provide: AI_RESULTS_SUMMARY_CLIENT,
+        useValue: { generateSummary: async () => null },
       },
     ],
   }).compile();
@@ -108,6 +113,9 @@ describe('AnalysisController — premium-tier HTTP enforcement (issue #76)', () 
       .post(`/children/${child.id}/follow-up-suggestions/some-id/answer`)
       .send({ answer: 'yes' })
       .expect(401);
+    await request(app.getHttpServer())
+      .post(`/children/${child.id}/results-summary`)
+      .expect(401);
   });
 
   it('rejects a logged-in free-tier account with 403, even with ai_analysis consent granted', async () => {
@@ -123,6 +131,10 @@ describe('AnalysisController — premium-tier HTTP enforcement (issue #76)', () 
       .expect(403);
     await request(app.getHttpServer())
       .get(`/children/${child.id}/follow-up-suggestions`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403);
+    await request(app.getHttpServer())
+      .post(`/children/${child.id}/results-summary`)
       .set('Authorization', `Bearer ${token}`)
       .expect(403);
   });
@@ -151,5 +163,12 @@ describe('AnalysisController — premium-tier HTTP enforcement (issue #76)', () 
       .get(`/children/${child.id}/follow-up-suggestions`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
+
+    // No answers were ever submitted for this child, so the service returns null — the
+    // point here is the guard let the request through at all (201, not 401/403).
+    await request(app.getHttpServer())
+      .post(`/children/${child.id}/results-summary`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(201);
   });
 });

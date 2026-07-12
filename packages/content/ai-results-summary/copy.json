@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "locale": "en",
+  "needs_clinical_signoff": true,
+  "note": "Clinical content (CLAUDE.md §9, issue #104 dual-assessment update 2026-07-11) — PLACEHOLDER COPY pending advisor sign-off, see docs/clinical-review/2026-07-11-dual-assessment-architecture.md. v2 replaces the v1 overview/areas_to_watch/noted_by_caregiver headings with the full CLAUDE.md §13 schema (likelihood, confidence, reasoning, developmental profile, strengths, support priorities, uncertainty, evidence summary, home/school recommendations, professional-assessment priorities). card_heading and framing_note separate this independent AI read from the official deterministic result above it (never combined, never a second finding). There is no visible failure/unavailable state by design — a missing, malformed, or unsafe narrative just means the section doesn't render at all (fail closed, CLAUDE.md §8), same as every other AI-assisted card in this app.",
+  "card_heading": "AI assessment",
+  "section_headings": {
+    "likelihood": "Likelihood",
+    "confidence": "Confidence",
+    "reasoning": "Why this read",
+    "developmental_profile": "Developmental pattern",
+    "strengths": "Strengths",
+    "support_priorities": {
+      "heading": "Support priorities",
+      "immediate": "Right now",
+      "short_term": "In the coming weeks",
+      "medium_term": "In the coming months",
+      "long_term": "Longer term"
+    },
+    "uncertainty": "What's uncertain",
+    "evidence_summary": "What the evidence shows",
+    "home_recommendations": "At home",
+    "school_recommendations": "At school",
+    "professional_assessment_priorities": "If seeking a professional assessment"
+  },
+  "framing_note": "This is a separate, AI-generated read of your typed answers — not part of your official results above, and not a second finding to combine with them. It's here as another way to reflect on what you shared."
+}

@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react-nativ
 import { ResultsScreen } from './ResultsScreen';
 import {
   answerFollowUpSuggestion,
+  getAiResultsSummary,
   getChild,
   getFollowUpSuggestions,
   getIntakeResponses,
@@ -16,6 +17,7 @@ jest.mock('../../api/index.js', () => ({
   getIntakeResponses: jest.fn(),
   getFollowUpSuggestions: jest.fn(),
   answerFollowUpSuggestion: jest.fn(),
+  getAiResultsSummary: jest.fn(),
   getChild: jest.fn(),
 }));
 jest.mock('../../session/index.js', () => ({
@@ -114,6 +116,7 @@ describe('ResultsScreen', () => {
     });
     // Default: nothing pending — most tests exercise plain results.
     (getFollowUpSuggestions as jest.Mock).mockResolvedValue([]);
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(null);
     (getChild as jest.Mock).mockResolvedValue({
       id: 'c1',
       family_id: 'f1',
@@ -526,6 +529,110 @@ describe('ResultsScreen', () => {
     await screen.findByText(SCREENING_DISCLAIMER);
 
     expect(getFollowUpSuggestions).not.toHaveBeenCalled();
+  });
+});
+
+describe('ResultsScreen — AI results summary (issue #104)', () => {
+  const AI_SUMMARY = {
+    likelihood: 'Moderate',
+    confidence: 'medium',
+    reasoning: 'The answers describe a toddler who enjoys playing with others.',
+    developmentalProfile:
+      'A pattern of typical play interest alongside some communication differences.',
+    strengths: ['Enjoys back-and-forth play with familiar adults'],
+    supportPriorities: { immediate: [], short_term: [], medium_term: [], long_term: [] },
+    uncertainty: 'Only a few questions were answered this session.',
+    uncertaintyFactors: ['sparse_structured_answers'],
+    evidenceSummary:
+      'The answers given lean toward limited spoken vocabulary for their age.',
+    homeRecommendations: [],
+    schoolRecommendations: [],
+    professionalAssessmentPriorities: [],
+    generatedAt: '2026-07-11T00:00:00.000Z',
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    clearChildId.mockResolvedValue(undefined);
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      isGuest: false,
+      tier: 'premium',
+      clearChildId,
+    });
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    (getFollowUpSuggestions as jest.Mock).mockResolvedValue([]);
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(null);
+    (getChild as jest.Mock).mockResolvedValue({
+      id: 'c1',
+      family_id: 'f1',
+      nickname: 'Ava',
+      age_band: 'toddler',
+      languages: ['English'],
+    });
+  });
+
+  it('fetches the AI summary as soon as Results loads, for a Premium logged-in session', async () => {
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(AI_SUMMARY);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(getAiResultsSummary).toHaveBeenCalledWith('c1');
+    // Renders collapsed by default: the toggle is present, the narrative text is not.
+    expect(await screen.findByTestId('ai-results-summary-card')).toBeTruthy();
+    expect(screen.queryByTestId('ai-results-summary-content')).toBeNull();
+  });
+
+  it('expands to show the narrative and framing note on tap', async () => {
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(AI_SUMMARY);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByTestId('ai-results-summary-card');
+
+    fireEvent.press(screen.getByTestId('ai-results-summary-toggle'));
+
+    expect(screen.getByText(AI_SUMMARY.reasoning)).toBeTruthy();
+    expect(
+      screen.getByText(/separate, AI-generated read of your typed answers/i),
+    ).toBeTruthy();
+  });
+
+  it('renders no card at all when there is no summary (fail closed, CLAUDE.md §8)', async () => {
+    (getAiResultsSummary as jest.Mock).mockResolvedValue(null);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(screen.queryByTestId('ai-results-summary-card')).toBeNull();
+  });
+
+  it('never calls getAiResultsSummary for a guest session (issue #99)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'guest:c1',
+      isGuest: true,
+      tier: null,
+      clearChildId,
+    });
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(getAiResultsSummary).not.toHaveBeenCalled();
+  });
+
+  it('never calls getAiResultsSummary for a logged-in free-tier account (issue #99)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      isGuest: false,
+      tier: 'free',
+      clearChildId,
+    });
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(getAiResultsSummary).not.toHaveBeenCalled();
   });
 });
 

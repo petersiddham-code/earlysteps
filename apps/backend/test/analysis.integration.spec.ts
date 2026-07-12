@@ -23,6 +23,10 @@ import {
   type ResponseAnalysisClient,
 } from '../src/analysis/analysis-client.js';
 import { InMemoryAnalysisRepository } from '../src/analysis/testing/in-memory-analysis.repository.js';
+import {
+  AI_RESULTS_SUMMARY_CLIENT,
+  DisabledAiResultsSummaryClient,
+} from '../src/analysis/ai-summary-client.js';
 import { ScreeningService } from '../src/screening/screening.service.js';
 import { SCREENING_REPOSITORY } from '../src/screening/screening.repository.js';
 import { InMemoryScreeningRepository } from '../src/screening/testing/in-memory-screening.repository.js';
@@ -79,6 +83,11 @@ async function buildStack(clientOutputs: (string | null)[]) {
       { provide: ANALYSIS_REPOSITORY, useValue: analysisRepository },
       { provide: FAMILIES_REPOSITORY, useValue: familiesRepository },
       { provide: RESPONSE_ANALYSIS_CLIENT, useValue: client },
+      // Not under test here (issue #104) — this stage is unaffected by response analysis.
+      {
+        provide: AI_RESULTS_SUMMARY_CLIENT,
+        useValue: new DisabledAiResultsSummaryClient(),
+      },
     ],
   }).compile();
   return {

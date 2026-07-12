@@ -21,6 +21,7 @@
  * into weighted scoring needs clinically-authored questions/weights first (see
  * docs/clinical-review/content-gaps.md and issue #22 coordination).
  */
+import { createHash } from 'node:crypto';
 import {
   ForbiddenException,
   Inject,
@@ -31,15 +32,19 @@ import {
 import {
   isFreeTextAnswer,
   stripFreeTextPrefix,
+  type AiResultsSummary,
+  type ComparisonResult,
   type FollowUpAnswer,
   type FollowUpSuggestion,
   type IntakeResponse,
 } from '@earlysteps/shared-types';
+import { compareAssessments } from '@earlysteps/comparison-engine';
 import {
   FOLLOW_UPS_BY_RED_FLAG_TYPE,
   allQuestions,
   getFollowUp,
 } from '@earlysteps/content';
+import { dedupeLatestByQuestion } from '@earlysteps/scoring-engine';
 import {
   FAMILIES_REPOSITORY,
   type FamiliesRepository,
@@ -55,7 +60,16 @@ import {
   RESPONSE_ANALYSIS_CLIENT,
   type ResponseAnalysisClient,
 } from './analysis-client.js';
+import {
+  AI_RESULTS_SUMMARY_CLIENT,
+  type AiResultsSummaryClient,
+  type AiSummaryAnsweredQuestion,
+} from './ai-summary-client.js';
 import { parseAnalysisOutput } from './signal-schema.js';
+import { isSummaryStillSafe, parseAiSummaryOutput } from './ai-summary-schema.js';
+
+/** See generateSafeSummary()'s doc comment for why a single rejected generation retries. */
+const MAX_SUMMARY_GENERATION_ATTEMPTS = 3;
 
 function freeTextEntries(answer: IntakeResponse['answer']): string[] {
   const entries = Array.isArray(answer)
@@ -73,6 +87,8 @@ export class AnalysisService {
   constructor(
     @Inject(ANALYSIS_REPOSITORY) private readonly repository: AnalysisRepository,
     @Inject(RESPONSE_ANALYSIS_CLIENT) private readonly client: ResponseAnalysisClient,
+    @Inject(AI_RESULTS_SUMMARY_CLIENT)
+    private readonly aiSummaryClient: AiResultsSummaryClient,
     @Inject(FAMILIES_REPOSITORY) private readonly familiesRepository: FamiliesRepository,
     // Explicit token: vitest's esbuild transform emits no decorator design:paramtypes
     // metadata, so class-typed constructor injection resolves to undefined in tests.
@@ -165,6 +181,153 @@ export class AnalysisService {
     const view = await this.screeningService.submitIntakeResponses(childId, [response]);
     await this.repository.markSuggestionAnswered(childId, suggestionId);
     return view;
+  }
+
+  /**
+   * The independent AI results summary (issue #104): a plain-language narrative built
+   * purely from the caregiver's raw answers, never the deterministic engine's computed
+   * levels/estimate/recommendation/red flags (CLAUDE.md §2 rule 7). Same ai_analysis
+   * consent gate as the free-text stage. Cached per child and only regenerated when the
+   * answered-question set has actually changed since the last generation — a Results
+   * visit with no new answers reuses the cached narrative rather than calling the LLM
+   * again. Returns null (section doesn't render) for: no answers yet, no API key,
+   * transport failure, or a malformed/unsafe model response (fail closed, CLAUDE.md §8).
+   */
+  async getResultsSummary(childId: string): Promise<AiResultsSummary | null> {
+    await this.ensureAiAnalysisConsent(childId);
+
+    const child = await this.familiesRepository.getChild(childId);
+    if (!child) return null;
+
+    const responses = dedupeLatestByQuestion(
+      await this.screeningService.getIntakeResponses(childId),
+    );
+    const answers = this.toAnsweredQuestions(responses);
+    if (answers.length === 0) return null;
+
+    const contentHash = this.hashAnsweredQuestions(child.age_band, child.gender, answers);
+    const cached = await this.repository.getCachedAiSummary(childId);
+    // Re-validated on every read, not just at generation time (PR #105 QA): the
+    // content-safety rules can gain new checks over time, so a narrative cached under an
+    // older, weaker check must never keep serving unsafe content indefinitely just
+    // because the underlying answers haven't changed since it was generated.
+    if (
+      cached &&
+      cached.contentHash === contentHash &&
+      isSummaryStillSafe(cached.content)
+    ) {
+      return cached.content;
+    }
+
+    const summary = await this.generateSafeSummary(child.age_band, child.gender, answers);
+    if (summary === null) return null;
+
+    await this.repository.saveAiSummary(childId, contentHash, summary);
+    return summary;
+  }
+
+  /**
+   * v2's much larger free-text surface (reasoning/developmental profile/uncertainty/
+   * evidence summary/tiered support priorities, on top of v1's four short fields) gives an
+   * LLM generation far more chances to drift into a single soft phrase that trips the
+   * content-safety check (observed live: "...useful for future conversations with any
+   * professional" inside `home_recommendations`, well outside the
+   * `professionalAssessmentPriorities` carve-out) — discarding an otherwise-good narrative
+   * over one stray word is a real usability cost, not a safety trade-off, since a retried
+   * generation is validated by the exact same fail-closed check (CLAUDE.md §8). Still fails
+   * closed (returns null) if every attempt is rejected.
+   */
+  private async generateSafeSummary(
+    ageBand: string,
+    gender: string | undefined,
+    answers: AiSummaryAnsweredQuestion[],
+  ): Promise<AiResultsSummary | null> {
+    for (let attempt = 0; attempt < MAX_SUMMARY_GENERATION_ATTEMPTS; attempt++) {
+      const rawOutput = await this.aiSummaryClient.generateSummary({
+        ageBand,
+        gender,
+        answers,
+      });
+      if (rawOutput === null) return null; // transport failure: retrying won't help
+      const summary = parseAiSummaryOutput(rawOutput);
+      if (summary !== null) return summary;
+    }
+    return null;
+  }
+
+  /**
+   * The Comparison Section (CLAUDE.md §13/§14, dual-assessment update 2026-07-11): a THIRD,
+   * standalone computation run AFTER Assessment A and Assessment B have each independently
+   * produced their own output (rule 7, §2 — it never feeds either engine's output back into
+   * the other, and @earlysteps/comparison-engine's inputs are Pick<>-typed to exactly the
+   * fields it may read). Same ai_analysis consent gate as the rest of this service. Returns
+   * null (section doesn't render) when there is no AI summary yet (no answers, consent/tier
+   * gate, transport failure, or a malformed/unsafe model response) or no computed Assessment
+   * A view yet — fail closed, same precedent as getResultsSummary.
+   *
+   * Deliberately NOT cached: this is a cheap, pure function over two already-computed
+   * inputs, each with its own independent cache/recompute lifecycle — caching this result
+   * too would need its own invalidation key tracking both sides' staleness at once, which
+   * isn't worth it while it's this cheap to just recompute.
+   */
+  async getComparisonResult(childId: string): Promise<ComparisonResult | null> {
+    await this.ensureAiAnalysisConsent(childId);
+
+    const summary = await this.getResultsSummary(childId);
+    if (summary === null) return null;
+
+    const resultsView = await this.screeningService.getResults(childId).catch(() => null);
+    if (resultsView === null) return null;
+
+    return compareAssessments(resultsView, summary);
+  }
+
+  /**
+   * Reduces this session's questionnaire responses to what the results-summary prompt
+   * needs: question text, selected option labels, and any typed note (PII minimization,
+   * CLAUDE.md §8). Responses whose question_id isn't a real questionnaire question (e.g.
+   * a follow-up confirmation) are skipped, same as ResultsScreen's own strengths
+   * derivation — this narrative covers the questionnaire itself, not its confirmations.
+   */
+  private toAnsweredQuestions(responses: IntakeResponse[]): AiSummaryAnsweredQuestion[] {
+    const questionsById = new Map(allQuestions().map((q) => [q.id, q]));
+    const answers: AiSummaryAnsweredQuestion[] = [];
+    for (const response of responses) {
+      const question = questionsById.get(response.question_id);
+      if (!question) continue;
+      const selectedIds = Array.isArray(response.answer)
+        ? response.answer
+        : [String(response.answer)];
+      const selectedLabels: string[] = [];
+      let freeText: string | undefined;
+      for (const id of selectedIds) {
+        if (isFreeTextAnswer(id)) {
+          freeText = stripFreeTextPrefix(id);
+          continue;
+        }
+        const option = question.options.find((o) => o.id === id);
+        if (option) selectedLabels.push(option.label);
+      }
+      answers.push({
+        questionText: question.text,
+        selectedLabels,
+        ...(freeText ? { freeText } : {}),
+      });
+    }
+    return answers;
+  }
+
+  /** Stable hash of the answered-question set, sorted so storage order never matters. */
+  private hashAnsweredQuestions(
+    ageBand: string,
+    gender: string | undefined,
+    answers: AiSummaryAnsweredQuestion[],
+  ): string {
+    const sorted = [...answers].sort((a, b) =>
+      a.questionText.localeCompare(b.questionText),
+    );
+    const stable = JSON.stringify({ ageBand, gender: gender ?? null, answers: sorted });
+    return createHash('sha256').update(stable).digest('hex');
   }
 
   private async ensureAiAnalysisConsent(childId: string): Promise<void> {

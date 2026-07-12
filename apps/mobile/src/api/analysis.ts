@@ -1,4 +1,5 @@
 import type {
+  AiResultsSummary,
   FollowUpAnswer,
   FollowUpSuggestion,
   ResultsView,
@@ -41,4 +42,17 @@ export function answerFollowUpSuggestion(
     `/children/${childId}/follow-up-suggestions/${suggestionId}/answer`,
     { answer },
   );
+}
+
+/**
+ * Independent AI results summary (issue #104): called once when Results loads, not when
+ * the collapsible section is expanded, so the narrative is ready (or in flight) by the
+ * time the caregiver opens it. Null means "no section" — offline, no AI consent (403),
+ * no API key, or a malformed/unsafe model response all collapse to the same no-op.
+ */
+export function getAiResultsSummary(childId: string): Promise<AiResultsSummary | null> {
+  // Guest/ephemeral child (issue #63): same reasoning as analyzeResponses above — no
+  // server-side child record to key the cached narrative on.
+  if (isGuestChildId(childId)) return Promise.resolve(null);
+  return apiClient.post<AiResultsSummary | null>(`/children/${childId}/results-summary`);
 }

@@ -22,7 +22,8 @@
     "paths": {
       "@earlysteps/shared-types": ["packages/shared-types/src/index.ts"],
       "@earlysteps/content": ["packages/content/src/index.ts"],
-      "@earlysteps/scoring-engine": ["packages/scoring-engine/src/index.ts"]
+      "@earlysteps/scoring-engine": ["packages/scoring-engine/src/index.ts"],
+      "@earlysteps/comparison-engine": ["packages/comparison-engine/src/index.ts"]
     }
   }
 }
