@@ -298,14 +298,18 @@ in one or two bands. Authoring filed as **issue #113** (all five bands, 3 items 
 items), same process as §10's batches — see
 `2026-07-13-issue109-motor-scope-decision.md`.
 
-## 13. Severe-feeding red flag can't fire for primary/teen/young_adult (issue #110)
+## 13. ~~Severe-feeding red flag can't fire for primary/teen/young_adult~~ — CLOSED (pending sign-off) 2026-07-13 (issue #110)
 
-Found during the issue #66 coverage audit. `checkSevereFeeding` checks only `T14`
-(toddler) and `P16` (preschool) — primary/teen/young_adult have no feeding/eating
-question at all, so the flag structurally can never fire for those three bands. This is
-the same shape of gap issue #65 fixed for `severe_sleep` (which was toddler-only until
-one question was added per remaining band). `FU_severe_feeding` already exists in the
-follow-ups bank for every band (mirrors `FU_severe_sleep`'s pre-#65 state), so the
-free-text-confirmation path already works everywhere — only the base question is missing.
-Also worth resolving in the same pass: item 3 above's open question of whether mapping
-feeding to the `sensory` domain is clinically correct. Open, unaddressed.
+Found during the issue #66 coverage audit. `checkSevereFeeding` checked only `T14`
+(toddler) and `P16` (preschool) — primary/teen/young_adult had no feeding/eating
+question at all, so the flag structurally could never fire for those three bands. This
+was the same shape of gap issue #65 fixed for `severe_sleep`. `FU_severe_feeding` already
+existed in the follow-ups bank for every band, so the free-text-confirmation path already
+worked everywhere — only the base question was missing.
+
+One new feeding question per remaining band (PR23, TE21, YA23 — same options/trigger as
+T14/P16, `sensory` domain, placeholder weights mirroring T14/P16);
+`checkSevereFeeding` now checks all five ids. See
+`2026-07-13-severe-feeding-all-bands.md`. Item 3 above's open question of whether the
+`sensory` mapping is clinically correct remains open, unaddressed — this PR extends the
+same mapping to the three new questions rather than resolving it.

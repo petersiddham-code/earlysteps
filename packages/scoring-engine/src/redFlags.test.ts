@@ -65,11 +65,15 @@ describe('red-flag rules — each independent and traceable (product plan §8.5)
     expect(checkSelfInjuryRisk([r(RF_SELF_INJURY_Q, 'no')])).toEqual([]);
   });
 
-  it('severe feeding triggers only on the explicit growth-worry option, not ordinary pickiness', () => {
-    expect(checkSevereFeeding([r('T14', 'so_few_worried_growth')])).toHaveLength(1);
-    expect(checkSevereFeeding([r('P16', 'so_few_worried_growth')])).toHaveLength(1);
-    expect(checkSevereFeeding([r('T14', 'very_picky')])).toEqual([]);
-    expect(checkSevereFeeding([r('T14', 'wide_variety')])).toEqual([]);
+  it("severe feeding triggers only on the explicit growth-worry option, on every age band's feeding question (#110)", () => {
+    for (const questionId of ['T14', 'P16', 'PR23', 'TE21', 'YA23']) {
+      expect(checkSevereFeeding([r(questionId, 'so_few_worried_growth')])).toHaveLength(
+        1,
+      );
+      expect(checkSevereFeeding([r(questionId, 'very_picky')])).toEqual([]);
+      expect(checkSevereFeeding([r(questionId, 'wide_variety')])).toEqual([]);
+    }
+    expect(checkSevereFeeding([])).toEqual([]);
   });
 
   it("severe sleep triggers on significant struggles, on every age band's sleep question (#65)", () => {

@@ -1,5 +1,5 @@
 {
-  "version": "1.6.0",
+  "version": "1.7.0",
   "locale": "en",
   "age_band": "primary",
   "questions": [
@@ -551,6 +551,36 @@
         }
       ],
       "hint": "This is about how much pain or temperature registers — not about how tolerant they choose to be."
+    },
+    {
+      "id": "PR23",
+      "domain": "sensory",
+      "age_band": "primary",
+      "text": "How would you describe [child]'s eating?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "wide_variety",
+          "label": "Eats a wide variety"
+        },
+        {
+          "id": "somewhat_picky",
+          "label": "Somewhat picky"
+        },
+        {
+          "id": "very_picky",
+          "label": "Very picky / few accepted foods"
+        },
+        {
+          "id": "so_few_worried_growth",
+          "label": "So few foods I worry about their growth or health"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "There's no right answer — picky eating happens at every age."
     },
     {
       "id": "PR20",
