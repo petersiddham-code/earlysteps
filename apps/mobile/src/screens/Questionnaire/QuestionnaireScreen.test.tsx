@@ -181,7 +181,9 @@ describe('QuestionnaireScreen', () => {
     await screen.findByText(/Question 1 of \d+/);
 
     expect(screen.queryByTestId('halfway-encouragement')).toBeNull();
-    skipToQuestion('Does Alex play pretend yet, like feeding a teddy bear or "talking" on a toy phone?');
+    skipToQuestion(
+      'Does Alex play pretend yet, like feeding a teddy bear or "talking" on a toy phone?',
+    );
     // T9 sits at index 20 of 41 — the midpoint for a toddler path (12 universal + 29
     // toddler, with U1/U2 collected at profile setup). Issue #113 added T27/T28/T29
     // (motor coverage, appended at the end of the bank), shifting the midpoint from T8
