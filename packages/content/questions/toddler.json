@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "locale": "en",
   "age_band": "toddler",
   "questions": [
@@ -712,6 +712,84 @@
         }
       ],
       "hint": "Holding something up to show you, even without words, counts."
+    },
+    {
+      "id": "T27",
+      "domain": "motor",
+      "age_band": "toddler",
+      "text": "Does [child] walk and try to run without falling often, and manage a few stairs with your hand or a railing?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "walks_confidently",
+          "label": "Yes, walks/runs confidently"
+        },
+        {
+          "id": "some_stumbling",
+          "label": "Some stumbling or unsteadiness"
+        },
+        {
+          "id": "very_unsteady",
+          "label": "Very unsteady, or not walking independently yet"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about how things go on a typical day, not just their very best moment."
+    },
+    {
+      "id": "T28",
+      "domain": "motor",
+      "age_band": "toddler",
+      "text": "Can [child] stack a few small blocks, turn the pages of a board book, or scribble with a crayon?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "manages_these",
+          "label": "Yes, manages these"
+        },
+        {
+          "id": "some_of_these",
+          "label": "Can do some of these"
+        },
+        {
+          "id": "struggles_with_most",
+          "label": "Struggles with most of these"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "These don't need to be neat or perfect — just attempted with some success."
+    },
+    {
+      "id": "T29",
+      "domain": "motor",
+      "age_band": "toddler",
+      "text": "When you clap your hands or wave, does [child] copy the movement?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "copies_easily",
+          "label": "Yes, copies fairly easily"
+        },
+        {
+          "id": "copies_sometimes",
+          "label": "Copies sometimes"
+        },
+        {
+          "id": "rarely_copies",
+          "label": "Rarely copies"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about copying a simple movement, not repeating words."
     }
   ]
 }

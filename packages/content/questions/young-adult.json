@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
+  "version": "1.10.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -635,6 +635,84 @@
         }
       ],
       "hint": "A close eye for detail is often a real strength — we're just building a picture of learning style."
+    },
+    {
+      "id": "YA24",
+      "domain": "motor",
+      "age_band": "young_adult",
+      "text": "In sports, exercise, or other physical activities, does [child] feel physically coordinated compared to peers — or does it take noticeably more effort to keep up?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "about_the_same",
+          "label": "Feels about the same as peers"
+        },
+        {
+          "id": "more_effort",
+          "label": "Takes noticeably more effort"
+        },
+        {
+          "id": "avoids_or_struggles",
+          "label": "Avoids these, or struggles a lot"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Many adults have learned to quietly avoid or push through this — go with how it actually feels, not how it looks from outside."
+    },
+    {
+      "id": "YA25",
+      "domain": "motor",
+      "age_band": "young_adult",
+      "text": "Do everyday fine-motor tasks — like handwriting, typing quickly, or using tools — feel harder or slower for [child] than for most peers?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "about_the_same",
+          "label": "No, feels about the same"
+        },
+        {
+          "id": "somewhat_harder",
+          "label": "Somewhat harder or slower"
+        },
+        {
+          "id": "much_harder",
+          "label": "Much harder or slower"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about how it feels day to day, even if [child] has found workarounds nobody else notices."
+    },
+    {
+      "id": "YA26",
+      "domain": "motor",
+      "age_band": "young_adult",
+      "text": "When learning a new physical skill or task — like driving, a sport, or a hands-on work task — does [child] need noticeably more practice than others to get the sequence smooth?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "about_the_same",
+          "label": "About the same as others"
+        },
+        {
+          "id": "a_bit_more_practice",
+          "label": "A bit more practice"
+        },
+        {
+          "id": "a_lot_more_practice",
+          "label": "A lot more practice"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about learning the order of movements, not physical fitness or strength."
     }
   ]
 }

@@ -46,6 +46,7 @@ Weighted (scoring-eligible) questions per domain each band can be asked, as of w
 | emotional_regulation | 1 • (3 after T25/T26, #82) | 1 • (0 before P21, #65; 3 after P25/P26, #82) | 2 • (1 • before PR17, #65; 3 after PR22, #82) | 3 (2 • before TE14, #65) | 3 (2 • before YA12, #65) |
 | learning | — | 1 • | 1 • | 1 • | 3 (— before YA20-22, #92) |
 | daily_living | — | — | 1 • | 1 • | 1 • |
+| motor | 3 (— before T27-29, #113) | 3 (— before P27-29, #113) | 3 (— before PR24-26, #113) | 3 (— before TE22-24, #113) | 3 (— before YA24-26, #113) |
 
 With the fix these sparse pairs surface (at low confidence) once fully answered — but the
 real remedy is **more questions per sparse domain per band**, especially teen/young-adult,
@@ -66,4 +67,8 @@ unaddressed gaps needing their own authoring batch (content-gaps.md §10). The f
 questions added for issue #110 (PR23/TE21/YA23) were authored to close the
 `severe_feeding` red-flag coverage gap, not primarily to fix this table — but, same as
 #65's sleep questions, they land in `sensory` and happen to add one item to each band
-already sitting exactly at the floor.
+already sitting exactly at the floor. Motor wasn't part of this table until the #66
+coverage audit found it at zero in every band — issue #109 confirmed the gap was real (same
+resolution shape as #83's `—` cells, but missing everywhere rather than per-band), and
+issue #113 closed it to the 3-item floor in every band — see
+`2026-07-13-motor-coverage-all-bands.md`.
