@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
+  "version": "1.10.0",
   "locale": "en",
   "age_band": "teen",
   "questions": [
@@ -283,6 +283,58 @@
       "hint": "Support needs here are common and useful to know — nothing more."
     },
     {
+      "id": "TE27",
+      "domain": "daily_living",
+      "age_band": "teen",
+      "text": "Can [child] get through a daily routine (like a morning or bedtime routine) with the steps in order, without needing reminders for each one?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "mostly_independent",
+          "label": "Mostly independent"
+        },
+        {
+          "id": "needs_some_reminders",
+          "label": "Needs some reminders"
+        },
+        {
+          "id": "needs_step_by_step_prompting",
+          "label": "Needs step-by-step prompting"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about remembering the order of steps, not the individual skills themselves."
+    },
+    {
+      "id": "TE28",
+      "domain": "daily_living",
+      "age_band": "teen",
+      "text": "How well does [child] judge everyday safety risks, like road safety, kitchen safety, or staying safe with people they don't know well?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "good_awareness",
+          "label": "Good awareness for their age"
+        },
+        {
+          "id": "some_awareness_needs_reminders",
+          "label": "Some awareness, needs reminders"
+        },
+        {
+          "id": "limited_awareness",
+          "label": "Limited awareness"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This helps us understand safety judgment, not just independence with tasks."
+    },
+    {
       "id": "TE10",
       "domain": "social",
       "age_band": "teen",
@@ -356,6 +408,58 @@
       ],
       "hint": "Feel free to summarize what they said, if you'd like.",
       "allow_free_text": true
+    },
+    {
+      "id": "TE25",
+      "domain": "learning",
+      "age_band": "teen",
+      "text": "Does [child] do best with clear, predictable steps for schoolwork or study — and find it harder without them?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "strongly_prefers_structure",
+          "label": "Strongly prefers a set structure"
+        },
+        {
+          "id": "somewhat_prefers_structure",
+          "label": "Somewhat prefers it, manages either way"
+        },
+        {
+          "id": "no_strong_preference",
+          "label": "No strong preference"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about school or study routines specifically, not daily life in general."
+    },
+    {
+      "id": "TE26",
+      "domain": "learning",
+      "age_band": "teen",
+      "text": "When a teacher suddenly changes how something is explained or the format of an assignment, how does [child] handle it?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "adjusts_easily",
+          "label": "Adjusts fairly easily"
+        },
+        {
+          "id": "needs_time_to_adjust",
+          "label": "Needs time and re-explanation to adjust"
+        },
+        {
+          "id": "very_unsettling",
+          "label": "Finds it very unsettling or hard to follow"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about a change in how instructions are given, not a change in difficulty."
     },
     {
       "id": "TE14",

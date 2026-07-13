@@ -177,7 +177,7 @@ young_adult as a side effect of the sleep-question work. Issue #78 closed sensor
 preschool/primary/teen/young_adult (the priority-1 batch below) — see
 `2026-07-09-sensory-coverage-preschool-primary-teen-young-adult.md`. The rest remain open.
 
-### Current state (post #113)
+### Current state (post #66 final batch)
 
 | Domain | toddler | preschool | primary | teen | young_adult |
 |---|---|---|---|---|---|
@@ -187,14 +187,23 @@ preschool/primary/teen/young_adult (the priority-1 batch below) — see
 | repetitive_behaviour | 3 ✅ (closed by #81) | 3 ✅ | 3 ✅ | 3 ✅ (closed by TE13) | 3 ✅ (closed by #81) |
 | attention | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #79) | 3 ✅ (closed by #91) | 3 ✅ (closed by #91) |
 | emotional_regulation | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by #82) | 3 ✅ (closed by TE14) | 3 ✅ (closed by YA12) |
-| learning | — (intentional) | **1 •** | **1 •** | **1 •** | 3 ✅ (closed by #92) |
-| daily_living | — (intentional) | — (intentional) | **1 •** | **1 •** | **1 •** |
+| learning | — (intentional) | 3 ✅ (closed by #66 final batch) | 3 ✅ (closed by #66 final batch) | 3 ✅ (closed by #66 final batch) | 3 ✅ (closed by #92) |
+| daily_living | — (intentional) | — (intentional) | 3 ✅ (closed by #66 final batch) | 3 ✅ (closed by #66 final batch) | 3 ✅ (closed by #66 final batch) |
 | motor | 3 ✅ (closed by #113) | 3 ✅ (closed by #113) | 3 ✅ (closed by #113) | 3 ✅ (closed by #113) | 3 ✅ (closed by #113) |
+
+Every cell is now at/above the 3-item floor or a confirmed-intentional `—` (issue #83). No
+open, unaddressed thin cells remain in this matrix.
 
 Motor wasn't part of this matrix until the issue #66 coverage audit found it — unlike the
 `•`/`—` cells above, it was zero in *every* band, not a per-band gap. Scope resolved by
 issue #109; closed by issue #113 (T27-29/P27-29/PR24-26/TE22-24/YA24-26) — see
 `2026-07-13-motor-coverage-all-bands.md`.
+
+learning (preschool/primary/teen) and daily_living (primary/teen/young_adult) sat at 1
+item each — re-confirmed by the same #66 audit, but not newly found by it (already
+tracked below as "remain open"). Closed by the final #66 batch: P30/P31, PR27/PR28,
+TE25/TE26 (learning); PR29/PR30, TE27/TE28, YA27/YA28 (daily_living) — see
+`2026-07-13-learning-daily-living-coverage-floor.md`.
 
 `•` = below the floor of 3. `—` = domain not asked in that band at all. Issue #83 asked the
 advisor to resolve each `—` cell — is the domain developmentally inapplicable to that band,
@@ -256,6 +265,14 @@ be masking-aware in their hints, the precedent set by TE13.
    cell raised by #83; the pre-existing thin `•` cells for learning
    (preschool/primary/teen) and daily_living (primary/teen/young_adult) remain open,
    unaddressed gaps needing their own batch.
+9. ~~**Learning** (preschool +2, primary +2, teen +2 = 6 items) and **daily_living**
+   (primary +2, teen +2, young_adult +2 = 6 items) — the last open, unaddressed thin cells
+   left in the matrix, re-confirmed (not newly found) by the issue #66 audit.~~ **Closed
+   by the final #66 batch** — P30/P31, PR27/PR28, TE25/TE26 (learning, mirroring the
+   already-shipped YA20/YA21 structure-preference + response-to-change pair);
+   PR29/PR30, TE27/TE28, YA27/YA28 (daily_living, routine sequencing + safety judgment) —
+   see `2026-07-13-learning-daily-living-coverage-floor.md`. Every cell in the matrix is
+   now at/above floor or confirmed-intentional.
 
 ### Process per batch (mirrors how #52/#54/#65 shipped)
 
