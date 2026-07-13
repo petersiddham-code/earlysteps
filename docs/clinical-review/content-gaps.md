@@ -68,29 +68,46 @@ Same file, same status (issue #64, 2026-07-09): `deriveRecommendationConfidence`
 **high** confidence for any red-flag-forced tier, regardless of the rest of the intake's
 evidence — see `2026-07-09-recommendation-confidence.md`. Also pending sign-off.
 
-## 6. Family/child onboarding + consent — partially closed
+## 6. Family/child onboarding + consent — mostly closed
 
 `apps/backend` now has a `FamiliesModule`: `POST /families`, `GET /families/:familyId`,
-`PATCH /families/:familyId/consent`, `POST /families/:familyId/children`,
-`GET /families/:familyId/children/:childId`. Consent is layered (product plan §4.7) — each
-scope stored/toggled independently, fail-safe default (`{}` = nothing granted).
-`ScreeningService.submitIntakeResponses` now requires `data_storage` consent before persisting
-anything, per CLAUDE.md §2 rule 9; an unconsented or unknown child gets a 403, never a silent
-write.
+`GET /families/:familyId/children`, `PATCH /families/:familyId/consent`,
+`POST /families/:familyId/children`, `GET /families/:familyId/children/:childId`. Consent
+is layered (product plan §4.7) — each scope stored/toggled independently, fail-safe default
+(`{}` = nothing granted). `ScreeningService.submitIntakeResponses` now requires
+`data_storage` consent before persisting anything, per CLAUDE.md §2 rule 9; an unconsented
+or unknown child gets a 403, never a silent write.
 
 Mobile is now wired end to end (Splash → Consent Center → Child Setup → Questionnaire →
 Results), all against the real API — no more sample-data demo screen.
 
+**Auth + multi-tenancy on the families/screening endpoints — closed 2026-07-13 (issue
+#23).** Since issue #94 added real accounts, two things were missing before real families
+could be considered safe: gating `FamiliesController`/`ScreeningController` behind login,
+and linking a `User` to the `Family`/`Child` it owns (until now, `User` was a standalone
+credentials table with no relation to `Family` at all). Both are done: `Family` now
+carries a nullable, unique `userId` (`apps/backend/prisma/schema.prisma`), linked lazily the
+first time a logged-in account creates a family — `FamiliesService.createFamily` is
+idempotent per account, so a caller who already owns a family gets that same family back
+instead of a duplicate (this is what makes "log in on a new device" actually recover data,
+not just re-run onboarding). A new `FamilyOwnershipGuard`
+(`apps/backend/src/families/family-ownership.guard.ts`), paired with an
+`OptionalJwtAuthGuard`/`OptionalUser` decorator that never rejects a request purely for a
+missing/invalid token, gates `FamiliesController`, `ScreeningController`, and
+`AnalysisController`: a family/child with no owner (a guest session, or anything created
+before this link existed) stays exactly as open as it was before this issue — no
+regression — but once a family is linked to a `User`, only that account's JWT may read or
+write it or its children (401 with no token, 403 for a different account). Verified live
+against a real Postgres + NestJS instance (idempotent recovery, the 401/403/200 matrix) and
+via a full browser click-through (two children created, switched between, no
+cross-contamination). See PR #119.
+
+Mobile also gained a child switcher (`ChildSwitcherScreen`) off the back of this — Splash
+now checks for recoverable children before routing a logged-in family with no local child to
+Child Profile Setup, so a fresh device recovers existing children instead of creating a
+duplicate.
+
 Still open:
-- **No auth on the families/screening endpoints.** Issue #94 added real username/password
-  accounts (`AuthModule`: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`,
-  bcrypt-hashed passwords, JWT sessions) — but `FamiliesController` and
-  `ScreeningController` still accept any caller: anyone with a `familyId`/`childId` can read
-  or write it. Still open, in order: (a) gate those endpoints behind login, (b) link a
-  `User` to the `Family`/`Child` it owns (today `User` is a standalone credentials table —
-  no relation to `Family` at all). CLAUDE.md's tech-stack table has been updated to record
-  username/password (not the original passwordless/OTP plan) as the actual decision, made
-  explicitly for this issue.
 - **`data_storage` and `ai_analysis` consent are enforced; the other two are not.**
   `data_storage` gates intake persistence; since issue #26, `ai_analysis` gates the free-text
   response-analysis stage (no LLM call is ever made without it — a 403, and results still
@@ -110,8 +127,8 @@ Still open:
   `ai_analysis` consent granted, since `AnalysisService` had no way to check the caller's
   tier.
 
-  Issue #76 closed that specific gap without waiting on the broader (a)/(b) items above:
-  `AnalysisController`'s three routes (`POST response-analysis`, `GET
+  Issue #76 closed that specific gap without waiting on the broader login-gating/ownership
+  work above: `AnalysisController`'s three routes (`POST response-analysis`, `GET
   follow-up-suggestions`, `POST follow-up-suggestions/:id/answer`) are now gated by
   `JwtAuthGuard` + a new `PremiumTierGuard`
   (`apps/backend/src/auth/premium-tier.guard.ts`) at the controller level — an
@@ -123,12 +140,13 @@ Still open:
   NestJS instance: no token → 401, free-tier token → 403 on all three routes even with
   `ai_analysis` granted, same token after `PATCH /auth/upgrade` → success.
 
-  Still open, unchanged by #76: `FamiliesController` and `ScreeningController` remain
-  unauthenticated ((a) above), and there's still no `User`↔`Family` ownership link ((b)
-  above) — so a free/guest account's own `familyId` isn't provably *theirs*, only the tier
-  check on the analysis routes is enforced. Multi-tenancy (stopping one account from
-  reading/writing another's family/child data) is a separate, larger piece of work than
-  this issue's scope.
+  Left open by #76, closed by #23 (above): `FamiliesController` and `ScreeningController`
+  were still unauthenticated after #76, and there was still no `User`↔`Family` ownership
+  link, so a free/guest account's own `familyId` wasn't provably *theirs* — only the tier
+  check on the analysis routes was enforced. Issue #23 added the ownership link and
+  `FamilyOwnershipGuard` across all three controllers (`FamiliesController`,
+  `ScreeningController`, `AnalysisController`), closing the multi-tenancy gap this note
+  used to describe as future, larger-scoped work.
 
 ## 7. ~~Scoring engine does not dedupe repeated answers to the same question~~ — CLOSED 2026-07-02
 
