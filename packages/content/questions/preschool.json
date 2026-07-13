@@ -1,5 +1,5 @@
 {
-  "version": "1.7.0",
+  "version": "1.8.0",
   "locale": "en",
   "age_band": "preschool",
   "questions": [
@@ -508,6 +508,58 @@
       ],
       "hint": "If yes, feel free to note what they said — totally optional.",
       "allow_free_text": true
+    },
+    {
+      "id": "P30",
+      "domain": "learning",
+      "age_band": "preschool",
+      "text": "Does [child] do best with clear, predictable steps during activities or circle time — and find it harder without them?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "strongly_prefers_structure",
+          "label": "Strongly prefers a set structure"
+        },
+        {
+          "id": "somewhat_prefers_structure",
+          "label": "Somewhat prefers it, manages either way"
+        },
+        {
+          "id": "no_strong_preference",
+          "label": "No strong preference"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about structured activities specifically, not daily routines in general."
+    },
+    {
+      "id": "P31",
+      "domain": "learning",
+      "age_band": "preschool",
+      "text": "When an activity or instruction is explained differently than usual, how does [child] handle it?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "adjusts_easily",
+          "label": "Adjusts fairly easily"
+        },
+        {
+          "id": "needs_time_to_adjust",
+          "label": "Needs time and re-explanation to adjust"
+        },
+        {
+          "id": "very_unsettling",
+          "label": "Finds it very unsettling or hard to follow"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about a change in how something is explained, not a change to the daily routine."
     },
     {
       "id": "P19",

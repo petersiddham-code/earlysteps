@@ -1,5 +1,5 @@
 {
-  "version": "1.10.0",
+  "version": "1.11.0",
   "locale": "en",
   "age_band": "young_adult",
   "questions": [
@@ -319,6 +319,58 @@
         }
       ],
       "hint": "Many young adults need support here — knowing helps us suggest useful next steps."
+    },
+    {
+      "id": "YA27",
+      "domain": "daily_living",
+      "age_band": "young_adult",
+      "text": "Can [child] get through a multi-step routine or responsibility (like a work/study or self-care routine) without needing step-by-step reminders?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "mostly_independent",
+          "label": "Mostly independent"
+        },
+        {
+          "id": "needs_some_reminders",
+          "label": "Needs some reminders"
+        },
+        {
+          "id": "needs_step_by_step_prompting",
+          "label": "Needs step-by-step prompting"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about remembering the order of steps, not the individual skills themselves."
+    },
+    {
+      "id": "YA28",
+      "domain": "daily_living",
+      "age_band": "young_adult",
+      "text": "How well does [child] judge everyday safety risks — like road safety, money or scam safety, or staying safe with people they don't know well?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "good_awareness",
+          "label": "Good awareness for their age"
+        },
+        {
+          "id": "some_awareness_needs_reminders",
+          "label": "Some awareness, needs reminders"
+        },
+        {
+          "id": "limited_awareness",
+          "label": "Limited awareness"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This helps us understand safety judgment, not just independence with tasks."
     },
     {
       "id": "YA11",

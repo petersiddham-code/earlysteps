@@ -1,5 +1,5 @@
 {
-  "version": "1.8.0",
+  "version": "1.9.0",
   "locale": "en",
   "age_band": "primary",
   "questions": [
@@ -335,6 +335,58 @@
       "allow_free_text": true
     },
     {
+      "id": "PR27",
+      "domain": "learning",
+      "age_band": "primary",
+      "text": "Does [child] do best with clear, predictable steps for schoolwork or homework — and find it harder without them?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "strongly_prefers_structure",
+          "label": "Strongly prefers a set structure"
+        },
+        {
+          "id": "somewhat_prefers_structure",
+          "label": "Somewhat prefers it, manages either way"
+        },
+        {
+          "id": "no_strong_preference",
+          "label": "No strong preference"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "Think about schoolwork routines specifically, not daily life in general."
+    },
+    {
+      "id": "PR28",
+      "domain": "learning",
+      "age_band": "primary",
+      "text": "When a teacher explains something differently than usual, or changes how an assignment is done, how does [child] handle it?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "adjusts_easily",
+          "label": "Adjusts fairly easily"
+        },
+        {
+          "id": "needs_time_to_adjust",
+          "label": "Needs time and re-explanation to adjust"
+        },
+        {
+          "id": "very_unsettling",
+          "label": "Finds it very unsettling or hard to follow"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about a change in how instructions are given, not a change in difficulty."
+    },
+    {
       "id": "PR13",
       "domain": "emotional_regulation",
       "age_band": "primary",
@@ -385,6 +437,58 @@
         }
       ],
       "hint": "Needing support here is common — it just helps us suggest useful activities."
+    },
+    {
+      "id": "PR29",
+      "domain": "daily_living",
+      "age_band": "primary",
+      "text": "Can [child] get through a daily routine (like getting ready for school) with the steps in order, without needing reminders for each one?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "mostly_independent",
+          "label": "Mostly independent"
+        },
+        {
+          "id": "needs_some_reminders",
+          "label": "Needs some reminders"
+        },
+        {
+          "id": "needs_step_by_step_prompting",
+          "label": "Needs step-by-step prompting"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This is about remembering the order of steps, not the individual skills themselves."
+    },
+    {
+      "id": "PR30",
+      "domain": "daily_living",
+      "age_band": "primary",
+      "text": "How well does [child] understand everyday safety, like looking before crossing a street or staying close in busy or unfamiliar places?",
+      "type": "buttons",
+      "options": [
+        {
+          "id": "good_awareness",
+          "label": "Good awareness for their age"
+        },
+        {
+          "id": "some_awareness_needs_reminders",
+          "label": "Some awareness, needs reminders"
+        },
+        {
+          "id": "limited_awareness",
+          "label": "Limited awareness"
+        },
+        {
+          "id": "not_sure",
+          "label": "Not sure"
+        }
+      ],
+      "hint": "This helps us understand safety awareness, not just physical skills."
     },
     {
       "id": "PR15",

@@ -100,6 +100,26 @@ describe('domainQuestionTotalsForBand (issue #52)', () => {
     expect(domainQuestionTotalsForBand('young_adult').learning).toBeGreaterThanOrEqual(3);
   });
 
+  it('pins issue #66 (final coverage batch): learning and daily_living reach the 3-item evidence floor everywhere they are asked', () => {
+    // Before this batch, learning sat at 1 item in preschool/primary/teen and
+    // daily_living sat at 1 item in primary/teen/young_adult — the last two unaddressed
+    // thin cells tracked in content-gaps.md §10 (called out but deliberately not authored
+    // by #78-#82/#91/#92, which closed every other cell). Found by the issue #66 coverage
+    // audit alongside motor (#109/#113) and severe-feeding (#110); this batch closes the
+    // remaining gap in #66's "all age bands pass a coverage checklist" acceptance
+    // criterion. New items: P30/P31, PR27/PR28 (learning), PR29/PR30, TE27/TE28, YA27/YA28
+    // (daily_living), TE25/TE26 (learning). If any of these regress, that's a
+    // clinical-content decision, so a conscious test update is the point.
+    expect(domainQuestionTotalsForBand('preschool').learning).toBeGreaterThanOrEqual(3);
+    expect(domainQuestionTotalsForBand('primary').learning).toBeGreaterThanOrEqual(3);
+    expect(domainQuestionTotalsForBand('teen').learning).toBeGreaterThanOrEqual(3);
+    expect(domainQuestionTotalsForBand('primary').daily_living).toBeGreaterThanOrEqual(3);
+    expect(domainQuestionTotalsForBand('teen').daily_living).toBeGreaterThanOrEqual(3);
+    expect(
+      domainQuestionTotalsForBand('young_adult').daily_living,
+    ).toBeGreaterThanOrEqual(3);
+  });
+
   it('pins issue #113: motor reaches the 3-item evidence floor in every band', () => {
     // Before #113, motor asked zero items in every band — the only domain with zero
     // coverage everywhere, not a per-band gap like the other cells in this matrix (found by
