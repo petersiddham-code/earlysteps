@@ -32,24 +32,27 @@ teen/young-adult had no sleep question at all, so the flag could never fire for 
 YA12), `checkSevereSleep` now checks all five — see `2026-07-09-severe-sleep-all-bands.md`.
 Wording/weights still await sign-off, same as the original T15 item.
 
-## 3. Domain mapping of feeding & sleep — scope decision filed 2026-07-13 (issue #120)
+## 3. ~~Domain mapping of feeding & sleep~~ — RESOLVED 2026-07-13 (issue #120): keep as-is
 
 Feeding (T14/P16, and now PR23/TE21/YA23 — issue #110) and sleep (T15, and now
 P21/PR17/TE14/YA12 — issue #65) don't correspond to one of the nine DomainProfile domains.
-They're currently mapped to `sensory` and `emotional_regulation` respectively for domain
-scoring, but primarily drive red-flag rules. Confirm this mapping is clinically acceptable or
-introduce a dedicated handling path — a 5-band decision, not a toddler-only one.
+They're mapped to `sensory` and `emotional_regulation` respectively for domain scoring, and
+also drive red-flag rules — every OTHER universal red-flag-only question is tagged
+`domain: "profile"` (excluded from domain scoring entirely), so feeding/sleep were flagged
+as a possible unreviewed inconsistency and filed for a scope decision.
 
-**Filed, not resolved:** every OTHER universal red-flag-only question
-(`RF_loss_of_skills`/`RF_self_injury`/`RF_sudden_behaviour_change`/`RF_safety_concern`) is
-tagged `domain: "profile"` and carries no `domain-weights.json` entry — the shipped
-convention for "drives a red flag, doesn't score any domain." Feeding and sleep are the only
-red-flag-driving questions that break that pattern, which reads as an unreviewed
-inconsistency rather than a deliberate choice. Options laid out for an advisor: keep as-is,
-retag all ten `domain: "profile"` to match the other red-flag questions (smallest change —
-red-flag rules read raw answers by question id, never touch the mapping either way), or
-introduce a dedicated non-domain handling path. See
-`2026-07-13-feeding-sleep-domain-mapping-scope-decision.md`.
+**Resolution: mapping stays as-is.** Retagging all ten questions `domain: "profile"` to
+match the other red-flag questions turned out not to be the "smallest change" it looked
+like — sleep is 1 of only 3 `emotional_regulation` items in every band (issues #65/#82
+authored the other two specifically to reach the evidence floor), so removing it would drop
+`emotional_regulation` below the floor in all five bands simultaneously; feeding does the
+same to `sensory` in preschool. Fixing that properly needs six new placeholder-weighted
+questions — a full content-authoring batch, not a mapping cleanup — which costs more than
+the inconsistency itself. `checkSevereFeeding`/`checkSevereSleep` are unaffected either way
+(gate-exempt, read raw answers by question id, never the computed domain profile). See
+`2026-07-13-feeding-sleep-domain-mapping-scope-decision.md` for the full reasoning; revisit
+if an advisor specifically flags the sensory/emotional_regulation framing as clinically
+wrong rather than just inconsistent with the other red-flag questions.
 
 ## 4. ~~Deferred age bands~~ — PARTIALLY CLOSED 2026-07-02
 

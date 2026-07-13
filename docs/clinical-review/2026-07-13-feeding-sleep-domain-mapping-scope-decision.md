@@ -1,8 +1,7 @@
-# Feeding & sleep domain-mapping — scope decision needed
+# Feeding & sleep domain-mapping — scope decision
 
-**Status:** documentation/tracking only — no question wording, weight, threshold, or
-red-flag logic changed by this note. Filed to resolve content-gaps.md §3, open since the
-severe-feeding/severe-sleep red flags first shipped.
+**Status:** RESOLVED 2026-07-13 — keep the mapping as-is (Option A). No question wording,
+weight, threshold, or red-flag logic changed. See Resolution at the bottom.
 
 ## The question
 
@@ -78,11 +77,43 @@ toward an existing domain" (A). Largest lift — needs product-plan-level scope 
 before any engineering starts, since it would add a caregiver-facing concept beyond the nine
 `DomainProfile` domains product plan §7 currently defines.
 
-## Recommendation (non-binding, pending advisor sign-off)
+## Resolution — 2026-07-13, Option A (keep the mapping as-is)
 
-Option B reads as the more internally consistent choice — it brings feeding/sleep in line
-with how every other red-flag-driving question in the bank is already treated, and the red-flag
-behavior itself (the part product plan §4.8 actually specifies) is completely unaffected
-either way. But this is exactly the kind of judgment call CLAUDE.md §9 reserves for a
-qualified developmental advisor, not an engineering default — filed as GitHub issue for
-tracking, not resolved here.
+Before acting on this note's non-binding lean toward Option B, checked what retagging all
+ten questions `domain: "profile"` would actually do to the per-band evidence-floor coverage
+that content-gaps.md §10 spent many batches closing:
+
+```
+sensory, per band:              toddler 4, preschool 3, primary 4, teen 4, young_adult 4
+emotional_regulation, per band: toddler 3, preschool 3, primary 3, teen 3, young_adult 3
+```
+
+Sleep is exactly 1 of only 3 `emotional_regulation` items in **every** band (the other two
+per band — T25/T26, P25/P26, PR13/PR22, TE7/TE8, YA8/YA9 — were authored specifically to
+reach the floor by issues #65/#82). Removing it drops `emotional_regulation` to 2 items,
+below the 3-item floor, in all five bands simultaneously. Feeding does the same to
+`sensory` in preschool specifically (P16 is 1 of only P15/P16/P22).
+
+So Option B is not the "smallest change" this note originally framed it as — done properly,
+it requires authoring six new placeholder-weighted questions (one per band for
+`emotional_regulation`, one more for preschool `sensory`) to avoid silently reopening gaps
+that issues #65, #78, #82, TE14, and YA12 already closed. That's a full content-authoring
+batch, not a scope-decision-sized change, and trading a mapping-consistency cleanup for a
+real coverage regression (or a disproportionate authoring lift to avoid one) isn't a good
+trade.
+
+**Decision: keep the current mapping (Option A).** Feeding and sleep stay scored under
+`sensory`/`emotional_regulation` respectively, and continue driving
+`checkSevereFeeding`/`checkSevereSleep` exactly as today — those rules are unaffected by
+this decision either way (gate-exempt per CLAUDE.md §2 rule 8, read raw answers by question
+id, never the computed domain profile). The original inconsistency this note opened with
+(feeding/sleep being the only red-flag-driving questions that also score a domain) is a real
+observation, but resolving it costs more (new clinical content, an authoring batch) than the
+inconsistency itself costs (feeding/sleep already have a defensible partial basis under
+sensory/emotional_regulation, and the caregiver-facing behavior — a nudge to those two
+traffic lights from a picky-eating or sleep-disruption answer — is a modest, not clearly
+wrong, effect). Revisit if an advisor specifically flags the sensory/emotional_regulation
+framing as clinically incorrect, at which point authoring the six replacement questions
+becomes the right call, not just cleanup.
+
+Closes issue #120, no clinical content shipped — signed off by Peter Siddham.
