@@ -497,6 +497,50 @@ describe('ResultsScreen', () => {
     expect(navigation.navigate).toHaveBeenCalledWith('ConsentCenter');
   });
 
+  it('offers "Switch child" for a real, logged-in, server-persisted child and navigates to ChildSwitcher (#23)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(<ResultsScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    fireEvent.press(screen.getByTestId('switch-child-button'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith('ChildSwitcher');
+  });
+
+  it('hides "Switch child" for a guest session — nothing is persisted server-side to switch between (#23)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'c1',
+      isGuest: true,
+      tier: null,
+      clearChildId,
+    });
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(screen.queryByTestId('switch-child-button')).toBeNull();
+  });
+
+  it('hides "Switch child" for a locally-held guest child even when logged in (data_storage declined, #23)', async () => {
+    (useSession as jest.Mock).mockReturnValue({
+      familyId: 'f1',
+      childId: 'guest:abc123',
+      isGuest: false,
+      tier: 'free',
+      clearChildId,
+    });
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    render(<ResultsScreen navigation={navProp()} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    expect(screen.queryByTestId('switch-child-button')).toBeNull();
+  });
+
   it('actually refetches when Try again is pressed after a failure', async () => {
     (getResults as jest.Mock)
       .mockRejectedValueOnce(new Error('network down'))

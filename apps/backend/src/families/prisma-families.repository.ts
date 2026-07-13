@@ -65,6 +65,7 @@ export class PrismaFamiliesRepository implements FamiliesRepository {
         locale: input.locale,
         lowBandwidthMode: input.lowBandwidthMode ?? false,
         consentFlags: {},
+        userId: input.userId ?? null,
       },
     });
     return toFamily(row);
@@ -72,6 +73,19 @@ export class PrismaFamiliesRepository implements FamiliesRepository {
 
   async getFamily(familyId: string): Promise<Family | null> {
     const row = await this.prisma.family.findUnique({ where: { id: familyId } });
+    return row ? toFamily(row) : null;
+  }
+
+  async getFamilyOwnerUserId(familyId: string): Promise<string | null | undefined> {
+    const row = await this.prisma.family.findUnique({
+      where: { id: familyId },
+      select: { userId: true },
+    });
+    return row ? row.userId : undefined;
+  }
+
+  async getFamilyByUserId(userId: string): Promise<Family | null> {
+    const row = await this.prisma.family.findUnique({ where: { userId } });
     return row ? toFamily(row) : null;
   }
 
@@ -110,6 +124,11 @@ export class PrismaFamiliesRepository implements FamiliesRepository {
   async getChild(childId: string): Promise<Child | null> {
     const row = await this.prisma.child.findUnique({ where: { id: childId } });
     return row ? toChild(row) : null;
+  }
+
+  async getChildrenByFamily(familyId: string): Promise<Child[]> {
+    const rows = await this.prisma.child.findMany({ where: { familyId } });
+    return rows.map(toChild);
   }
 
   async hasConsent(childId: string, scope: ConsentScope): Promise<boolean> {

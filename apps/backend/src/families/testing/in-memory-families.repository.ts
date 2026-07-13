@@ -42,6 +42,9 @@ export function bornMonthsAgo(months: number): {
 export class InMemoryFamiliesRepository implements FamiliesRepository {
   private readonly families = new Map<string, Family>();
   private readonly children = new Map<string, Child>();
+  /** Issue #23: which account (if any) owns each family — kept separately since the
+   * public Family shape never exposes it, mirroring the real schema's userId column. */
+  private readonly familyOwners = new Map<string, string | null>();
 
   /**
    * Mirrors the production purge (issue #55): the Prisma implementation deletes every
@@ -59,6 +62,7 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
     if (this.onDeleteChildren) await this.onDeleteChildren(childIds);
     for (const id of childIds) this.children.delete(id);
     this.families.delete(familyId);
+    this.familyOwners.delete(familyId);
     return true;
   }
 
@@ -70,11 +74,24 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
       consent_flags: {},
     };
     this.families.set(family.id, family);
+    this.familyOwners.set(family.id, input.userId ?? null);
     return family;
   }
 
   async getFamily(familyId: string): Promise<Family | null> {
     return this.families.get(familyId) ?? null;
+  }
+
+  async getFamilyOwnerUserId(familyId: string): Promise<string | null | undefined> {
+    if (!this.families.has(familyId)) return undefined;
+    return this.familyOwners.get(familyId) ?? null;
+  }
+
+  async getFamilyByUserId(userId: string): Promise<Family | null> {
+    for (const [familyId, owner] of this.familyOwners) {
+      if (owner === userId) return this.families.get(familyId) ?? null;
+    }
+    return null;
   }
 
   async updateConsent(
@@ -119,6 +136,15 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
     };
   }
 
+  async getChildrenByFamily(familyId: string): Promise<Child[]> {
+    return [...this.children.values()]
+      .filter((child) => child.family_id === familyId)
+      .map((child) => ({
+        ...child,
+        age_band: deriveAgeBandOrNearest(child.birth_month, child.birth_year),
+      }));
+  }
+
   async hasConsent(childId: string, scope: ConsentScope): Promise<boolean> {
     const child = this.children.get(childId);
     if (!child) return false;
@@ -127,7 +153,8 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
     return family.consent_flags[scope] === true;
   }
 
-  /** Test-only shortcut: create a family + child pair, optionally pre-granting consent. */
+  /** Test-only shortcut: create a family + child pair, optionally pre-granting consent
+   * and/or linking the family to an owning account (issue #23). */
   async seedChildWithConsent(
     grantedScopes: ConsentScope[] = [],
     childInput: CreateChildInput = {
@@ -136,8 +163,9 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
       ...bornMonthsAgo(24),
       languages: ['English'],
     },
+    userId: string | null = null,
   ): Promise<{ family: Family; child: Child }> {
-    const family = await this.createFamily({ locale: 'en' });
+    const family = await this.createFamily({ locale: 'en', userId });
     for (const scope of grantedScopes) {
       await this.updateConsent(family.id, scope, true);
     }

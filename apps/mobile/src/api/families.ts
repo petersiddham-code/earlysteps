@@ -25,6 +25,11 @@ export function getFamily(familyId: string): Promise<Family> {
   return apiClient.get<Family>(`/families/${familyId}`);
 }
 
+/** The child switcher's data source (issue #23) — every child recorded under this family. */
+export function getChildren(familyId: string): Promise<Child[]> {
+  return apiClient.get<Child[]>(`/families/${familyId}/children`);
+}
+
 /** Updates exactly one consent scope — matches <ConsentToggle/>'s one-scope-per-call UX. */
 export function updateConsent(
   familyId: string,

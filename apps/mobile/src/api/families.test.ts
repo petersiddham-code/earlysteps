@@ -3,6 +3,7 @@ import {
   createChild,
   createFamily,
   getChild,
+  getChildren,
   getFamily,
   updateConsent,
 } from './families';
@@ -51,6 +52,11 @@ describe('families API wrappers', () => {
   it('getChild gets the nested child route', async () => {
     await getChild('f1', 'c1');
     expect(apiClient.get).toHaveBeenCalledWith('/families/f1/children/c1');
+  });
+
+  it('getChildren gets the family-wide children list route (issue #23)', async () => {
+    await getChildren('f1');
+    expect(apiClient.get).toHaveBeenCalledWith('/families/f1/children');
   });
 
   it('getChild reads the in-memory guest store instead of the network for a guest child (#63)', async () => {

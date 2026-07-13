@@ -9,6 +9,7 @@ import { AnswerFollowUpDto } from './dto/answer-follow-up.dto.js';
 import type { ResultsView } from '../screening/results-view.js';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { PremiumTierGuard } from '../auth/premium-tier.guard.js';
+import { FamilyOwnershipGuard } from '../families/family-ownership.guard.js';
 
 /**
  * Free-text response-analysis endpoints (issue #26). All three are additive to the
@@ -18,8 +19,12 @@ import { PremiumTierGuard } from '../auth/premium-tier.guard.js';
  * mobile app's canUseAiFeatures() check (issue #99) — closes the gap where a direct API
  * call from a free or guest account could still reach the LLM stage as long as
  * ai_analysis consent was set (docs/clinical-review/content-gaps.md §6(c)).
+ *
+ * Issue #23: FamilyOwnershipGuard added alongside — a Premium account can't reach a
+ * child under a DIFFERENT account's family (403). A child whose family predates the
+ * ownership link (userId null) stays as open to any Premium account as it is today.
  */
-@UseGuards(JwtAuthGuard, PremiumTierGuard)
+@UseGuards(JwtAuthGuard, PremiumTierGuard, FamilyOwnershipGuard)
 @Controller('children/:childId')
 export class AnalysisController {
   constructor(
