@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Ionicons } from '@expo/vector-icons';
 import { allQuestions, RESULT_COPY } from '@earlysteps/content';
 import {
   DOMAIN_DISPLAY_NAMES,
@@ -340,6 +341,19 @@ export function ResultsScreen({ navigation, route }: Props) {
           screen already rendered before the dual-assessment update — only the wrapping
           is new. */}
       <View style={styles.section} testID="section-a-deterministic">
+        {/* Section A's own heading (issue #112): Sections B and Comparison below already
+            title themselves (AIAssessmentCard/ComparisonCard render their own card_heading)
+            — Section A didn't, so the three regions read asymmetrically. This closes that
+            gap with the same visual language (icon + bodyStrong heading), making which
+            section is the official deterministic result versus an AI reflection obvious at
+            a glance, not just structurally (CLAUDE.md §14). */}
+        <View style={styles.sectionHeaderRow}>
+          <Ionicons name="clipboard-outline" size={18} color={colors.primary} />
+          <Text style={styles.sectionHeading} testID="section-a-heading">
+            {RESULT_COPY.card_heading}
+          </Text>
+        </View>
+
         {/* One-tap crisis resources (issue #50, product plan §10 rule 10): when a
             self-injury or safety flag is present this must be immediately visible — above
             the fold, before anything the caregiver has to scroll for. Non-urgent flags
@@ -366,24 +380,28 @@ export function ResultsScreen({ navigation, route }: Props) {
           empty white box — the recommendation card below says "not enough information". */}
         {results.domains.length > 0 && (
           <View style={styles.card}>
-            {results.domains.map((domain) =>
-              // Minimum-evidence gate (issue #22): a gated domain has NO label/confidence on
-              // the wire — it renders as "not enough information yet", never a traffic light.
-              domain.status === 'scored' ? (
-                <TrafficLightBar
-                  key={domain.domain}
-                  domain={domain.domain}
-                  level={LABEL_TO_SIGN_LEVEL[domain.label]}
-                  confidence={domain.confidence}
-                />
-              ) : (
-                <TrafficLightBar
-                  key={domain.domain}
-                  domain={domain.domain}
-                  level="insufficient_evidence"
-                />
-              ),
-            )}
+            {results.domains.map((domain, i) => (
+              // Hairline divider between rows (not after the last) — issue #112, a compact
+              // summary band instead of a plain stacked list. Purely visual: the row content
+              // itself is unchanged.
+              <View
+                key={domain.domain}
+                style={i < results.domains.length - 1 && styles.domainRowDivider}
+              >
+                {domain.status === 'scored' ? (
+                  // Minimum-evidence gate (issue #22): a gated domain has NO label/confidence
+                  // on the wire — it renders as "not enough information yet", never a traffic
+                  // light.
+                  <TrafficLightBar
+                    domain={domain.domain}
+                    level={LABEL_TO_SIGN_LEVEL[domain.label]}
+                    confidence={domain.confidence}
+                  />
+                ) : (
+                  <TrafficLightBar domain={domain.domain} level="insufficient_evidence" />
+                )}
+              </View>
+            ))}
             {results.domains.some((d) => d.status === 'insufficient_evidence') && (
               <Text style={styles.insufficientDetail} testID="insufficient-domain-detail">
                 {RESULT_COPY.insufficient_evidence.domain_detail}
@@ -573,6 +591,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   provenance: { ...type.caption, color: colors.inkSoft },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sectionHeading: { ...type.bodyStrong, color: colors.ink },
+  domainRowDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
   insufficientDetail: {
     ...type.caption,
     color: colors.inkSoft,

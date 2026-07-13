@@ -120,6 +120,8 @@ export const resultCopySchema = z.object({
   locale: z.string(),
   needs_clinical_signoff: z.boolean(),
   note: z.string(),
+  /** Titles Section A on Results (issue #112) — mirrors card_heading on Sections B/Comparison. */
+  card_heading: safeCopyNonEmpty,
   disclaimer: safeCopy,
   sign_level_labels: z.record(z.enum(SIGN_LEVELS), z.string()),
   recommendation_tiers: z.record(z.string(), z.string()),

@@ -1,3 +1,4 @@
+export * from './AppWordmark/AppWordmark';
 export * from './ScreeningDisclaimer/ScreeningDisclaimer';
 export * from './ConfidenceBadge/ConfidenceBadge';
 export * from './TrafficLightBar/TrafficLightBar';
