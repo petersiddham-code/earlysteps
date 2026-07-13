@@ -470,3 +470,49 @@ describe('screening pipeline — data_storage consent gate (CLAUDE.md §2 rule 9
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });
+
+describe('screening pipeline — multi-child isolation (issue #23)', () => {
+  it('never lets one child under the same family see another child’s answers, scores, or red flags', async () => {
+    const { service, familiesRepository } = await buildService();
+    const family = await familiesRepository.createFamily({ locale: 'en' });
+    await familiesRepository.updateConsent(family.id, 'data_storage', true);
+    const childA = await familiesRepository.createChild(family.id, {
+      nickname: 'A',
+      birthMonth: 1,
+      birthYear: 2023,
+      languages: ['English'],
+    });
+    const childB = await familiesRepository.createChild(family.id, {
+      nickname: 'B',
+      birthMonth: 1,
+      birthYear: 2023,
+      languages: ['English'],
+    });
+
+    // Child A gets a batch of ordinary answers; child B gets a red-flag-triggering one only.
+    const childAResponses = [
+      r('T1', 'before_12mo'),
+      r('T2', 'short_sentences'),
+      r('T3', 'yes_often'),
+    ].map((res) => ({ ...res, child_id: childA.id }));
+    await service.submitIntakeResponses(childA.id, childAResponses);
+    await service.submitIntakeResponses(childB.id, [
+      { ...r('RF_self_injury', 'yes'), child_id: childB.id },
+    ]);
+
+    const viewA = await service.getResults(childA.id);
+    const viewB = await service.getResults(childB.id);
+
+    // Child A's own responses never leaked into child B's stored history, and vice versa.
+    expect(await service.getIntakeResponses(childA.id)).toHaveLength(
+      childAResponses.length,
+    );
+    expect(await service.getIntakeResponses(childB.id)).toHaveLength(1);
+
+    // Child B's red flag is child B's alone — it must never appear on child A's results.
+    expect(viewB.redFlagTypes.length).toBeGreaterThan(0);
+    expect(viewA.redFlagTypes).toEqual([]);
+    expect(viewA.basedOnAnswers).toBe(childAResponses.length);
+    expect(viewB.basedOnAnswers).toBe(1);
+  });
+});

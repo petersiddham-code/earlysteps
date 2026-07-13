@@ -4,6 +4,13 @@ export type RootStackParamList = {
   Signup: undefined;
   ConsentCenter: undefined;
   ChildProfileSetup: undefined;
+  /**
+   * Issue #23: lists the logged-in family's children so a caregiver can switch which one
+   * is active, or add another. Reached from Results ("Switch child") and from Splash when
+   * a recovered family already has children but no local childId is selected yet — never
+   * shown to a guest session (nothing is persisted server-side for one to list).
+   */
+  ChildSwitcher: undefined;
   Questionnaire: undefined;
   /**
    * Issue #102: interim step for a Premium submission that included free text — checks

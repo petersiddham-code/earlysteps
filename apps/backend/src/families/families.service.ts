@@ -23,14 +23,33 @@ export class FamiliesService {
     @Inject(FAMILIES_REPOSITORY) private readonly repository: FamiliesRepository,
   ) {}
 
-  createFamily(input: CreateFamilyInput): Promise<Family> {
-    return this.repository.createFamily(input);
+  /**
+   * Issue #23: idempotent per account. A logged-in caller who already owns a family gets
+   * that SAME family back instead of a duplicate — this is what makes "log in on a new
+   * device" actually recover data rather than silently starting over. A guest session
+   * (requestingUserId null) behaves exactly as before: a fresh, unowned family every time.
+   */
+  async createFamily(
+    input: CreateFamilyInput,
+    requestingUserId: string | null = null,
+  ): Promise<Family> {
+    if (requestingUserId) {
+      const existing = await this.repository.getFamilyByUserId(requestingUserId);
+      if (existing) return existing;
+    }
+    return this.repository.createFamily({ ...input, userId: requestingUserId });
   }
 
   async getFamily(familyId: string): Promise<Family> {
     const family = await this.repository.getFamily(familyId);
     if (!family) throw new NotFoundException(`No family found with id ${familyId}`);
     return family;
+  }
+
+  /** The child switcher's data source (issue #23) — every child recorded under this family. */
+  async getChildren(familyId: string): Promise<Child[]> {
+    await this.getFamily(familyId); // 404 rather than a silent empty list for a bad id
+    return this.repository.getChildrenByFamily(familyId);
   }
 
   updateConsent(

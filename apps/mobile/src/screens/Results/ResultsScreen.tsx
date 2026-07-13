@@ -34,6 +34,7 @@ import {
   getResults,
 } from '../../api/index.js';
 import { ApiError } from '../../api/client.js';
+import { isGuestChildId } from '../../guest/guestStore.js';
 import { canUseAiFeatures, useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import {
@@ -127,6 +128,10 @@ const LABEL_TO_SIGN_LEVEL: Record<SignLevelLabel, SignLevel> = {
 
 export function ResultsScreen({ navigation, route }: Props) {
   const { familyId, childId, isGuest, tier, clearChildId } = useSession();
+  // Issue #23: only a real, server-persisted child under a logged-in family can be
+  // switched away from — a guest session (or a child saved locally because data_storage
+  // consent was declined) has no server-side sibling list to switch between.
+  const canSwitchChild = !isGuest && childId !== null && !isGuestChildId(childId);
   const [results, setResults] = useState<ResultsView | null>(null);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -283,6 +288,14 @@ export function ResultsScreen({ navigation, route }: Props) {
           </View>
         </View>
         <View style={styles.actions}>
+          {canSwitchChild && (
+            <PrimaryButton
+              label="Switch child"
+              variant="quiet"
+              onPress={() => navigation.navigate('ChildSwitcher')}
+              testID="switch-child-button"
+            />
+          )}
           <Text style={styles.actionsHint}>
             Starting a new set of questions begins fresh with a child's details. These
             results won't be shown in the app afterwards, so note down anything you want
@@ -536,12 +549,21 @@ export function ResultsScreen({ navigation, route }: Props) {
       {/* Issue #20: results must never be a dead end. Splash replace()s straight here for
           a returning session, so without these the caregiver has no path back into the
           app's flows. Starting a new set of questions forgets the child but keeps the
-          family (consent stays granted) and begins at the child's details — the app holds
-          one child at a time, so this is also how a different child gets screened until
-          multi-child support lands (#23). The old profile stays stored server-side for
-          when accounts/login exist; it just stops being viewable on this device, which
-          the hint says plainly. replace, not navigate — no stale Results underneath. */}
+          family (consent stays granted) and begins at a fresh child's details — "Switch
+          child" (issue #23) is the non-destructive way to move between children already on
+          file; this stays for a first-time-only child (guest, or data_storage declined) that
+          has nowhere to switch to. The old profile stays stored server-side; it just stops
+          being viewable on this device once forgotten this way, which the hint says plainly.
+          replace, not navigate — no stale Results underneath. */}
       <View style={styles.actions}>
+        {canSwitchChild && (
+          <PrimaryButton
+            label="Switch child"
+            variant="quiet"
+            onPress={() => navigation.navigate('ChildSwitcher')}
+            testID="switch-child-button"
+          />
+        )}
         <Text style={styles.actionsHint}>
           Starting a new set of questions begins fresh with a child's details. These
           results won't be shown in the app afterwards, so note down anything you want to

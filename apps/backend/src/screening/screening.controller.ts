@@ -1,12 +1,24 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
 import type { IntakeResponse } from '@earlysteps/shared-types';
 import { ScreeningService } from './screening.service.js';
 import { SubmitIntakeResponsesDto } from './dto/submit-intake-responses.dto.js';
 import type { ResultsView } from './results-view.js';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard.js';
+import { FamilyOwnershipGuard } from '../families/family-ownership.guard.js';
 
+/**
+ * Issue #23: same optional-auth + ownership pattern as FamiliesController — a child under
+ * an unowned/guest family stays fully open (no regression), a child under an
+ * account-linked family only answers to that account's JWT.
+ */
+@UseGuards(OptionalJwtAuthGuard, FamilyOwnershipGuard)
 @Controller('children/:childId')
 export class ScreeningController {
-  constructor(private readonly screeningService: ScreeningService) {}
+  constructor(
+    // Explicit token: vitest's esbuild transform emits no decorator design:paramtypes
+    // metadata, so class-typed constructor injection resolves to undefined in tests.
+    @Inject(ScreeningService) private readonly screeningService: ScreeningService,
+  ) {}
 
   @Post('intake-responses')
   submitIntakeResponses(

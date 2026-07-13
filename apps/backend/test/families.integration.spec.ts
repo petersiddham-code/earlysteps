@@ -278,3 +278,52 @@ describe('families — delete everything (issue #55, right to erasure)', () => {
     );
   });
 });
+
+describe('families — account recovery on a new device (issue #23)', () => {
+  let service: FamiliesService;
+
+  beforeEach(async () => {
+    ({ service } = await buildService());
+  });
+
+  it('a guest (no requestingUserId) always gets a brand-new, unowned family', async () => {
+    const first = await service.createFamily({ locale: 'en' });
+    const second = await service.createFamily({ locale: 'en' });
+    expect(first.id).not.toBe(second.id);
+  });
+
+  it('a logged-in account calling createFamily twice gets the SAME family back, not a duplicate', async () => {
+    const first = await service.createFamily({ locale: 'en' }, 'user-1');
+    const second = await service.createFamily({ locale: 'en' }, 'user-1');
+    expect(second.id).toBe(first.id);
+  });
+
+  it('two different accounts never share a family even if they call createFamily independently', async () => {
+    const familyA = await service.createFamily({ locale: 'en' }, 'user-1');
+    const familyB = await service.createFamily({ locale: 'en' }, 'user-2');
+    expect(familyA.id).not.toBe(familyB.id);
+  });
+
+  it('getChildren lists every child recorded under a family', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+    const a = await service.createChild(family.id, {
+      nickname: 'A',
+      ...bornMonthsAgo(24),
+      languages: ['English'],
+    });
+    const b = await service.createChild(family.id, {
+      nickname: 'B',
+      ...bornMonthsAgo(50),
+      languages: ['English'],
+    });
+
+    const children = await service.getChildren(family.id);
+    expect(children.map((c) => c.id).sort()).toEqual([a.id, b.id].sort());
+  });
+
+  it('getChildren on an unknown family is a clear 404, not an empty list', async () => {
+    await expect(service.getChildren('unknown-family')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+});

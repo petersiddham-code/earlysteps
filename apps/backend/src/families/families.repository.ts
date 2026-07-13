@@ -14,6 +14,11 @@ export const FAMILIES_REPOSITORY = Symbol('FAMILIES_REPOSITORY');
 export interface CreateFamilyInput {
   locale: string;
   lowBandwidthMode?: boolean;
+  /**
+   * Links the family to the logged-in account that created it (issue #23). Omitted/null
+   * for a guest session — matches today's fully anonymous behaviour exactly.
+   */
+  userId?: string | null;
 }
 
 export interface CreateChildInput {
@@ -29,10 +34,20 @@ export interface CreateChildInput {
 export interface FamiliesRepository {
   createFamily(input: CreateFamilyInput): Promise<Family>;
   getFamily(familyId: string): Promise<Family | null>;
+  /**
+   * The account that owns this family (issue #23) — null for an anonymous/guest family,
+   * undefined when no such family exists at all. Powers FamilyOwnershipGuard: an unowned
+   * family stays unrestricted, exactly matching today's behaviour.
+   */
+  getFamilyOwnerUserId(familyId: string): Promise<string | null | undefined>;
+  /** The one family already linked to this account, if any — recovery on a new device. */
+  getFamilyByUserId(userId: string): Promise<Family | null>;
   /** Updates exactly one consent scope — matches <ConsentToggle/>'s one-scope-per-call UX. */
   updateConsent(familyId: string, scope: ConsentScope, granted: boolean): Promise<Family>;
   createChild(familyId: string, input: CreateChildInput): Promise<Child>;
   getChild(childId: string): Promise<Child | null>;
+  /** Every child recorded under a family — the child switcher's data source (issue #23). */
+  getChildrenByFamily(familyId: string): Promise<Child[]>;
   /** Fail-safe default: a child/family with no recorded grant has NOT consented. */
   hasConsent(childId: string, scope: ConsentScope): Promise<boolean>;
   /**

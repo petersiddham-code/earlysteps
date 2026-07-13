@@ -18,9 +18,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Login credentials (issue #94). Deliberately standalone — not yet linked to Family; a
-/// user account owning/linking to a Family is a follow-up (docs/clinical-review/content-gaps.md
-/// §6), same as gating existing endpoints behind it. `tier` exists so premium-tier gating
+/// Login credentials (issue #94). Issue #23 added the one-to-one link to Family below —
+/// still a standalone credentials table otherwise. `tier` exists so premium-tier gating
 /// (the issue's stated motivation) has somewhere to read from later — nothing enforces it yet.
 model User {
   id           String   @id @default(cuid())
@@ -30,6 +29,7 @@ model User {
   tier         String   @default("free")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  family       Family?
 }
 
 model Family {
@@ -43,6 +43,14 @@ model Family {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   children         Child[]
+  /// One family per account (issue #23), created lazily on first Consent Center visit —
+  /// null for a guest session (never persisted at all) or a family created before this
+  /// link existed. Logging in on a new device recovers this family via getFamilyByUserId
+  /// instead of creating a duplicate. Also the multi-tenancy boundary: FamilyOwnershipGuard
+  /// only restricts access once a family has an owner, so an unowned/guest family stays
+  /// exactly as open as it is today.
+  userId           String?  @unique
+  user             User?    @relation(fields: [userId], references: [id])
 }
 
 model Child {
