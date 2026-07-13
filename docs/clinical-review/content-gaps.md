@@ -32,13 +32,24 @@ teen/young-adult had no sleep question at all, so the flag could never fire for 
 YA12), `checkSevereSleep` now checks all five — see `2026-07-09-severe-sleep-all-bands.md`.
 Wording/weights still await sign-off, same as the original T15 item.
 
-## 3. Domain mapping of feeding & sleep
+## 3. Domain mapping of feeding & sleep — scope decision filed 2026-07-13 (issue #120)
 
-Feeding (T14/P16) and sleep (T15, and now P21/PR17/TE14/YA12 — issue #65) don't correspond to
-one of the nine DomainProfile domains. They're currently mapped to `sensory` and
-`emotional_regulation` respectively for domain scoring, but primarily drive red-flag rules.
-Confirm this mapping is clinically acceptable or introduce a dedicated handling path — now a
-5-band decision, not a toddler-only one.
+Feeding (T14/P16, and now PR23/TE21/YA23 — issue #110) and sleep (T15, and now
+P21/PR17/TE14/YA12 — issue #65) don't correspond to one of the nine DomainProfile domains.
+They're currently mapped to `sensory` and `emotional_regulation` respectively for domain
+scoring, but primarily drive red-flag rules. Confirm this mapping is clinically acceptable or
+introduce a dedicated handling path — a 5-band decision, not a toddler-only one.
+
+**Filed, not resolved:** every OTHER universal red-flag-only question
+(`RF_loss_of_skills`/`RF_self_injury`/`RF_sudden_behaviour_change`/`RF_safety_concern`) is
+tagged `domain: "profile"` and carries no `domain-weights.json` entry — the shipped
+convention for "drives a red flag, doesn't score any domain." Feeding and sleep are the only
+red-flag-driving questions that break that pattern, which reads as an unreviewed
+inconsistency rather than a deliberate choice. Options laid out for an advisor: keep as-is,
+retag all ten `domain: "profile"` to match the other red-flag questions (smallest change —
+red-flag rules read raw answers by question id, never touch the mapping either way), or
+introduce a dedicated non-domain handling path. See
+`2026-07-13-feeding-sleep-domain-mapping-scope-decision.md`.
 
 ## 4. ~~Deferred age bands~~ — PARTIALLY CLOSED 2026-07-02
 
