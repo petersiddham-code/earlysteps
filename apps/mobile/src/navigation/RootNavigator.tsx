@@ -9,8 +9,24 @@ import { ChildSwitcherScreen } from '../screens/ChildSwitcher/ChildSwitcherScree
 import { QuestionnaireScreen } from '../screens/Questionnaire/QuestionnaireScreen.js';
 import { FollowUpCheckScreen } from '../screens/FollowUpCheck/FollowUpCheckScreen.js';
 import { ResultsScreen } from '../screens/Results/ResultsScreen.js';
+import { LogoutButton } from '../components/index.js';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+/**
+ * Issue #121: every screen reached only once a session exists (i.e. everything past the
+ * Login/Signup gate — see SplashScreen) gets a floating Log out affordance in its header.
+ * `headerTransparent` keeps the header from taking layout space, so it floats over each
+ * screen's own content instead of pushing it down by an extra header's height on top of
+ * the manual top padding those screens already carry for the status bar/notch.
+ */
+const authenticatedScreenOptions = {
+  headerShown: true,
+  headerTransparent: true,
+  headerTitle: () => null,
+  headerBackVisible: false,
+  headerRight: () => <LogoutButton />,
+} as const;
 
 export function RootNavigator() {
   return (
@@ -18,12 +34,36 @@ export function RootNavigator() {
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
-      <Stack.Screen name="ConsentCenter" component={ConsentCenterScreen} />
-      <Stack.Screen name="ChildProfileSetup" component={ChildProfileSetupScreen} />
-      <Stack.Screen name="ChildSwitcher" component={ChildSwitcherScreen} />
-      <Stack.Screen name="Questionnaire" component={QuestionnaireScreen} />
-      <Stack.Screen name="FollowUpCheck" component={FollowUpCheckScreen} />
-      <Stack.Screen name="Results" component={ResultsScreen} />
+      <Stack.Screen
+        name="ConsentCenter"
+        component={ConsentCenterScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="ChildProfileSetup"
+        component={ChildProfileSetupScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="ChildSwitcher"
+        component={ChildSwitcherScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="Questionnaire"
+        component={QuestionnaireScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="FollowUpCheck"
+        component={FollowUpCheckScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="Results"
+        component={ResultsScreen}
+        options={authenticatedScreenOptions}
+      />
     </Stack.Navigator>
   );
 }
