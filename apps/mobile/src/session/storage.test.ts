@@ -6,6 +6,7 @@ import {
   saveAccessToken,
   saveChildId,
   saveFamilyId,
+  saveRole,
   saveTier,
 } from './storage';
 
@@ -20,6 +21,7 @@ describe('session storage', () => {
       childId: null,
       accessToken: null,
       tier: null,
+      role: null,
     });
   });
 
@@ -30,19 +32,22 @@ describe('session storage', () => {
       childId: null,
       accessToken: null,
       tier: null,
+      role: null,
     });
   });
 
-  it('persists ids, the access token, and the tier independently', async () => {
+  it('persists ids, the access token, the tier, and the role independently', async () => {
     await saveFamilyId('f1');
     await saveChildId('c1');
     await saveAccessToken('t1');
     await saveTier('premium');
+    await saveRole('admin');
     expect(await loadSession()).toEqual({
       familyId: 'f1',
       childId: 'c1',
       accessToken: 't1',
       tier: 'premium',
+      role: 'admin',
     });
   });
 
@@ -55,20 +60,23 @@ describe('session storage', () => {
       childId: null,
       accessToken: null,
       tier: null,
+      role: null,
     });
   });
 
-  it('clearSession removes the ids, the access token, and the tier (#97, #99)', async () => {
+  it('clearSession removes the ids, the access token, the tier, and the role (#97, #99, #125)', async () => {
     await saveFamilyId('f1');
     await saveChildId('c1');
     await saveAccessToken('t1');
     await saveTier('premium');
+    await saveRole('admin');
     await clearSession();
     expect(await loadSession()).toEqual({
       familyId: null,
       childId: null,
       accessToken: null,
       tier: null,
+      role: null,
     });
   });
 });

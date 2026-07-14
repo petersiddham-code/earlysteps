@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { UserTier } from '@earlysteps/shared-types';
+import type { UserRole, UserTier } from '@earlysteps/shared-types';
 import {
   clearChildId as clearStoredChildId,
   clearSession,
@@ -7,6 +7,7 @@ import {
   saveAccessToken as saveStoredAccessToken,
   saveChildId,
   saveFamilyId,
+  saveRole as saveStoredRole,
   saveTier as saveStoredTier,
 } from './storage.js';
 import { forgetGuestChild, isGuestChildId } from '../guest/guestStore.js';
@@ -23,6 +24,8 @@ export interface SessionValue {
   accessToken: string | null;
   /** The logged-in account's tier ('free' | 'premium') — null when logged out or guest. */
   tier: UserTier | null;
+  /** The logged-in account's role ('parent' | 'admin') — null when logged out or guest. */
+  role: UserRole | null;
   /**
    * Issue #99: true once the caregiver chose "Continue as guest" on Login. Held in state
    * only, never persisted — an app restart forgets it, the same ephemerality contract as
@@ -31,7 +34,7 @@ export interface SessionValue {
   isGuest: boolean;
   setFamilyId: (familyId: string) => Promise<void>;
   setChildId: (childId: string) => Promise<void>;
-  setAccessToken: (accessToken: string, tier: UserTier) => Promise<void>;
+  setAccessToken: (accessToken: string, tier: UserTier, role: UserRole) => Promise<void>;
   /** Updates the tier after a successful upgrade, without touching anything else. */
   setTier: (tier: UserTier) => Promise<void>;
   /** Issue #99: bypasses Login entirely — see LoginScreen "Continue as guest". */
@@ -54,6 +57,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [childId, setChildIdState] = useState<string | null>(null);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [tier, setTierState] = useState<UserTier | null>(null);
+  const [role, setRoleState] = useState<UserRole | null>(null);
   const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
@@ -62,6 +66,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setChildIdState(stored.childId);
       setAccessTokenState(stored.accessToken);
       setTierState(stored.tier);
+      setRoleState(stored.role);
       setAuthToken(stored.accessToken);
       setIsLoading(false);
     });
@@ -77,10 +82,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setChildIdState(id);
   };
 
-  const setAccessToken = async (token: string, nextTier: UserTier) => {
-    await Promise.all([saveStoredAccessToken(token), saveStoredTier(nextTier)]);
+  const setAccessToken = async (
+    token: string,
+    nextTier: UserTier,
+    nextRole: UserRole,
+  ) => {
+    await Promise.all([
+      saveStoredAccessToken(token),
+      saveStoredTier(nextTier),
+      saveStoredRole(nextRole),
+    ]);
     setAccessTokenState(token);
     setTierState(nextTier);
+    setRoleState(nextRole);
     setAuthToken(token);
   };
 
@@ -110,6 +124,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setChildIdState(null);
     setAccessTokenState(null);
     setTierState(null);
+    setRoleState(null);
     setIsGuest(false);
     setAuthToken(null);
   };
@@ -122,6 +137,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         childId,
         accessToken,
         tier,
+        role,
         isGuest,
         setFamilyId,
         setChildId,
@@ -154,4 +170,12 @@ export function canUseAiFeatures(
   session: Pick<SessionValue, 'isGuest' | 'tier'>,
 ): boolean {
   return !session.isGuest && session.tier === 'premium';
+}
+
+/**
+ * Issue #125: gates the Admin Console entry point. A guest session never has a role at
+ * all (never persisted, matching canUseAiFeatures's guest exclusion above).
+ */
+export function isAdmin(session: Pick<SessionValue, 'isGuest' | 'role'>): boolean {
+  return !session.isGuest && session.role === 'admin';
 }

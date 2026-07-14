@@ -34,7 +34,13 @@ describe('SignupScreen', () => {
 
   it('registers, stores the access token, and resets to Splash on success', async () => {
     (register as jest.Mock).mockResolvedValue({
-      user: { id: 'u1', username: 'alex', tier: 'free', created_at: '2026-01-01' },
+      user: {
+        id: 'u1',
+        username: 'alex',
+        tier: 'free',
+        role: 'parent',
+        created_at: '2026-01-01',
+      },
       access_token: 't1',
     });
     const navigation = navProp();
@@ -45,7 +51,9 @@ describe('SignupScreen', () => {
     fireEvent.press(screen.getByTestId('signup-submit-button'));
 
     await waitFor(() => expect(register).toHaveBeenCalledWith('alex', 'password123'));
-    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1', 'free'));
+    await waitFor(() =>
+      expect(setAccessToken).toHaveBeenCalledWith('t1', 'free', 'parent'),
+    );
     expect(navigation.reset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: 'Splash' }],
@@ -54,7 +62,13 @@ describe('SignupScreen', () => {
 
   it('clears any stale familyId/childId from a previous session before storing the new token (Codex QA on #98)', async () => {
     (register as jest.Mock).mockResolvedValue({
-      user: { id: 'u1', username: 'alex', tier: 'free', created_at: '2026-01-01' },
+      user: {
+        id: 'u1',
+        username: 'alex',
+        tier: 'free',
+        role: 'parent',
+        created_at: '2026-01-01',
+      },
       access_token: 't1',
     });
     const resetOrder: string[] = [];
@@ -71,7 +85,9 @@ describe('SignupScreen', () => {
     fireEvent.changeText(screen.getByTestId('signup-password-input'), 'password123');
     fireEvent.press(screen.getByTestId('signup-submit-button'));
 
-    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1', 'free'));
+    await waitFor(() =>
+      expect(setAccessToken).toHaveBeenCalledWith('t1', 'free', 'parent'),
+    );
     expect(reset).toHaveBeenCalled();
     expect(resetOrder).toEqual(['reset', 'setAccessToken']);
   });

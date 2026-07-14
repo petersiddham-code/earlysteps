@@ -35,7 +35,13 @@ describe('LoginScreen', () => {
 
   it('logs in, stores the access token, and resets to Splash on success', async () => {
     (login as jest.Mock).mockResolvedValue({
-      user: { id: 'u1', username: 'alex', tier: 'free', created_at: '2026-01-01' },
+      user: {
+        id: 'u1',
+        username: 'alex',
+        tier: 'free',
+        role: 'parent',
+        created_at: '2026-01-01',
+      },
       access_token: 't1',
     });
     const navigation = navProp();
@@ -46,7 +52,9 @@ describe('LoginScreen', () => {
     fireEvent.press(screen.getByTestId('login-submit-button'));
 
     await waitFor(() => expect(login).toHaveBeenCalledWith('alex', 'password123'));
-    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1', 'free'));
+    await waitFor(() =>
+      expect(setAccessToken).toHaveBeenCalledWith('t1', 'free', 'parent'),
+    );
     expect(navigation.reset).toHaveBeenCalledWith({
       index: 0,
       routes: [{ name: 'Splash' }],
@@ -55,7 +63,13 @@ describe('LoginScreen', () => {
 
   it('clears any stale familyId/childId from a previous session before storing the new token (Codex QA on #98)', async () => {
     (login as jest.Mock).mockResolvedValue({
-      user: { id: 'u1', username: 'alex', tier: 'free', created_at: '2026-01-01' },
+      user: {
+        id: 'u1',
+        username: 'alex',
+        tier: 'free',
+        role: 'parent',
+        created_at: '2026-01-01',
+      },
       access_token: 't1',
     });
     const resetOrder: string[] = [];
@@ -72,7 +86,9 @@ describe('LoginScreen', () => {
     fireEvent.changeText(screen.getByTestId('login-password-input'), 'password123');
     fireEvent.press(screen.getByTestId('login-submit-button'));
 
-    await waitFor(() => expect(setAccessToken).toHaveBeenCalledWith('t1', 'free'));
+    await waitFor(() =>
+      expect(setAccessToken).toHaveBeenCalledWith('t1', 'free', 'parent'),
+    );
     expect(reset).toHaveBeenCalled();
     expect(resetOrder).toEqual(['reset', 'setAccessToken']);
   });

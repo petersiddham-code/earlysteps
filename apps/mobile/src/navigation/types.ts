@@ -27,4 +27,14 @@ export type RootStackParamList = {
    * session reset (#53).
    */
   Results: { emptySubmit?: boolean } | undefined;
+  /**
+   * Issue #125, Admin Console v1: read-only ops dashboard (accounts, tier distribution).
+   * Reached only via <AdminConsoleButton/> on ChildSwitcherScreen, which renders nothing
+   * unless isAdmin(session) is true — never reachable by a parent/guest session.
+   */
+  AdminDashboard: undefined;
+  /** Read-only question bank / red-flag copy summary — no editing in this phase. */
+  AdminContent: undefined;
+  /** Read-only rendering of docs/clinical-review/README.md's sign-off log. */
+  AdminReviewLog: undefined;
 };

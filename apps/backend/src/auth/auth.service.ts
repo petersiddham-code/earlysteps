@@ -27,6 +27,7 @@ function toPublicUser(stored: StoredUser): User {
     id: stored.id,
     username: stored.username,
     tier: stored.tier,
+    role: stored.role,
     created_at: stored.created_at,
   };
 }

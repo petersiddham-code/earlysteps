@@ -21,11 +21,19 @@ export class InMemoryAuthRepository implements AuthRepository {
       username: input.username,
       passwordHash: input.passwordHash,
       tier: 'free',
+      role: 'parent',
       created_at: new Date().toISOString(),
     };
     this.usersById.set(user.id, user);
     this.idByUsername.set(user.username, user.id);
     return user;
+  }
+
+  /** Test-only helper (issue #125) — production has no self-service way to become an admin. */
+  promoteToAdmin(id: string): void {
+    const existing = this.usersById.get(id);
+    if (!existing) throw new Error(`No user with id ${id}`);
+    this.usersById.set(id, { ...existing, role: 'admin' });
   }
 
   async findByUsername(username: string): Promise<StoredUser | null> {

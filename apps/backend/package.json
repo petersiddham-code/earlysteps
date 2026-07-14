@@ -8,7 +8,8 @@
     "start:dev": "node --watch --loader ts-node/esm src/main.ts",
     "start": "node --loader ts-node/esm src/main.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "prisma:generate": "prisma generate"
+    "prisma:generate": "prisma generate",
+    "promote-admin": "node --loader ts-node/esm prisma/promote-to-admin.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.109.0",

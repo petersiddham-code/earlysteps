@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { UserTier } from '@earlysteps/shared-types';
+import type { UserRole, UserTier } from '@earlysteps/shared-types';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { AuthRepository, CreateUserInput, StoredUser } from './auth.repository.js';
 
@@ -8,6 +8,7 @@ function toStoredUser(row: {
   username: string;
   passwordHash: string;
   tier: string;
+  role: string;
   createdAt: Date;
 }): StoredUser {
   return {
@@ -15,6 +16,7 @@ function toStoredUser(row: {
     username: row.username,
     passwordHash: row.passwordHash,
     tier: row.tier as UserTier,
+    role: row.role as UserRole,
     created_at: row.createdAt.toISOString(),
   };
 }
