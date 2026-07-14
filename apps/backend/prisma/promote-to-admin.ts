@@ -9,7 +9,12 @@
 import { PrismaClient } from '@prisma/client';
 
 async function main() {
-  const username = process.argv[2];
+  // `pnpm --filter <pkg> <script> -- <args>` doesn't consistently strip the `--`
+  // separator before forwarding argv to the script (unlike plain `npm run`) — Codex QA
+  // on this issue hit exactly that, ending up with argv[2] === '--'. Skip it if present
+  // so both `... promote-admin -- <username>` and `... promote-admin <username>` work.
+  const args = process.argv.slice(2).filter((arg) => arg !== '--');
+  const username = args[0];
   if (!username) {
     console.error('Usage: pnpm --filter @earlysteps/backend promote-admin -- <username>');
     process.exit(1);
