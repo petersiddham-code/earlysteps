@@ -35,9 +35,11 @@ jest.mock('../../session/index.js', () => ({
 }));
 
 function navProp() {
-  return { replace: jest.fn(), navigate: jest.fn() } as unknown as Parameters<
-    typeof ResultsScreen
-  >[0]['navigation'];
+  return {
+    replace: jest.fn(),
+    navigate: jest.fn(),
+    reset: jest.fn(),
+  } as unknown as Parameters<typeof ResultsScreen>[0]['navigation'];
 }
 
 const RESULTS = {
@@ -110,17 +112,20 @@ const FOLLOW_UP_SUGGESTION = {
 };
 
 const clearChildId = jest.fn().mockResolvedValue(undefined);
+const reset = jest.fn().mockResolvedValue(undefined);
 
 describe('ResultsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     clearChildId.mockResolvedValue(undefined);
+    reset.mockResolvedValue(undefined);
     (useSession as jest.Mock).mockReturnValue({
       familyId: 'f1',
       childId: 'c1',
       isGuest: false,
       tier: 'premium',
       clearChildId,
+      reset,
     });
     // Default: nothing pending — most tests exercise plain results.
     (getFollowUpSuggestions as jest.Mock).mockResolvedValue([]);
@@ -463,6 +468,32 @@ describe('ResultsScreen', () => {
     expect(navigation.replace).toHaveBeenCalledWith('Questionnaire');
     expect(screen.getByTestId('new-questions-button')).toBeTruthy();
     expect(screen.getByTestId('permissions-button')).toBeTruthy();
+    expect(screen.getByTestId('logout-button')).toBeTruthy();
+  });
+
+  it('logs out from the empty state: forgets the session, returns to Splash (#121)', async () => {
+    (getResults as jest.Mock).mockRejectedValue(
+      new ApiError(404, { message: 'No computed results yet for child c1' }),
+    );
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(
+      <ResultsScreen
+        navigation={navigation}
+        route={{ params: { emptySubmit: true } } as never}
+      />,
+    );
+    await screen.findByTestId('empty-results-state');
+
+    fireEvent.press(screen.getByTestId('logout-button'));
+
+    await waitFor(() =>
+      expect(navigation.reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [{ name: 'Splash' }],
+      }),
+    );
+    expect(reset).toHaveBeenCalled();
   });
 
   it('starts a new set of questions: forgets the child, then child details (#20)', async () => {
@@ -495,6 +526,29 @@ describe('ResultsScreen', () => {
     fireEvent.press(screen.getByTestId('permissions-button'));
 
     expect(navigation.navigate).toHaveBeenCalledWith('ConsentCenter');
+  });
+
+  it('logs out: forgets the whole session, then resets the nav stack to Splash (#121)', async () => {
+    (getResults as jest.Mock).mockResolvedValue(RESULTS);
+    (getIntakeResponses as jest.Mock).mockResolvedValue([]);
+    const navigation = navProp();
+    render(<ResultsScreen navigation={navigation} route={{} as never} />);
+    await screen.findByText(SCREENING_DISCLAIMER);
+
+    fireEvent.press(screen.getByTestId('logout-button'));
+
+    // reset() must run before the nav stack is torn down — same ordering the
+    // existing "new set of questions" flow already relies on.
+    await waitFor(() =>
+      expect(navigation.reset).toHaveBeenCalledWith({
+        index: 0,
+        routes: [{ name: 'Splash' }],
+      }),
+    );
+    expect(reset).toHaveBeenCalled();
+    expect(reset.mock.invocationCallOrder[0]).toBeLessThan(
+      (navigation.reset as jest.Mock).mock.invocationCallOrder[0],
+    );
   });
 
   it('offers "Switch child" for a real, logged-in, server-persisted child and navigates to ChildSwitcher (#23)', async () => {

@@ -127,7 +127,7 @@ const LABEL_TO_SIGN_LEVEL: Record<SignLevelLabel, SignLevel> = {
 };
 
 export function ResultsScreen({ navigation, route }: Props) {
-  const { familyId, childId, isGuest, tier, clearChildId } = useSession();
+  const { familyId, childId, isGuest, tier, clearChildId, reset } = useSession();
   // Issue #23: only a real, server-persisted child under a logged-in family can be
   // switched away from — a guest session (or a child saved locally because data_storage
   // consent was declined) has no server-side sibling list to switch between.
@@ -248,6 +248,17 @@ export function ResultsScreen({ navigation, route }: Props) {
     }
   };
 
+  /**
+   * Issue #121: forgets the whole session (not just the active child, unlike "Start a new
+   * set of questions") and resets the nav stack back to Splash, which routes a now-logged-out
+   * session straight to Login — same reset()-then-replace-to-Splash pattern LoginScreen and
+   * ConsentCenterScreen's "delete everything" already use.
+   */
+  const handleLogout = async () => {
+    await reset();
+    navigation.reset({ index: 0, routes: [{ name: 'Splash' }] });
+  };
+
   if (error) {
     return (
       <View style={styles.centered}>
@@ -314,6 +325,12 @@ export function ResultsScreen({ navigation, route }: Props) {
             variant="quiet"
             onPress={() => navigation.navigate('ConsentCenter')}
             testID="permissions-button"
+          />
+          <PrimaryButton
+            label="Log out"
+            variant="quiet"
+            onPress={handleLogout}
+            testID="logout-button"
           />
         </View>
       </ScrollView>
@@ -582,6 +599,12 @@ export function ResultsScreen({ navigation, route }: Props) {
           variant="quiet"
           onPress={() => navigation.navigate('ConsentCenter')}
           testID="permissions-button"
+        />
+        <PrimaryButton
+          label="Log out"
+          variant="quiet"
+          onPress={handleLogout}
+          testID="logout-button"
         />
       </View>
     </ScrollView>
