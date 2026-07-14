@@ -60,4 +60,37 @@ describe('ConsentToggle', () => {
       unmount();
     }
   });
+
+  describe('tier-gated scopes (issue #123)', () => {
+    it('disables the switch and shows the reason instead of hiding the scope', () => {
+      const onChange = jest.fn();
+      render(
+        <ConsentToggle
+          scope="media_capture"
+          value={false}
+          onChange={onChange}
+          disabled
+          disabledReason="Available on Premium"
+        />,
+      );
+
+      expect(screen.getByText(CONSENT_COPY.scopes.media_capture.label)).toBeTruthy();
+      expect(screen.getByText('Available on Premium')).toBeTruthy();
+      const toggle = screen.getByRole('switch');
+      expect(toggle.props.disabled).toBe(true);
+      expect(toggle.props.accessibilityState).toMatchObject({ disabled: true });
+      // Real RN Switch ignores touches while `disabled` and never fires `onValueChange` —
+      // that native gating isn't simulated by a raw fireEvent here, so the onChange contract
+      // itself (never invoked while disabled) is instead enforced one level up, in
+      // ConsentCenterScreen's handleToggle guard.
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('shows no reason text and a switchable toggle when not disabled', () => {
+      render(<ConsentToggle scope="media_capture" value={false} onChange={() => {}} />);
+
+      expect(screen.queryByText('Available on Premium')).toBeNull();
+      expect(screen.getByRole('switch').props.disabled).toBeFalsy();
+    });
+  });
 });

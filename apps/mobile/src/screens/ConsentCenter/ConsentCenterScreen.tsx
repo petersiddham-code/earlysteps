@@ -24,9 +24,9 @@ import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { colors, spacing, type } from '../../theme/index.js';
 
-/** Issue #99: a guest session has nothing to save and no AI analysis to consent to —
- * these two scopes are non-negotiable, not just off by default. */
-const GUEST_HIDDEN_SCOPES: readonly ConsentScope[] = ['data_storage', 'ai_analysis'];
+/** Issue #123: recording is a premium feature — shown to every logged-in caregiver so they
+ * know it exists, but only switchable once upgraded, never silently hidden. */
+const PREMIUM_ONLY_SCOPE: ConsentScope = 'media_capture';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ConsentCenter'>;
 
@@ -55,9 +55,13 @@ export function ConsentCenterScreen({ navigation }: Props) {
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
-  const visibleScopes = isGuest
-    ? CONSENT_SCOPES.filter((scope) => !GUEST_HIDDEN_SCOPES.includes(scope))
-    : CONSENT_SCOPES;
+  // Issue #99 hid data_storage/ai_analysis for a guest (nothing to save, no AI analysis
+  // available). Issue #123 extends that: a guest also has no account to attach media to or
+  // share a report from, so media_capture/professional_sharing are just as non-negotiable —
+  // a guest sees no consent toggles at all, only the banner below explaining why.
+  const visibleScopes: readonly ConsentScope[] = isGuest ? [] : CONSENT_SCOPES;
+
+  const mediaCaptureLocked = tier !== 'premium';
 
   const handleUpgrade = async () => {
     setUpgrading(true);
@@ -132,6 +136,9 @@ export function ConsentCenterScreen({ navigation }: Props) {
 
   const handleToggle = async (scope: ConsentScope, granted: boolean) => {
     if (!family) return;
+    // Belt-and-suspenders: the Switch itself is disabled for a locked scope, but never trust
+    // the UI alone to enforce a tier gate.
+    if (scope === PREMIUM_ONLY_SCOPE && mediaCaptureLocked) return;
     setPendingScope(scope);
     try {
       const updated = await updateConsent(family.id, scope, granted);
@@ -167,14 +174,16 @@ export function ConsentCenterScreen({ navigation }: Props) {
         You're in control — turn any of these on or off, any time.
       </Text>
 
-      {/* Issue #99: a guest has nothing to save and no AI analysis available — spell that
-          out plainly instead of showing two toggles that can never meaningfully turn on. */}
+      {/* Issue #99/#123: a guest has no account to save to, analyse, attach media to, or
+          share a report from — spell that out plainly instead of showing toggles that can
+          never meaningfully turn on. */}
       {isGuest && (
         <View style={styles.guestBanner} testID="consent-guest-banner">
           <Text style={styles.guestBannerTitle}>You're browsing as a guest</Text>
           <Text style={styles.guestBannerBody}>
-            Answers here aren't saved, and AI-assisted analysis isn't available. Log in or
-            sign up any time to unlock saving your results and more.
+            Answers here aren't saved, and AI-assisted analysis, recording, and sharing
+            with a professional aren't available. Log in or sign up any time to unlock
+            saving your results and more.
           </Text>
           <Pressable
             onPress={() => navigation.navigate('Login')}
@@ -193,6 +202,12 @@ export function ConsentCenterScreen({ navigation }: Props) {
           value={family.consent_flags[scope] === true}
           onChange={(next) => handleToggle(scope, next)}
           childName={childName}
+          disabled={scope === PREMIUM_ONLY_SCOPE && mediaCaptureLocked}
+          disabledReason={
+            scope === PREMIUM_ONLY_SCOPE && mediaCaptureLocked
+              ? 'Available on Premium'
+              : undefined
+          }
         />
       ))}
       {pendingScope && (

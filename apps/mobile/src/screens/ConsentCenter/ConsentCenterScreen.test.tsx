@@ -279,16 +279,17 @@ describe('ConsentCenterScreen', () => {
       (createFamily as jest.Mock).mockResolvedValue(FAMILY);
     });
 
-    it('hides data_storage and ai_analysis, keeps the other two scopes', async () => {
+    it('hides all four consent scopes for a guest (issue #123)', async () => {
       render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
       await screen.findByTestId('consent-guest-banner');
 
       expect(screen.queryByText(CONSENT_COPY.scopes.data_storage.label)).toBeNull();
       expect(screen.queryByText(CONSENT_COPY.scopes.ai_analysis.label)).toBeNull();
-      expect(screen.getByText(CONSENT_COPY.scopes.media_capture.label)).toBeTruthy();
+      expect(screen.queryByText(CONSENT_COPY.scopes.media_capture.label)).toBeNull();
       expect(
-        screen.getByText(CONSENT_COPY.scopes.professional_sharing.label),
-      ).toBeTruthy();
+        screen.queryByText(CONSENT_COPY.scopes.professional_sharing.label),
+      ).toBeNull();
+      expect(screen.queryAllByRole('switch')).toHaveLength(0);
     });
 
     it('hides "Delete everything" — a guest has nothing saved to delete', async () => {
@@ -369,6 +370,66 @@ describe('ConsentCenterScreen', () => {
 
       expect(await screen.findByTestId('consent-plan-section')).toBeTruthy();
       expect(screen.queryByTestId('upgrade-to-premium-button')).toBeNull();
+    });
+  });
+
+  describe('media_capture premium gating (issue #123)', () => {
+    it('disables media_capture (but keeps it visible) for a logged-in free-tier account', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        isGuest: false,
+        tier: 'free',
+        setTier: jest.fn(),
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByText(CONSENT_COPY.scopes.media_capture.label);
+
+      expect(screen.getByText('Available on Premium')).toBeTruthy();
+      const switches = screen.getAllByRole('switch');
+      // CONSENT_SCOPES order: data_storage, ai_analysis, media_capture, professional_sharing.
+      expect(switches[2]!.props.disabled).toBe(true);
+      expect(switches[0]!.props.disabled).toBeFalsy();
+      expect(switches[3]!.props.disabled).toBeFalsy();
+    });
+
+    it('does not call updateConsent when the disabled media_capture switch is toggled anyway', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        isGuest: false,
+        tier: 'free',
+        setTier: jest.fn(),
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByText(CONSENT_COPY.scopes.media_capture.label);
+
+      const switches = screen.getAllByRole('switch');
+      fireEvent(switches[2]!, 'valueChange', true);
+
+      expect(updateConsent).not.toHaveBeenCalled();
+    });
+
+    it('enables media_capture for a premium account, with no "Available on Premium" reason', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        isGuest: false,
+        tier: 'premium',
+        setTier: jest.fn(),
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByText(CONSENT_COPY.scopes.media_capture.label);
+
+      expect(screen.queryByText('Available on Premium')).toBeNull();
+      const switches = screen.getAllByRole('switch');
+      expect(switches[2]!.props.disabled).toBeFalsy();
     });
   });
 });
