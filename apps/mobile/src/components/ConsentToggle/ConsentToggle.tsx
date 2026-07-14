@@ -15,6 +15,14 @@ export interface ConsentToggleProps {
    * profile exists — the copy then reads "your child" instead.
    */
   childName?: string;
+  /**
+   * Issue #123: some scopes are tier-gated (e.g. `media_capture` on a free account) — the
+   * toggle stays visible and legible but can't be switched on, with a short reason shown
+   * instead of silently disappearing (the caregiver should never wonder where an option went).
+   */
+  disabled?: boolean;
+  /** Reason shown under the label while `disabled`, e.g. "Available on Premium". */
+  disabledReason?: string;
 }
 
 /** Decorative per-scope icon so each consent card is recognisable at a glance. */
@@ -33,11 +41,18 @@ const SCOPE_ICON: Record<ConsentScope, keyof typeof Ionicons.glyphMap> = {
  * @earlysteps/content, not hardcoded, so a consent-copy change routes through clinical review
  * like any other result/report copy.
  */
-export function ConsentToggle({ scope, value, onChange, childName }: ConsentToggleProps) {
+export function ConsentToggle({
+  scope,
+  value,
+  onChange,
+  childName,
+  disabled = false,
+  disabledReason,
+}: ConsentToggleProps) {
   const copy = CONSENT_COPY.scopes[scope];
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, disabled && styles.cardDisabled]}>
       <View
         style={styles.iconCircle}
         accessibilityElementsHidden
@@ -52,12 +67,17 @@ export function ConsentToggle({ scope, value, onChange, childName }: ConsentTogg
           name={childName ?? 'your child'}
           style={styles.explanation}
         />
+        {disabled && disabledReason && (
+          <Text style={styles.disabledReason}>{disabledReason}</Text>
+        )}
       </View>
       <Switch
         value={value}
         onValueChange={onChange}
+        disabled={disabled}
         accessibilityLabel={copy.label}
         accessibilityRole="switch"
+        accessibilityState={{ disabled }}
         trackColor={{ true: colors.primary, false: colors.border }}
         thumbColor={colors.card}
       />
@@ -74,6 +94,9 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     marginBottom: spacing.md,
     ...cardShadow,
+  },
+  cardDisabled: {
+    opacity: 0.6,
   },
   iconCircle: {
     width: 40,
@@ -96,5 +119,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
     ...type.caption,
     color: colors.inkSoft,
+  },
+  disabledReason: {
+    marginTop: spacing.xs,
+    ...type.caption,
+    color: colors.accent,
+    fontWeight: '600',
   },
 });
