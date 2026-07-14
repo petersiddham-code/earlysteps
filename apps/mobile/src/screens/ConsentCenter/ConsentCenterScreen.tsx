@@ -24,9 +24,10 @@ import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { colors, spacing, type } from '../../theme/index.js';
 
-/** Issue #123: recording is a premium feature — shown to every logged-in caregiver so they
- * know it exists, but only switchable once upgraded, never silently hidden. */
-const PREMIUM_ONLY_SCOPE: ConsentScope = 'media_capture';
+/** Issue #123: recording and AI-assisted analysis are premium features — shown to every
+ * logged-in caregiver so they know they exist, but only switchable once upgraded, never
+ * silently hidden. */
+const PREMIUM_ONLY_SCOPES: readonly ConsentScope[] = ['media_capture', 'ai_analysis'];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ConsentCenter'>;
 
@@ -61,7 +62,9 @@ export function ConsentCenterScreen({ navigation }: Props) {
   // a guest sees no consent toggles at all, only the banner below explaining why.
   const visibleScopes: readonly ConsentScope[] = isGuest ? [] : CONSENT_SCOPES;
 
-  const mediaCaptureLocked = tier !== 'premium';
+  const premiumScopesLocked = tier !== 'premium';
+  const isLockedScope = (scope: ConsentScope) =>
+    PREMIUM_ONLY_SCOPES.includes(scope) && premiumScopesLocked;
 
   const handleUpgrade = async () => {
     setUpgrading(true);
@@ -138,7 +141,7 @@ export function ConsentCenterScreen({ navigation }: Props) {
     if (!family) return;
     // Belt-and-suspenders: the Switch itself is disabled for a locked scope, but never trust
     // the UI alone to enforce a tier gate.
-    if (scope === PREMIUM_ONLY_SCOPE && mediaCaptureLocked) return;
+    if (isLockedScope(scope)) return;
     setPendingScope(scope);
     try {
       const updated = await updateConsent(family.id, scope, granted);
@@ -202,12 +205,8 @@ export function ConsentCenterScreen({ navigation }: Props) {
           value={family.consent_flags[scope] === true}
           onChange={(next) => handleToggle(scope, next)}
           childName={childName}
-          disabled={scope === PREMIUM_ONLY_SCOPE && mediaCaptureLocked}
-          disabledReason={
-            scope === PREMIUM_ONLY_SCOPE && mediaCaptureLocked
-              ? 'Available on Premium'
-              : undefined
-          }
+          disabled={isLockedScope(scope)}
+          disabledReason={isLockedScope(scope) ? 'Available on Premium' : undefined}
         />
       ))}
       {pendingScope && (

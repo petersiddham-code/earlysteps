@@ -373,8 +373,8 @@ describe('ConsentCenterScreen', () => {
     });
   });
 
-  describe('media_capture premium gating (issue #123)', () => {
-    it('disables media_capture (but keeps it visible) for a logged-in free-tier account', async () => {
+  describe('premium-gated scopes: ai_analysis and media_capture (issue #123)', () => {
+    it('disables ai_analysis and media_capture (but keeps both visible) for a free-tier account', async () => {
       (useSession as jest.Mock).mockReturnValue({
         familyId: 'f1',
         childId: 'c1',
@@ -387,15 +387,16 @@ describe('ConsentCenterScreen', () => {
       render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
       await screen.findByText(CONSENT_COPY.scopes.media_capture.label);
 
-      expect(screen.getByText('Available on Premium')).toBeTruthy();
+      expect(screen.getAllByText('Available on Premium')).toHaveLength(2);
       const switches = screen.getAllByRole('switch');
       // CONSENT_SCOPES order: data_storage, ai_analysis, media_capture, professional_sharing.
-      expect(switches[2]!.props.disabled).toBe(true);
       expect(switches[0]!.props.disabled).toBeFalsy();
+      expect(switches[1]!.props.disabled).toBe(true);
+      expect(switches[2]!.props.disabled).toBe(true);
       expect(switches[3]!.props.disabled).toBeFalsy();
     });
 
-    it('does not call updateConsent when the disabled media_capture switch is toggled anyway', async () => {
+    it('does not call updateConsent when a disabled switch is toggled anyway', async () => {
       (useSession as jest.Mock).mockReturnValue({
         familyId: 'f1',
         childId: 'c1',
@@ -409,12 +410,13 @@ describe('ConsentCenterScreen', () => {
       await screen.findByText(CONSENT_COPY.scopes.media_capture.label);
 
       const switches = screen.getAllByRole('switch');
+      fireEvent(switches[1]!, 'valueChange', true);
       fireEvent(switches[2]!, 'valueChange', true);
 
       expect(updateConsent).not.toHaveBeenCalled();
     });
 
-    it('enables media_capture for a premium account, with no "Available on Premium" reason', async () => {
+    it('enables both for a premium account, with no "Available on Premium" reason', async () => {
       (useSession as jest.Mock).mockReturnValue({
         familyId: 'f1',
         childId: 'c1',
@@ -429,6 +431,7 @@ describe('ConsentCenterScreen', () => {
 
       expect(screen.queryByText('Available on Premium')).toBeNull();
       const switches = screen.getAllByRole('switch');
+      expect(switches[1]!.props.disabled).toBeFalsy();
       expect(switches[2]!.props.disabled).toBeFalsy();
     });
   });
