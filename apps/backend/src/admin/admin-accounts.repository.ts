@@ -1,9 +1,12 @@
 /**
- * Port (interface) AdminService depends on for the one DB-backed admin read. Two
+ * Port (interface) AdminService depends on for the DB-backed admin reads/writes. Two
  * implementations: PrismaAdminAccountsRepository (production) and an in-memory test
  * double (testing/) — never wired into AppModule.
  */
-import type { AdminAccountSummary } from '@earlysteps/shared-types';
+import type {
+  AdminAccountSummary,
+  AdminAccountUpdateInput,
+} from '@earlysteps/shared-types';
 
 export const ADMIN_ACCOUNTS_REPOSITORY = Symbol('ADMIN_ACCOUNTS_REPOSITORY');
 
@@ -14,4 +17,13 @@ export interface AdminAccountsRepository {
    * admin-facing views).
    */
   listAccounts(): Promise<AdminAccountSummary[]>;
+
+  /** Existence-and-identity lookup only, for the username-conflict check (issue #131). */
+  findByUsername(username: string): Promise<{ id: string } | null>;
+
+  /** Returns null (not found) rather than throwing — AdminService turns that into a 404. */
+  updateAccount(
+    id: string,
+    updates: AdminAccountUpdateInput,
+  ): Promise<AdminAccountSummary | null>;
 }

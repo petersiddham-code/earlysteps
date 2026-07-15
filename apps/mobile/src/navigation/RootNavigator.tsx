@@ -11,6 +11,7 @@ import { FollowUpCheckScreen } from '../screens/FollowUpCheck/FollowUpCheckScree
 import { ResultsScreen } from '../screens/Results/ResultsScreen.js';
 import { AdminLandingScreen } from '../screens/AdminLanding/AdminLandingScreen.js';
 import { AdminDashboardScreen } from '../screens/AdminDashboard/AdminDashboardScreen.js';
+import { AdminAccountEditScreen } from '../screens/AdminAccountEdit/AdminAccountEditScreen.js';
 import { AdminContentScreen } from '../screens/AdminContent/AdminContentScreen.js';
 import { AdminContentEditScreen } from '../screens/AdminContentEdit/AdminContentEditScreen.js';
 import { AdminContentDraftsScreen } from '../screens/AdminContentDrafts/AdminContentDraftsScreen.js';
@@ -95,6 +96,11 @@ export function RootNavigator() {
       <Stack.Screen
         name="AdminDashboard"
         component={AdminDashboardScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="AdminAccountEdit"
+        component={AdminAccountEditScreen}
         options={authenticatedScreenOptions}
       />
       <Stack.Screen

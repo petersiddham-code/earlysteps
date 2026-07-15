@@ -1,4 +1,7 @@
-import type { AdminEditableContentKey } from '@earlysteps/shared-types';
+import type {
+  AdminAccountSummary,
+  AdminEditableContentKey,
+} from '@earlysteps/shared-types';
 
 export type RootStackParamList = {
   /**
@@ -48,6 +51,12 @@ export type RootStackParamList = {
    * reachable by a parent/guest session either way.
    */
   AdminDashboard: undefined;
+  /**
+   * Issue #131: direct (non-draft) editor for one account's username/tier/role. Takes the
+   * whole summary rather than just an id — AdminDashboard already has it loaded, so this
+   * avoids a redundant GET-by-id endpoint that doesn't otherwise exist.
+   */
+  AdminAccountEdit: { account: AdminAccountSummary };
   /** Question bank / red-flag copy summary, with entry points into draft editing (issue #127). */
   AdminContent: undefined;
   /**

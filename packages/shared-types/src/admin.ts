@@ -16,6 +16,18 @@ export interface AdminAccountSummary {
   child_count: number;
 }
 
+/**
+ * Account edits (issue #131). Every field optional — a PATCH only touches what's sent.
+ * Not clinical content (CLAUDE.md §9): this is account/operational metadata, the same
+ * category AdminAccountSummary already covers, not question wording, scoring, red-flag
+ * definitions, or result copy.
+ */
+export interface AdminAccountUpdateInput {
+  username?: string;
+  tier?: UserTier;
+  role?: UserRole;
+}
+
 export interface AdminQuestionBankSummary {
   age_band: string;
   locale: string;

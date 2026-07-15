@@ -26,6 +26,7 @@ import { InMemoryContentDraftsRepository } from '../src/admin/testing/in-memory-
 
 async function buildApp(
   authRepository: InMemoryAuthRepository,
+  adminAccountsRepository: InMemoryAdminAccountsRepository,
 ): Promise<INestApplication> {
   const moduleRef = await Test.createTestingModule({
     imports: [
@@ -42,20 +43,7 @@ async function buildApp(
       { provide: AUTH_REPOSITORY, useValue: authRepository },
       AdminService,
       AdminGuard,
-      {
-        provide: ADMIN_ACCOUNTS_REPOSITORY,
-        useValue: new InMemoryAdminAccountsRepository([
-          {
-            id: 'user-1',
-            username: 'a-parent',
-            tier: 'free',
-            role: 'parent',
-            created_at: new Date().toISOString(),
-            family_count: 1,
-            child_count: 2,
-          },
-        ]),
-      },
+      { provide: ADMIN_ACCOUNTS_REPOSITORY, useValue: adminAccountsRepository },
       {
         provide: CONTENT_DRAFTS_REPOSITORY,
         useValue: new InMemoryContentDraftsRepository(),
@@ -71,10 +59,22 @@ async function buildApp(
 describe('admin routes', () => {
   let app: INestApplication;
   let authRepository: InMemoryAuthRepository;
+  let adminAccountsRepository: InMemoryAdminAccountsRepository;
 
   beforeEach(async () => {
     authRepository = new InMemoryAuthRepository();
-    app = await buildApp(authRepository);
+    adminAccountsRepository = new InMemoryAdminAccountsRepository([
+      {
+        id: 'user-1',
+        username: 'a-parent',
+        tier: 'free',
+        role: 'parent',
+        created_at: new Date().toISOString(),
+        family_count: 1,
+        child_count: 2,
+      },
+    ]);
+    app = await buildApp(authRepository, adminAccountsRepository);
   });
 
   afterEach(async () => {
@@ -342,6 +342,139 @@ describe('admin routes', () => {
         .set(auth)
         .send({ field_path: 'card_heading', proposed_value: 'x', note: 'x' })
         .expect(403);
+    });
+  });
+
+  describe('account editing (issue #131) — direct, not draft-only', () => {
+    it('PATCH /admin/accounts/:id responds 401 with no token', async () => {
+      await request(app.getHttpServer())
+        .patch('/admin/accounts/user-1')
+        .send({ tier: 'premium' })
+        .expect(401);
+    });
+
+    it('PATCH /admin/accounts/:id responds 403 for a plain parent account', async () => {
+      const registered = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ username: 'plain-parent-1', password: 'correct-horse-battery' })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch('/admin/accounts/user-1')
+        .set('Authorization', `Bearer ${registered.body.access_token}`)
+        .send({ tier: 'premium' })
+        .expect(403);
+    });
+
+    it('updates username, tier, and role for another account', async () => {
+      const token = await registerAndPromote('an-admin-20');
+
+      const res = await request(app.getHttpServer())
+        .patch('/admin/accounts/user-1')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ username: 'a-parent-renamed', tier: 'premium', role: 'admin' })
+        .expect(200);
+
+      expect(res.body).toEqual(
+        expect.objectContaining({
+          id: 'user-1',
+          username: 'a-parent-renamed',
+          tier: 'premium',
+          role: 'admin',
+        }),
+      );
+    });
+
+    it('404s for an unknown account id', async () => {
+      const token = await registerAndPromote('an-admin-21');
+
+      await request(app.getHttpServer())
+        .patch('/admin/accounts/does-not-exist')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ tier: 'premium' })
+        .expect(404);
+    });
+
+    it('rejects a PATCH with no fields to update', async () => {
+      const token = await registerAndPromote('an-admin-22');
+
+      await request(app.getHttpServer())
+        .patch('/admin/accounts/user-1')
+        .set('Authorization', `Bearer ${token}`)
+        .send({})
+        .expect(400);
+    });
+
+    it('rejects an invalid tier value', async () => {
+      const token = await registerAndPromote('an-admin-23');
+
+      await request(app.getHttpServer())
+        .patch('/admin/accounts/user-1')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ tier: 'gold' })
+        .expect(400);
+    });
+
+    it('rejects renaming an account to a username already taken by another account', async () => {
+      const token = await registerAndPromote('an-admin-24');
+      adminAccountsRepository.addAccount({
+        id: 'user-2',
+        username: 'existing-user',
+        tier: 'free',
+        role: 'parent',
+        created_at: new Date().toISOString(),
+        family_count: 0,
+        child_count: 0,
+      });
+
+      await request(app.getHttpServer())
+        .patch('/admin/accounts/user-1')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ username: 'existing-user' })
+        .expect(409);
+    });
+
+    it('rejects an admin changing their own role away from admin (self-demotion guard)', async () => {
+      const registered = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ username: 'self-admin', password: 'correct-horse-battery' })
+        .expect(201);
+      const selfId = registered.body.user.id;
+      authRepository.promoteToAdmin(selfId);
+      adminAccountsRepository.addAccount({
+        id: selfId,
+        username: 'self-admin',
+        tier: 'free',
+        role: 'admin',
+        created_at: new Date().toISOString(),
+        family_count: 0,
+        child_count: 0,
+      });
+
+      await request(app.getHttpServer())
+        .patch(`/admin/accounts/${selfId}`)
+        .set('Authorization', `Bearer ${registered.body.access_token}`)
+        .send({ role: 'parent' })
+        .expect(400);
+    });
+
+    it('allows an admin to change another admin account away from admin', async () => {
+      const token = await registerAndPromote('an-admin-25');
+      adminAccountsRepository.addAccount({
+        id: 'user-3',
+        username: 'other-admin',
+        tier: 'free',
+        role: 'admin',
+        created_at: new Date().toISOString(),
+        family_count: 0,
+        child_count: 0,
+      });
+
+      await request(app.getHttpServer())
+        .patch('/admin/accounts/user-3')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ role: 'parent' })
+        .expect(200);
     });
   });
 });
