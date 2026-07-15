@@ -4,7 +4,7 @@ The foundation-phase scaffold surfaced gaps between the safety spec and the ship
 None of this is safe for real families until a qualified developmental advisor resolves it.
 Nothing here was silently worked around — each item is wired but explicitly incomplete.
 
-## 1. Scoring weights are placeholders (BLOCKER)
+## 1. Scoring weights are placeholders (BLOCKER, issue #129)
 
 `packages/content/weights/domain-weights.json` carries `needs_clinical_signoff: true`. Product
 plan §8 says weights are "derived from CDC/AAP milestone importance and NICE red-flag weighting"
@@ -69,7 +69,7 @@ with question banks and placeholder weights — see
   communication) stay toddler/preschool-only by design — they are early-childhood signs; an
   advisor should confirm no band-appropriate equivalent is needed.
 
-## 5. Recommendation-tier crosswalk is a placeholder heuristic
+## 5. Recommendation-tier crosswalk is a placeholder heuristic (issue #130)
 
 `scoring-engine/src/recommendationTier.ts` (`deriveRecommendationTier`) decides which of the
 three §3.2 recommendation tiers to show. The product plan is explicit that red flags must
