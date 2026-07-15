@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { UserTier } from '@earlysteps/shared-types';
+import type { UserRole, UserTier } from '@earlysteps/shared-types';
 
 /**
  * On-device persistence for the current family/child/login session so the app doesn't force
@@ -13,22 +13,33 @@ const ACCESS_TOKEN_KEY = 'earlysteps.accessToken';
 /** Issue #99: mirrors the logged-in user's tier so LLM-gated UI survives an app restart
  * without a round trip — refreshed from the server on every login/signup/upgrade. */
 const TIER_KEY = 'earlysteps.tier';
+/** Issue #125: mirrors the logged-in user's role so the Admin Console entry point survives
+ * an app restart without a round trip — refreshed from the server on every login/signup. */
+const ROLE_KEY = 'earlysteps.role';
 
 export interface StoredSession {
   familyId: string | null;
   childId: string | null;
   accessToken: string | null;
   tier: UserTier | null;
+  role: UserRole | null;
 }
 
 export async function loadSession(): Promise<StoredSession> {
-  const [familyId, childId, accessToken, tier] = await Promise.all([
+  const [familyId, childId, accessToken, tier, role] = await Promise.all([
     AsyncStorage.getItem(FAMILY_ID_KEY),
     AsyncStorage.getItem(CHILD_ID_KEY),
     AsyncStorage.getItem(ACCESS_TOKEN_KEY),
     AsyncStorage.getItem(TIER_KEY),
+    AsyncStorage.getItem(ROLE_KEY),
   ]);
-  return { familyId, childId, accessToken, tier: tier as UserTier | null };
+  return {
+    familyId,
+    childId,
+    accessToken,
+    tier: tier as UserTier | null,
+    role: role as UserRole | null,
+  };
 }
 
 export async function saveFamilyId(familyId: string): Promise<void> {
@@ -47,6 +58,10 @@ export async function saveTier(tier: UserTier): Promise<void> {
   await AsyncStorage.setItem(TIER_KEY, tier);
 }
 
+export async function saveRole(role: UserRole): Promise<void> {
+  await AsyncStorage.setItem(ROLE_KEY, role);
+}
+
 /** Forget the child but keep the family (and its consent flags) — used to start a fresh
  * screening for another child's details (#20 interim, until multi-child lands, #23). */
 export async function clearChildId(): Promise<void> {
@@ -59,5 +74,6 @@ export async function clearSession(): Promise<void> {
     CHILD_ID_KEY,
     ACCESS_TOKEN_KEY,
     TIER_KEY,
+    ROLE_KEY,
   ]);
 }

@@ -9,7 +9,12 @@ import { ChildSwitcherScreen } from '../screens/ChildSwitcher/ChildSwitcherScree
 import { QuestionnaireScreen } from '../screens/Questionnaire/QuestionnaireScreen.js';
 import { FollowUpCheckScreen } from '../screens/FollowUpCheck/FollowUpCheckScreen.js';
 import { ResultsScreen } from '../screens/Results/ResultsScreen.js';
-import { LogoutButton } from '../components/index.js';
+import { AdminLandingScreen } from '../screens/AdminLanding/AdminLandingScreen.js';
+import { AdminDashboardScreen } from '../screens/AdminDashboard/AdminDashboardScreen.js';
+import { AdminContentScreen } from '../screens/AdminContent/AdminContentScreen.js';
+import { AdminReviewLogScreen } from '../screens/AdminReviewLog/AdminReviewLogScreen.js';
+import { AdminConsoleButton, LogoutButton } from '../components/index.js';
+import { View } from 'react-native';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -26,6 +31,22 @@ const authenticatedScreenOptions = {
   headerTitle: () => null,
   headerBackVisible: false,
   headerRight: () => <LogoutButton />,
+} as const;
+
+/**
+ * Issue #125: ChildSwitcher (the main post-login hub) also gets the Admin Console entry
+ * point next to Log out — AdminConsoleButton renders nothing for a non-admin session, so
+ * this doesn't change what a parent account sees. Kept screen-specific rather than folded
+ * into authenticatedScreenOptions, which every authenticated screen shares.
+ */
+const childSwitcherScreenOptions = {
+  ...authenticatedScreenOptions,
+  headerRight: () => (
+    <View style={{ flexDirection: 'row' }}>
+      <AdminConsoleButton />
+      <LogoutButton />
+    </View>
+  ),
 } as const;
 
 export function RootNavigator() {
@@ -47,7 +68,7 @@ export function RootNavigator() {
       <Stack.Screen
         name="ChildSwitcher"
         component={ChildSwitcherScreen}
-        options={authenticatedScreenOptions}
+        options={childSwitcherScreenOptions}
       />
       <Stack.Screen
         name="Questionnaire"
@@ -62,6 +83,26 @@ export function RootNavigator() {
       <Stack.Screen
         name="Results"
         component={ResultsScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="AdminLanding"
+        component={AdminLandingScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="AdminDashboard"
+        component={AdminDashboardScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="AdminContent"
+        component={AdminContentScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="AdminReviewLog"
+        component={AdminReviewLogScreen}
         options={authenticatedScreenOptions}
       />
     </Stack.Navigator>

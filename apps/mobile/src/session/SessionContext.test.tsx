@@ -1,7 +1,7 @@
 import { Text, Pressable } from 'react-native';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SessionProvider, useSession, canUseAiFeatures } from './SessionContext';
+import { SessionProvider, useSession, canUseAiFeatures, isAdmin } from './SessionContext';
 import { createGuestChild, getGuestChild } from '../guest/guestStore';
 
 function Probe() {
@@ -36,7 +36,7 @@ function Probe() {
       <Pressable onPress={() => setChildId('c1')}>
         <Text>set child</Text>
       </Pressable>
-      <Pressable onPress={() => setAccessToken('t1', 'free')}>
+      <Pressable onPress={() => setAccessToken('t1', 'free', 'parent')}>
         <Text>set token</Text>
       </Pressable>
       <Pressable onPress={() => setTier('premium')}>
@@ -291,5 +291,21 @@ describe('canUseAiFeatures (#99)', () => {
 
   it('is true only for a logged-in premium account', () => {
     expect(canUseAiFeatures({ isGuest: false, tier: 'premium' })).toBe(true);
+  });
+});
+
+describe('isAdmin (#125)', () => {
+  it('is false for a guest, regardless of role', () => {
+    expect(isAdmin({ isGuest: true, role: 'admin' })).toBe(false);
+    expect(isAdmin({ isGuest: true, role: null })).toBe(false);
+  });
+
+  it('is false for a logged-in parent account', () => {
+    expect(isAdmin({ isGuest: false, role: 'parent' })).toBe(false);
+    expect(isAdmin({ isGuest: false, role: null })).toBe(false);
+  });
+
+  it('is true only for a logged-in admin account', () => {
+    expect(isAdmin({ isGuest: false, role: 'admin' })).toBe(true);
   });
 });

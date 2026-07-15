@@ -1,0 +1,48 @@
+import { render, screen, waitFor } from '@testing-library/react-native';
+import { AdminContentScreen } from './AdminContentScreen';
+import { getAdminContentSummary } from '../../api/index.js';
+
+jest.mock('../../api/index.js', () => ({ getAdminContentSummary: jest.fn() }));
+
+function navProp() {
+  return {} as unknown as Parameters<typeof AdminContentScreen>[0]['navigation'];
+}
+
+const SUMMARY = {
+  question_banks: [
+    { age_band: 'toddler', locale: 'en', version: '1.6.0', question_count: 26 },
+    { age_band: 'young_adult', locale: 'en', version: '1.6.0', question_count: 16 },
+  ],
+  red_flag_copy_version: '1.1.0',
+  red_flag_copy_needs_signoff: true,
+};
+
+describe('AdminContentScreen', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('renders every question bank and the red-flag copy signoff status', async () => {
+    (getAdminContentSummary as jest.Mock).mockResolvedValue(SUMMARY);
+    render(<AdminContentScreen navigation={navProp()} route={{} as never} />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('admin-content-bank-toddler')).toBeTruthy(),
+    );
+    expect(screen.getByText('Young adult')).toBeTruthy();
+    expect(screen.getByTestId('admin-red-flag-summary')).toHaveTextContent(
+      'Red-flag copy v1.1.0Awaiting clinical sign-off',
+    );
+  });
+
+  it('shows an error state when content fails to load', async () => {
+    (getAdminContentSummary as jest.Mock).mockRejectedValue(new Error('offline'));
+    render(<AdminContentScreen navigation={navProp()} route={{} as never} />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText("We couldn't load content. Please try again."),
+      ).toBeTruthy(),
+    );
+  });
+});

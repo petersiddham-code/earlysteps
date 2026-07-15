@@ -1,5 +1,10 @@
 export type RootStackParamList = {
-  Splash: undefined;
+  /**
+   * Issue #125: skipAdminChoice lets AdminLanding's "Continue to app" button replace
+   * back to Splash and fall through its normal family/child routing below, without
+   * bouncing back to AdminLanding a second time.
+   */
+  Splash: { skipAdminChoice?: boolean } | undefined;
   Login: undefined;
   Signup: undefined;
   ConsentCenter: undefined;
@@ -27,4 +32,22 @@ export type RootStackParamList = {
    * session reset (#53).
    */
   Results: { emptySubmit?: boolean } | undefined;
+  /**
+   * Issue #125: shown on every app launch/resume where Splash resolves an admin session,
+   * right after the login gate and before the normal family/child routing below — an
+   * admin picks "Continue to app" (replaces back to Splash with skipAdminChoice) or
+   * "Open admin console" (pushes AdminDashboard). Never shown to a parent/guest session.
+   */
+  AdminLanding: undefined;
+  /**
+   * Issue #125, Admin Console v1: read-only ops dashboard (accounts, tier distribution).
+   * Reached from AdminLanding right after login, or via <AdminConsoleButton/> on
+   * ChildSwitcherScreen as a secondary entry point once already in the app — never
+   * reachable by a parent/guest session either way.
+   */
+  AdminDashboard: undefined;
+  /** Read-only question bank / red-flag copy summary — no editing in this phase. */
+  AdminContent: undefined;
+  /** Read-only rendering of docs/clinical-review/README.md's sign-off log. */
+  AdminReviewLog: undefined;
 };

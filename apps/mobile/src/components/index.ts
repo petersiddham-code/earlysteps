@@ -16,3 +16,4 @@ export * from './SupportPrioritiesCard/SupportPrioritiesCard';
 export * from './AIAssessmentCard/AIAssessmentCard';
 export * from './ComparisonCard/ComparisonCard';
 export * from './LogoutButton/LogoutButton';
+export * from './AdminConsoleButton/AdminConsoleButton';

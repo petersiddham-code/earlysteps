@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getChildren } from '../../api/index.js';
-import { useSession } from '../../session/index.js';
+import { isAdmin, useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
 import { AppWordmark } from '../../components/index.js';
 import { colors, spacing } from '../../theme/index.js';
@@ -28,14 +28,24 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
  * If the child has no computed results yet (questionnaire never submitted), the Results
  * screen forwards to the Questionnaire — safe now that the scoring engine dedupes
  * re-answered questions.
+ *
+ * Issue #125: an admin session sees AdminLanding's "app or admin console" choice before
+ * any of the above, on every launch/resume — unless it's already been answered this trip
+ * through Splash (AdminLandingScreen's "Continue to app" replaces back here with
+ * `skipAdminChoice: true`, so choosing "app" doesn't bounce back to the choice a second
+ * time on the very next Splash render).
  */
-export function SplashScreen({ navigation }: Props) {
-  const { isLoading, accessToken, isGuest, familyId, childId } = useSession();
+export function SplashScreen({ navigation, route }: Props) {
+  const { isLoading, accessToken, isGuest, familyId, childId, role } = useSession();
 
   useEffect(() => {
     if (isLoading) return;
     if (!accessToken && !isGuest) {
       navigation.replace('Login');
+      return;
+    }
+    if (isAdmin({ isGuest, role }) && !route.params?.skipAdminChoice) {
+      navigation.replace('AdminLanding');
       return;
     }
     if (!familyId) {
@@ -62,7 +72,16 @@ export function SplashScreen({ navigation }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [isLoading, accessToken, isGuest, familyId, childId, navigation]);
+  }, [
+    isLoading,
+    accessToken,
+    isGuest,
+    role,
+    familyId,
+    childId,
+    navigation,
+    route.params?.skipAdminChoice,
+  ]);
 
   return (
     <View style={styles.container}>
