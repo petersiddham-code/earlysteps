@@ -12,6 +12,8 @@ import { ResultsScreen } from '../screens/Results/ResultsScreen.js';
 import { AdminLandingScreen } from '../screens/AdminLanding/AdminLandingScreen.js';
 import { AdminDashboardScreen } from '../screens/AdminDashboard/AdminDashboardScreen.js';
 import { AdminContentScreen } from '../screens/AdminContent/AdminContentScreen.js';
+import { AdminContentEditScreen } from '../screens/AdminContentEdit/AdminContentEditScreen.js';
+import { AdminContentDraftsScreen } from '../screens/AdminContentDrafts/AdminContentDraftsScreen.js';
 import { AdminReviewLogScreen } from '../screens/AdminReviewLog/AdminReviewLogScreen.js';
 import { AdminConsoleButton, LogoutButton } from '../components/index.js';
 import { View } from 'react-native';
@@ -98,6 +100,16 @@ export function RootNavigator() {
       <Stack.Screen
         name="AdminContent"
         component={AdminContentScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="AdminContentEdit"
+        component={AdminContentEditScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="AdminContentDrafts"
+        component={AdminContentDraftsScreen}
         options={authenticatedScreenOptions}
       />
       <Stack.Screen

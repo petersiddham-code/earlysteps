@@ -33,6 +33,33 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   family       Family?
+  contentDrafts ContentDraft[]
+}
+
+/// Admin Console content-edit proposal (issue #127). Draft-only, by design: nothing ever
+/// reads this table to serve live app content, and no code path writes packages/content
+/// from it. Going live still requires a human to turn an approved draft into a real JSON
+/// change via a normal PR + CI + docs/clinical-review sign-off (CLAUDE.md §9) — same gate
+/// as a hand-edit today. See docs/clinical-review/2026-07-15-issue127-admin-content-editing-plan.md.
+model ContentDraft {
+  id            String    @id @default(cuid())
+  /// One of shared-types' AdminEditableContentKey values, e.g. "questions.toddler".
+  contentKey    String
+  /// Dotted/bracketed address within that content key, e.g. "Q1.hint".
+  fieldPath     String
+  /// Live value captured at draft time, so the console can show a diff even if the live
+  /// value later changes (e.g. from a merged PR) without needing to re-fetch history.
+  currentValue  String
+  proposedValue String
+  /// Required rationale from the admin proposing the change.
+  note          String
+  createdById   String
+  createdBy     User      @relation(fields: [createdById], references: [id])
+  createdAt     DateTime  @default(now())
+  status        String    @default("pending") // pending | discarded
+  discardedAt   DateTime?
+
+  @@index([contentKey, status])
 }
 
 model Family {

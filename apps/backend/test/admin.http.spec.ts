@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { Test } from '@nestjs/testing';
-import { type INestApplication } from '@nestjs/common';
+import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import request from 'supertest';
@@ -21,6 +21,8 @@ import { AdminService } from '../src/admin/admin.service.js';
 import { AdminGuard } from '../src/admin/admin-role.guard.js';
 import { ADMIN_ACCOUNTS_REPOSITORY } from '../src/admin/admin-accounts.repository.js';
 import { InMemoryAdminAccountsRepository } from '../src/admin/testing/in-memory-admin-accounts.repository.js';
+import { CONTENT_DRAFTS_REPOSITORY } from '../src/admin/content-drafts.repository.js';
+import { InMemoryContentDraftsRepository } from '../src/admin/testing/in-memory-content-drafts.repository.js';
 
 async function buildApp(
   authRepository: InMemoryAuthRepository,
@@ -54,9 +56,14 @@ async function buildApp(
           },
         ]),
       },
+      {
+        provide: CONTENT_DRAFTS_REPOSITORY,
+        useValue: new InMemoryContentDraftsRepository(),
+      },
     ],
   }).compile();
   const app = moduleRef.createNestApplication();
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.init();
   return app;
 }
@@ -90,6 +97,7 @@ describe('admin routes', () => {
     '/admin/accounts',
     '/admin/content',
     '/admin/clinical-review-log',
+    '/admin/content/drafts',
   ]) {
     it(`${route} responds 401 with no token`, async () => {
       await request(app.getHttpServer()).get(route).expect(401);
@@ -162,5 +170,178 @@ describe('admin routes', () => {
         status: expect.any(String),
       }),
     );
+  });
+
+  describe('content editing (issue #127) — draft-only', () => {
+    it('GET /admin/content/:contentKey lists editable fields but never fixed vocabulary or the disclaimer', async () => {
+      const token = await registerAndPromote('an-admin-5');
+
+      const res = await request(app.getHttpServer())
+        .get('/admin/content/result-copy.labels')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.content_key).toBe('result-copy.labels');
+      const paths = res.body.fields.map((f: { path: string }) => f.path);
+      expect(paths).toContain('card_heading');
+      expect(paths).toContain('red_flag_confidence_note');
+      expect(paths).toContain('insufficient_evidence.explanation');
+      // Locked: fixed CLAUDE.md §2 rule 2/3/5 vocabulary and the verbatim disclaimer.
+      expect(paths).not.toContain('disclaimer');
+      expect(paths).not.toContain('sign_level_labels.low');
+      expect(paths).not.toContain('recommendation_tiers.begin');
+      expect(paths).not.toContain('support_level_terms.mild');
+      // Locked: matched against INSUFFICIENT_EVIDENCE_LABEL elsewhere in the pipeline.
+      expect(paths).not.toContain('insufficient_evidence.label');
+    });
+
+    it('GET /admin/content/:contentKey only exposes text/hint for question banks, never option ids', async () => {
+      const token = await registerAndPromote('an-admin-6');
+
+      const res = await request(app.getHttpServer())
+        .get('/admin/content/questions.toddler')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const paths: string[] = res.body.fields.map((f: { path: string }) => f.path);
+      expect(paths.length).toBeGreaterThan(0);
+      for (const path of paths) {
+        expect(path.endsWith('.text') || path.endsWith('.hint')).toBe(true);
+      }
+      expect(paths.some((p) => p.includes('.options'))).toBe(false);
+    });
+
+    it('GET /admin/content/:contentKey 404s for an unregistered key', async () => {
+      const token = await registerAndPromote('an-admin-7');
+
+      await request(app.getHttpServer())
+        .get('/admin/content/weights.domain-weights')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it('drafts a valid edit, lists it, then discards it', async () => {
+      const token = await registerAndPromote('an-admin-8');
+      const auth = { Authorization: `Bearer ${token}` };
+
+      const created = await request(app.getHttpServer())
+        .post('/admin/content/result-copy.labels/drafts')
+        .set(auth)
+        .send({
+          field_path: 'card_heading',
+          proposed_value: 'Your screening results',
+          note: 'Testing whether a friendlier heading reads better to caregivers.',
+        })
+        .expect(201);
+
+      expect(created.body).toEqual(
+        expect.objectContaining({
+          content_key: 'result-copy.labels',
+          field_path: 'card_heading',
+          current_value: 'Screening results',
+          proposed_value: 'Your screening results',
+          status: 'pending',
+        }),
+      );
+
+      const listed = await request(app.getHttpServer())
+        .get('/admin/content/drafts')
+        .set(auth)
+        .expect(200);
+      expect(listed.body).toEqual([expect.objectContaining({ id: created.body.id })]);
+
+      const scoped = await request(app.getHttpServer())
+        .get('/admin/content/drafts?content_key=result-copy.labels')
+        .set(auth)
+        .expect(200);
+      expect(scoped.body).toEqual([expect.objectContaining({ id: created.body.id })]);
+
+      await request(app.getHttpServer())
+        .delete(`/admin/content/drafts/${created.body.id}`)
+        .set(auth)
+        .expect(204);
+
+      const afterDiscard = await request(app.getHttpServer())
+        .get('/admin/content/drafts')
+        .set(auth)
+        .expect(200);
+      expect(afterDiscard.body).toEqual([]);
+    });
+
+    it('DELETE /admin/content/drafts/:draftId 404s for an already-discarded or unknown id', async () => {
+      const token = await registerAndPromote('an-admin-9');
+
+      await request(app.getHttpServer())
+        .delete('/admin/content/drafts/does-not-exist')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(404);
+    });
+
+    it('rejects a draft for a field outside the registry allowlist', async () => {
+      const token = await registerAndPromote('an-admin-10');
+
+      await request(app.getHttpServer())
+        .post('/admin/content/result-copy.labels/drafts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          field_path: 'disclaimer',
+          proposed_value: 'Some other disclaimer text entirely.',
+          note: 'Trying to change the disclaimer.',
+        })
+        .expect(400);
+    });
+
+    it('rejects a draft containing banned/reserved language (fail closed)', async () => {
+      const token = await registerAndPromote('an-admin-11');
+
+      await request(app.getHttpServer())
+        .post('/admin/content/result-copy.labels/drafts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          field_path: 'card_heading',
+          proposed_value: 'Your child has an abnormal result',
+          note: 'Bad example.',
+        })
+        .expect(400);
+    });
+
+    it('rejects a draft with an empty note', async () => {
+      const token = await registerAndPromote('an-admin-12');
+
+      await request(app.getHttpServer())
+        .post('/admin/content/result-copy.labels/drafts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ field_path: 'card_heading', proposed_value: 'Fine copy.', note: '' })
+        .expect(400);
+    });
+
+    it('rejects a draft for an unregistered content key', async () => {
+      const token = await registerAndPromote('an-admin-13');
+
+      await request(app.getHttpServer())
+        .post('/admin/content/weights.domain-weights/drafts')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ field_path: 'version', proposed_value: '9.9.9', note: 'nope' })
+        .expect(404);
+    });
+
+    it('a plain parent account cannot read or create drafts', async () => {
+      const registered = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({ username: 'a-parent-3', password: 'correct-horse-battery' })
+        .expect(201);
+      const auth = { Authorization: `Bearer ${registered.body.access_token}` };
+
+      await request(app.getHttpServer())
+        .get('/admin/content/result-copy.labels')
+        .set(auth)
+        .expect(403);
+
+      await request(app.getHttpServer())
+        .post('/admin/content/result-copy.labels/drafts')
+        .set(auth)
+        .send({ field_path: 'card_heading', proposed_value: 'x', note: 'x' })
+        .expect(403);
+    });
   });
 });

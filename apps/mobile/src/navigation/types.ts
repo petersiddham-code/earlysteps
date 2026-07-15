@@ -1,3 +1,5 @@
+import type { AdminEditableContentKey } from '@earlysteps/shared-types';
+
 export type RootStackParamList = {
   /**
    * Issue #125: skipAdminChoice lets AdminLanding's "Continue to app" button replace
@@ -46,8 +48,16 @@ export type RootStackParamList = {
    * reachable by a parent/guest session either way.
    */
   AdminDashboard: undefined;
-  /** Read-only question bank / red-flag copy summary — no editing in this phase. */
+  /** Question bank / red-flag copy summary, with entry points into draft editing (issue #127). */
   AdminContent: undefined;
+  /**
+   * Issue #127: field-level draft editor for one content key. Editing is draft-only — see
+   * docs/clinical-review/2026-07-15-issue127-admin-content-editing-plan.md. Which fields
+   * are draftable at all is decided server-side (admin-content-registry.ts), not here.
+   */
+  AdminContentEdit: { contentKey: AdminEditableContentKey };
+  /** Issue #127: pending drafts, optionally scoped to one content key. Discard-only here. */
+  AdminContentDrafts: { contentKey?: AdminEditableContentKey } | undefined;
   /** Read-only rendering of docs/clinical-review/README.md's sign-off log. */
   AdminReviewLog: undefined;
 };
