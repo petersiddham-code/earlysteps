@@ -120,7 +120,6 @@ so obviously-bad drafts don't pile up waiting for a reviewer to catch them:
 
 ## Sign-off status
 
-Filed in `docs/clinical-review/README.md`'s sign-off log as pending. Nothing here changes a
-shipped string, but the risk-tiering choices above (what's locked vs. draftable, and the
-draft-only workflow itself) are exactly the kind of judgment call that document's process
-exists to record and let a reviewer push back on before more content flows through this path.
+Signed off by Peter Siddham, 2026-07-15 — see `docs/clinical-review/README.md`'s sign-off log.
+Both the risk-tiering above (what's locked vs. draftable) and the draft-only workflow itself
+were approved as designed.
