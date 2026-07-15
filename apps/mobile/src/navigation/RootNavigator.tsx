@@ -9,6 +9,7 @@ import { ChildSwitcherScreen } from '../screens/ChildSwitcher/ChildSwitcherScree
 import { QuestionnaireScreen } from '../screens/Questionnaire/QuestionnaireScreen.js';
 import { FollowUpCheckScreen } from '../screens/FollowUpCheck/FollowUpCheckScreen.js';
 import { ResultsScreen } from '../screens/Results/ResultsScreen.js';
+import { AdminLandingScreen } from '../screens/AdminLanding/AdminLandingScreen.js';
 import { AdminDashboardScreen } from '../screens/AdminDashboard/AdminDashboardScreen.js';
 import { AdminContentScreen } from '../screens/AdminContent/AdminContentScreen.js';
 import { AdminReviewLogScreen } from '../screens/AdminReviewLog/AdminReviewLogScreen.js';
@@ -82,6 +83,11 @@ export function RootNavigator() {
       <Stack.Screen
         name="Results"
         component={ResultsScreen}
+        options={authenticatedScreenOptions}
+      />
+      <Stack.Screen
+        name="AdminLanding"
+        component={AdminLandingScreen}
         options={authenticatedScreenOptions}
       />
       <Stack.Screen

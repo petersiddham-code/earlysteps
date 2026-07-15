@@ -3,7 +3,10 @@ import { SplashScreen } from './SplashScreen';
 import { useSession } from '../../session/index.js';
 import { getChildren } from '../../api/index.js';
 
-jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
+jest.mock('../../session/index.js', () => ({
+  ...jest.requireActual('../../session/index.js'),
+  useSession: jest.fn(),
+}));
 jest.mock('../../api/index.js', () => ({ getChildren: jest.fn() }));
 
 function navProp() {
@@ -137,5 +140,58 @@ describe('SplashScreen', () => {
     const navigation = navProp();
     render(<SplashScreen navigation={navigation} route={{} as never} />);
     expect(navigation.replace).not.toHaveBeenCalled();
+  });
+
+  describe('admin routing (#125)', () => {
+    it('routes an admin session to AdminLanding ahead of the normal family/child routing', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        isLoading: false,
+        accessToken: 't1',
+        isGuest: false,
+        role: 'admin',
+        familyId: 'f1',
+        childId: 'c1',
+      });
+      const navigation = navProp();
+      render(<SplashScreen navigation={navigation} route={{} as never} />);
+      await waitFor(() =>
+        expect(navigation.replace).toHaveBeenCalledWith('AdminLanding'),
+      );
+      expect(getChildren).not.toHaveBeenCalled();
+    });
+
+    it('falls through to the normal routing when skipAdminChoice is set (AdminLanding "Continue to app")', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        isLoading: false,
+        accessToken: 't1',
+        isGuest: false,
+        role: 'admin',
+        familyId: 'f1',
+        childId: 'c1',
+      });
+      const navigation = navProp();
+      render(
+        <SplashScreen
+          navigation={navigation}
+          route={{ params: { skipAdminChoice: true } } as never}
+        />,
+      );
+      await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Results'));
+    });
+
+    it('never routes a plain parent session to AdminLanding', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        isLoading: false,
+        accessToken: 't1',
+        isGuest: false,
+        role: 'parent',
+        familyId: 'f1',
+        childId: 'c1',
+      });
+      const navigation = navProp();
+      render(<SplashScreen navigation={navigation} route={{} as never} />);
+      await waitFor(() => expect(navigation.replace).toHaveBeenCalledWith('Results'));
+      expect(navigation.replace).not.toHaveBeenCalledWith('AdminLanding');
+    });
   });
 });
