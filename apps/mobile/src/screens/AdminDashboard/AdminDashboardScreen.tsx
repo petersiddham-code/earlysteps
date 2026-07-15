@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -24,19 +24,25 @@ export function AdminDashboardScreen({ navigation }: Props) {
   const [accounts, setAccounts] = useState<AdminAccountSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadAccounts = useCallback(() => {
     getAdminAccounts()
-      .then((list) => {
-        if (!cancelled) setAccounts(list);
-      })
-      .catch(() => {
-        if (!cancelled) setError("We couldn't load accounts. Please try again.");
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then(setAccounts)
+      .catch(() => setError("We couldn't load accounts. Please try again."));
   }, []);
+
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
+
+  /**
+   * Issue #131: re-fetches whenever this screen regains focus (e.g. returning from
+   * AdminAccountEdit after a save), not just on first mount — otherwise an edited
+   * account's row would keep showing its pre-edit values until the app reloads.
+   */
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', loadAccounts);
+    return unsubscribe;
+  }, [navigation, loadAccounts]);
 
   const premiumCount = accounts?.filter((a) => a.tier === 'premium').length ?? 0;
 
@@ -86,14 +92,18 @@ export function AdminDashboardScreen({ navigation }: Props) {
         data={accounts}
         keyExtractor={(account) => account.id}
         renderItem={({ item }) => (
-          <View style={styles.row} testID={`admin-account-row-${item.id}`}>
+          <Pressable
+            style={styles.row}
+            testID={`admin-account-row-${item.id}`}
+            onPress={() => navigation.navigate('AdminAccountEdit', { account: item })}
+          >
             <Text style={styles.rowName}>{item.username}</Text>
             <Text style={styles.rowMeta}>
               {item.tier} tier · {item.role} · {item.family_count} famil
               {item.family_count === 1 ? 'y' : 'ies'} · {item.child_count} child
               {item.child_count === 1 ? '' : 'ren'}
             </Text>
-          </View>
+          </Pressable>
         )}
       />
     </View>

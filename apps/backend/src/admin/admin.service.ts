@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Inject,
   Injectable,
   NotFoundException,
@@ -8,9 +9,14 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { QUESTION_BANKS, RED_FLAG_COPY } from '@earlysteps/content';
-import { containsBannedOrReservedLanguage } from '@earlysteps/shared-types';
+import {
+  containsBannedOrReservedLanguage,
+  USER_ROLES,
+  USER_TIERS,
+} from '@earlysteps/shared-types';
 import type {
   AdminAccountSummary,
+  AdminAccountUpdateInput,
   AdminClinicalReviewLogEntry,
   AdminContentDetail,
   AdminContentDraft,
@@ -93,6 +99,60 @@ export class AdminService {
 
   listAccounts(): Promise<AdminAccountSummary[]> {
     return this.accountsRepository.listAccounts();
+  }
+
+  /**
+   * Issue #131: account edits (username/tier/role). Not clinical content (CLAUDE.md §9) —
+   * this is operational account metadata, not question wording, scoring, red-flag
+   * definitions, or result copy. Fails closed on two guardrails the UI can't fully enforce
+   * itself:
+   *  - an admin can never change their own role away from 'admin' — the only other path
+   *    to admin is the promote-to-admin CLI script (see packages/shared-types/src/auth.ts),
+   *    so a self-demotion here would lock that admin out with no self-service way back in.
+   *  - a proposed username can't collide with a different existing account.
+   */
+  async updateAccount(
+    id: string,
+    updates: AdminAccountUpdateInput,
+    actingUserId: string,
+  ): Promise<AdminAccountSummary> {
+    if (
+      updates.username === undefined &&
+      updates.tier === undefined &&
+      updates.role === undefined
+    ) {
+      throw new BadRequestException(
+        'At least one of username, tier, or role is required.',
+      );
+    }
+
+    // Belt-and-suspenders with UpdateAdminAccountDto's @IsIn decorators: under vitest's
+    // esbuild transform (unlike production's ts-node), NestJS's ValidationPipe can't read
+    // design:paramtypes metadata for @Body() params, so DTO-level validation is a no-op in
+    // tests. Checking here too means invalid values are rejected in both environments.
+    if (updates.tier !== undefined && !USER_TIERS.includes(updates.tier)) {
+      throw new BadRequestException(`tier must be one of: ${USER_TIERS.join(', ')}`);
+    }
+    if (updates.role !== undefined && !USER_ROLES.includes(updates.role)) {
+      throw new BadRequestException(`role must be one of: ${USER_ROLES.join(', ')}`);
+    }
+
+    if (updates.role !== undefined && updates.role !== 'admin' && id === actingUserId) {
+      throw new BadRequestException('You cannot change your own role away from admin.');
+    }
+
+    if (updates.username !== undefined) {
+      const existing = await this.accountsRepository.findByUsername(updates.username);
+      if (existing && existing.id !== id) {
+        throw new ConflictException('That username is already taken.');
+      }
+    }
+
+    const updated = await this.accountsRepository.updateAccount(id, updates);
+    if (!updated) {
+      throw new NotFoundException(`No account '${id}'.`);
+    }
+    return updated;
   }
 
   getContentSummary(): AdminContentSummary {

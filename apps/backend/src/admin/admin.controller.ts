@@ -6,6 +6,7 @@ import {
   HttpCode,
   Inject,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -23,12 +24,15 @@ import { CurrentUser } from '../auth/current-user.decorator.js';
 import { AdminGuard } from './admin-role.guard.js';
 import { AdminService } from './admin.service.js';
 import { CreateContentDraftDto } from './dto/create-content-draft.dto.js';
+import { UpdateAdminAccountDto } from './dto/update-admin-account.dto.js';
 
 /**
  * Issue #125, Admin Console v1: read-only ops dashboard + content/clinical-review-log
  * visibility. Issue #127 adds draft-only content editing (see admin-content-registry.ts
- * and docs/clinical-review/2026-07-15-issue127-admin-content-editing-plan.md) — no route
- * here ever writes packages/content; a draft is a proposal, not a publish.
+ * and docs/clinical-review/2026-07-15-issue127-admin-content-editing-plan.md) — no content
+ * route here ever writes packages/content; a draft is a proposal, not a publish. Issue
+ * #131 adds direct (non-draft) account editing — account/operational metadata isn't
+ * clinical content, so it doesn't go through that same draft gate.
  */
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('admin')
@@ -42,6 +46,15 @@ export class AdminController {
   @Get('accounts')
   listAccounts(): Promise<AdminAccountSummary[]> {
     return this.adminService.listAccounts();
+  }
+
+  @Patch('accounts/:id')
+  updateAccount(
+    @Param('id') id: string,
+    @Body() dto: UpdateAdminAccountDto,
+    @CurrentUser() user: User,
+  ): Promise<AdminAccountSummary> {
+    return this.adminService.updateAccount(id, dto, user.id);
   }
 
   @Get('content')

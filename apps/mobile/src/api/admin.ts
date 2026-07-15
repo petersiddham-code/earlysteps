@@ -1,5 +1,6 @@
 import type {
   AdminAccountSummary,
+  AdminAccountUpdateInput,
   AdminClinicalReviewLogEntry,
   AdminContentDetail,
   AdminContentDraft,
@@ -11,6 +12,17 @@ import { apiClient } from './client.js';
 /** Issue #125: read-only Admin Console endpoints — every route 403s for a non-admin caller. */
 export function getAdminAccounts(): Promise<AdminAccountSummary[]> {
   return apiClient.get<AdminAccountSummary[]>('/admin/accounts');
+}
+
+/** Issue #131: direct (non-draft) account edits — username, tier, and/or role. */
+export function updateAdminAccount(
+  id: string,
+  updates: AdminAccountUpdateInput,
+): Promise<AdminAccountSummary> {
+  return apiClient.patch<AdminAccountSummary>(
+    `/admin/accounts/${encodeURIComponent(id)}`,
+    updates,
+  );
 }
 
 export function getAdminContentSummary(): Promise<AdminContentSummary> {

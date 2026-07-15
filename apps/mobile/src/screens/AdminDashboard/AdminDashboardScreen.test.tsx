@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { AdminDashboardScreen } from './AdminDashboardScreen';
 import { getAdminAccounts } from '../../api/index.js';
 
@@ -7,6 +7,7 @@ jest.mock('../../api/index.js', () => ({ getAdminAccounts: jest.fn() }));
 function navProp() {
   return {
     navigate: jest.fn(),
+    addListener: jest.fn(() => jest.fn()),
   } as unknown as Parameters<typeof AdminDashboardScreen>[0]['navigation'];
 }
 
@@ -55,5 +56,35 @@ describe('AdminDashboardScreen', () => {
         screen.getByText("We couldn't load accounts. Please try again."),
       ).toBeTruthy(),
     );
+  });
+
+  it('navigates to AdminAccountEdit with the tapped account on row press (issue #131)', async () => {
+    (getAdminAccounts as jest.Mock).mockResolvedValue([ACCOUNT_A, ACCOUNT_B]);
+    const navigation = navProp();
+    render(<AdminDashboardScreen navigation={navigation} route={{} as never} />);
+
+    await waitFor(() => expect(screen.getByTestId('admin-account-row-u1')).toBeTruthy());
+    fireEvent.press(screen.getByTestId('admin-account-row-u1'));
+
+    expect(navigation.navigate).toHaveBeenCalledWith('AdminAccountEdit', {
+      account: ACCOUNT_A,
+    });
+  });
+
+  it('re-fetches accounts when the screen regains focus (e.g. after an edit)', async () => {
+    (getAdminAccounts as jest.Mock).mockResolvedValue([ACCOUNT_A]);
+    const navigation = navProp();
+    render(<AdminDashboardScreen navigation={navigation} route={{} as never} />);
+
+    await waitFor(() => expect(getAdminAccounts).toHaveBeenCalled());
+    expect(navigation.addListener).toHaveBeenCalledWith('focus', expect.any(Function));
+
+    const focusHandler = (navigation.addListener as jest.Mock).mock.calls.find(
+      ([event]) => event === 'focus',
+    )?.[1];
+    (getAdminAccounts as jest.Mock).mockResolvedValue([ACCOUNT_A, ACCOUNT_B]);
+    focusHandler();
+
+    await waitFor(() => expect(screen.getByTestId('admin-account-row-u2')).toBeTruthy());
   });
 });
