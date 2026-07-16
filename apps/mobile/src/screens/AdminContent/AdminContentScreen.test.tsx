@@ -17,6 +17,10 @@ const SUMMARY = {
   ],
   red_flag_copy_version: '1.1.0',
   red_flag_copy_needs_signoff: true,
+  clinical_signoff: [
+    { key: 'weights', version: '0.14.0-placeholder', needs_signoff: true },
+    { key: 'evidence-floors', version: '0.3.0-placeholder', needs_signoff: false },
+  ],
 };
 
 describe('AdminContentScreen', () => {
@@ -35,6 +39,21 @@ describe('AdminContentScreen', () => {
     expect(screen.getByTestId('admin-red-flag-summary')).toHaveTextContent(
       'Red-flag copy v1.1.0Awaiting clinical sign-off',
     );
+  });
+
+  it('lists clinical sign-off status for every content file, including non-draftable ones like weights (issue #129)', async () => {
+    (getAdminContentSummary as jest.Mock).mockResolvedValue(SUMMARY);
+    render(<AdminContentScreen navigation={navProp()} route={{} as never} />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('admin-clinical-signoff-weights')).toBeTruthy(),
+    );
+    expect(screen.getByTestId('admin-clinical-signoff-weights')).toHaveTextContent(
+      'Scoring weightsv0.14.0-placeholder · Awaiting clinical sign-off',
+    );
+    expect(
+      screen.getByTestId('admin-clinical-signoff-evidence-floors'),
+    ).toHaveTextContent('Evidence floorsv0.3.0-placeholder · Signed off');
   });
 
   it('navigates into the field editor for a question bank, and lists every other content key', async () => {

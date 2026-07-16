@@ -39,6 +39,22 @@ const OTHER_CONTENT_KEYS: { key: AdminEditableContentKey; label: string }[] = [
 ];
 
 /**
+ * Human-readable labels for clinical_signoff's content keys (issue #129). Weights and
+ * evidence-floors aren't admin-draftable (admin-content-registry.ts) so they have no card
+ * elsewhere on this screen — this list is the only place their sign-off status is visible.
+ */
+const SIGNOFF_KEY_LABELS: Record<string, string> = {
+  weights: 'Scoring weights',
+  'evidence-floors': 'Evidence floors',
+  'result-copy': 'Result copy',
+  'red-flag-copy': 'Red-flag copy',
+  'domain-resources': 'Domain resources',
+  'follow-ups': 'Follow-up questions',
+  'ai-results-summary-copy': 'AI assessment copy',
+  'comparison-copy': 'Comparison copy',
+};
+
+/**
  * Issue #125, Admin Console v1: question banks + red-flag copy versions. Issue #127 adds
  * draft-only editing — every row here navigates into AdminContentEdit for that content
  * key; nothing on this screen itself writes content (see AdminContentEditScreen).
@@ -114,6 +130,27 @@ export function AdminContentScreen({ navigation }: Props) {
                   : 'Signed off'}
               </Text>
             </Pressable>
+            <Text style={styles.sectionHeading}>Clinical sign-off status</Text>
+            {summary.clinical_signoff.map((status) => (
+              <View
+                key={status.key}
+                style={styles.row}
+                testID={`admin-clinical-signoff-${status.key}`}
+              >
+                <Text style={styles.rowName}>
+                  {SIGNOFF_KEY_LABELS[status.key] ?? status.key}
+                </Text>
+                <Text
+                  style={[
+                    styles.rowMeta,
+                    status.needs_signoff ? styles.rowMetaPending : null,
+                  ]}
+                >
+                  v{status.version} ·{' '}
+                  {status.needs_signoff ? 'Awaiting clinical sign-off' : 'Signed off'}
+                </Text>
+              </View>
+            ))}
             <Text style={styles.sectionHeading}>Question banks</Text>
           </>
         }
@@ -206,4 +243,5 @@ const styles = StyleSheet.create({
   },
   rowName: { ...type.bodyStrong, color: colors.ink },
   rowMeta: { ...type.caption, color: colors.inkSoft, marginTop: spacing.xs },
+  rowMetaPending: { color: colors.error },
 });

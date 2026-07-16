@@ -8,7 +8,11 @@ import {
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { QUESTION_BANKS, RED_FLAG_COPY } from '@earlysteps/content';
+import {
+  QUESTION_BANKS,
+  RED_FLAG_COPY,
+  clinicalSignoffStatus,
+} from '@earlysteps/content';
 import {
   containsBannedOrReservedLanguage,
   USER_ROLES,
@@ -165,6 +169,7 @@ export class AdminService {
       })),
       red_flag_copy_version: RED_FLAG_COPY.version,
       red_flag_copy_needs_signoff: RED_FLAG_COPY.needs_clinical_signoff,
+      clinical_signoff: clinicalSignoffStatus(),
     };
   }
 

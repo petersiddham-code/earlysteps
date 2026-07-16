@@ -35,10 +35,26 @@ export interface AdminQuestionBankSummary {
   question_count: number;
 }
 
+/** One content file's live clinical sign-off state (issue #129) — see @earlysteps/content's
+ * ClinicalSignoffStatus, which this mirrors so the mobile app doesn't need that package. */
+export interface AdminClinicalSignoffStatus {
+  key: string;
+  version: string;
+  needs_signoff: boolean;
+}
+
 export interface AdminContentSummary {
   question_banks: AdminQuestionBankSummary[];
   red_flag_copy_version: string;
   red_flag_copy_needs_signoff: boolean;
+  /**
+   * Every content file that carries `needs_clinical_signoff` (issue #129) — including
+   * scoring weights and evidence floors, which aren't admin-draftable (see
+   * admin-content-registry.ts) and previously had no visibility anywhere in the Admin
+   * Console. `red_flag_copy_*` above stays for backward compatibility with its existing
+   * dedicated card; this is the comprehensive list.
+   */
+  clinical_signoff: AdminClinicalSignoffStatus[];
 }
 
 export interface AdminClinicalReviewLogEntry {
