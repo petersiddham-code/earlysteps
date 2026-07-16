@@ -78,18 +78,22 @@ with question banks and placeholder weights — see
   communication) stay toddler/preschool-only by design — they are early-childhood signs; an
   advisor should confirm no band-appropriate equivalent is needed.
 
-## 5. Recommendation-tier crosswalk is a placeholder heuristic (issue #130)
+## 5. ~~Recommendation-tier crosswalk is a placeholder heuristic~~ — CLOSED 2026-07-16 (issue #130)
 
 `scoring-engine/src/recommendationTier.ts` (`deriveRecommendationTier`) decides which of the
 three §3.2 recommendation tiers to show. The product plan is explicit that red flags must
 trigger a recommendation (urgent ones → "strongly recommended soon"), but it does not specify
-what a red-flag-free `SupportLevelEstimate` of `high` should map to. The current rule — `high`
-support estimate alone also recommends formal assessment — is a reasonable interpretation, not
-a validated clinical threshold. Needs advisor sign-off before this drives real backend results.
+what a red-flag-free `SupportLevelEstimate` of `high` should map to. The rule — `high`
+support estimate alone also recommends formal assessment — was a reasonable interpretation,
+not a validated clinical threshold, pending sign-off.
 
-Same file, same status (issue #64, 2026-07-09): `deriveRecommendationConfidence` reports
-**high** confidence for any red-flag-forced tier, regardless of the rest of the intake's
-evidence — see `2026-07-09-recommendation-confidence.md`. Also pending sign-off.
+**Resolved 2026-07-16: confirmed as correct, no code change.** See
+`2026-07-16-issue130-recommendation-tier-signoff.md`.
+
+Same file (issue #64, 2026-07-09): `deriveRecommendationConfidence` reports **high**
+confidence for any red-flag-forced tier, regardless of the rest of the intake's evidence —
+this was already signed off 2026-07-09, see `2026-07-09-recommendation-confidence.md`.
+Issue #130 restated it as pending; that was stale, not a real gap.
 
 ## 6. Family/child onboarding + consent — mostly closed
 
