@@ -24,7 +24,10 @@ import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import type { IntakeResponse } from '@earlysteps/shared-types';
 import { AnalysisService } from '../src/analysis/analysis.service.js';
-import { MAX_ANALYZABLE_PHOTOS } from '../src/media/media.service.js';
+import {
+  MAX_ANALYZABLE_PHOTOS,
+  MAX_ANALYZABLE_VIDEOS,
+} from '../src/media/media.service.js';
 import { ANALYSIS_REPOSITORY } from '../src/analysis/analysis.repository.js';
 import {
   RESPONSE_ANALYSIS_CLIENT,
@@ -50,6 +53,8 @@ import {
   type ObjectStorageService,
 } from '../src/media/object-storage/object-storage.js';
 import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
+import { FRAME_EXTRACTION_SERVICE } from '../src/media/frame-extraction.js';
+import { FakeFrameExtractionService } from '../src/media/testing/fake-frame-extraction.service.js';
 
 const AT = '2026-07-11T00:00:00.000Z';
 const LATER = '2026-07-11T00:05:00.000Z';
@@ -129,6 +134,7 @@ async function buildStack(clientOutputs: (string | null)[]) {
   const familiesRepository = new InMemoryFamiliesRepository();
   const aiSummaryClient = new StubAiSummaryClient(clientOutputs);
   const objectStorage = new InMemoryObjectStorageService();
+  const frameExtraction = new FakeFrameExtractionService();
   const moduleRef = await Test.createTestingModule({
     providers: [
       ScreeningService,
@@ -141,12 +147,15 @@ async function buildStack(clientOutputs: (string | null)[]) {
         useValue: new DisabledResponseAnalysisClient(),
       },
       { provide: AI_RESULTS_SUMMARY_CLIENT, useValue: aiSummaryClient },
-      // issue #135: real MediaService (in-memory-backed) so photo-evidence tests below can
-      // seed assets through the same upload path production uses, consent gate included.
+      // issue #135/#139: real MediaService (in-memory-backed) so photo/video-evidence tests
+      // below can seed assets through the same upload path production uses, consent gate
+      // included. FakeFrameExtractionService stands in for real ffmpeg so these tests never
+      // need to decode an actual video file.
       MediaService,
       MediaEncryptionService,
       { provide: MEDIA_REPOSITORY, useClass: InMemoryMediaRepository },
       { provide: OBJECT_STORAGE_SERVICE, useValue: objectStorage },
+      { provide: FRAME_EXTRACTION_SERVICE, useValue: frameExtraction },
     ],
   }).compile();
   return {
@@ -157,6 +166,7 @@ async function buildStack(clientOutputs: (string | null)[]) {
     aiSummaryClient,
     mediaService: moduleRef.get(MediaService),
     objectStorage: moduleRef.get<ObjectStorageService>(OBJECT_STORAGE_SERVICE),
+    frameExtraction,
   };
 }
 
@@ -940,7 +950,54 @@ describe('AI results summary — photo evidence (issue #135, Phase 2)', () => {
     expect(aiSummaryClient.calls[0]!.photos).toHaveLength(MAX_ANALYZABLE_PHOTOS);
   });
 
-  it('never sends video/audio assets — only photo kind is wired up in this phase', async () => {
+  it('never sends audio assets — only photo and video kinds are wired up (issue #139 extends this to video)', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/mp4',
+      data: Buffer.from('fake-audio-bytes'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.photos).toEqual([]);
+    expect(aiSummaryClient.calls[0]!.videoFrames).toEqual([]);
+  });
+});
+
+describe('AI results summary — video evidence (issue #139, Phase 3)', () => {
+  async function seedWithOneAnswer(
+    familiesRepository: InMemoryFamiliesRepository,
+    screeningService: ScreeningService,
+    grantedScopes: Parameters<InMemoryFamiliesRepository['seedChildWithConsent']>[0],
+  ) {
+    const { family, child } =
+      await familiesRepository.seedChildWithConsent(grantedScopes);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+    return { family, child };
+  }
+
+  it('extracts and attaches video-frame evidence, records it in evidenceModalities, when both consents are granted', async () => {
     const {
       analysisService,
       screeningService,
@@ -958,15 +1015,201 @@ describe('AI results summary — photo evidence (issue #135, Phase 2)', () => {
       mimeType: 'video/mp4',
       data: Buffer.from('fake-video-bytes'),
     });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.evidenceModalities).toEqual(
+      expect.arrayContaining(['structured_answers', 'video']),
+    );
+    expect(aiSummaryClient.calls).toHaveLength(1);
+    expect(aiSummaryClient.calls[0]!.videoFrames).toHaveLength(3);
+    expect(aiSummaryClient.calls[0]!.videoFrames[0]).toEqual({
+      mimeType: 'image/jpeg',
+      base64Data: Buffer.from('fake-video-bytes-frame-0').toString('base64'),
+    });
+  });
+
+  it('sends no video-frame evidence, and never records "video", when there is no media at all', async () => {
+    const { analysisService, screeningService, familiesRepository, aiSummaryClient } =
+      await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.videoFrames).toEqual([]);
+  });
+
+  it('omits video-frame evidence when media_capture consent is withdrawn, even though a video already exists and ai_analysis is still granted', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { family, child } = await seedWithOneAnswer(
+      familiesRepository,
+      screeningService,
+      ['data_storage', 'ai_analysis', 'media_capture'],
+    );
     await mediaService.upload(child.id, {
-      kind: 'audio',
-      mimeType: 'audio/mp4',
-      data: Buffer.from('fake-audio-bytes'),
+      kind: 'video',
+      mimeType: 'video/mp4',
+      data: Buffer.from('fake-video-bytes'),
+    });
+    await familiesRepository.updateConsent(family.id, 'media_capture', false);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.videoFrames).toEqual([]);
+  });
+
+  it('regenerates when a new video is captured, even though the answered questions have not changed', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT, VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+
+    await analysisService.getResultsSummary(child.id);
+    await mediaService.upload(child.id, {
+      kind: 'video',
+      mimeType: 'video/mp4',
+      data: Buffer.from('fake-video-bytes'),
+    });
+    await analysisService.getResultsSummary(child.id);
+
+    expect(aiSummaryClient.calls).toHaveLength(2);
+    expect(aiSummaryClient.calls[0]!.videoFrames).toEqual([]);
+    expect(aiSummaryClient.calls[1]!.videoFrames).toHaveLength(3);
+  });
+
+  it('skips an unsupported video mime type rather than attempting frame extraction on it', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'video',
+      mimeType: 'video/x-msvideo',
+      data: Buffer.from('unsupported-format-bytes'),
     });
 
     const result = await analysisService.getResultsSummary(child.id);
 
     expect(result?.evidenceModalities).toEqual(['structured_answers']);
-    expect(aiSummaryClient.calls[0]!.photos).toEqual([]);
+    expect(aiSummaryClient.calls[0]!.videoFrames).toEqual([]);
+  });
+
+  it('caps video evidence at MAX_ANALYZABLE_VIDEOS, keeping the most recently captured', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    for (let i = 0; i < MAX_ANALYZABLE_VIDEOS + 2; i++) {
+      await mediaService.upload(child.id, {
+        kind: 'video',
+        mimeType: 'video/mp4',
+        data: Buffer.from(`video-${i}`),
+        capturedAt: new Date(Date.parse(AT) + i * 1000).toISOString(),
+      });
+    }
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(aiSummaryClient.calls[0]!.videoFrames).toHaveLength(MAX_ANALYZABLE_VIDEOS * 3);
+  });
+
+  it('contributes zero frames, without failing the whole call, when a video cannot be probed/extracted', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+      frameExtraction,
+    } = await buildStack([VALID_OUTPUT]);
+    frameExtraction.framesPerVideo = 0; // simulates an unprobeable/corrupt video
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'video',
+      mimeType: 'video/mp4',
+      data: Buffer.from('fake-video-bytes'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.videoFrames).toEqual([]);
+  });
+
+  it('attaches both photo and video-frame evidence together when both are present', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      data: Buffer.from('fake-photo-bytes'),
+    });
+    await mediaService.upload(child.id, {
+      kind: 'video',
+      mimeType: 'video/mp4',
+      data: Buffer.from('fake-video-bytes'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result?.evidenceModalities).toEqual(
+      expect.arrayContaining(['structured_answers', 'photo', 'video']),
+    );
+    expect(aiSummaryClient.calls[0]!.photos).toHaveLength(1);
+    expect(aiSummaryClient.calls[0]!.videoFrames).toHaveLength(3);
   });
 });

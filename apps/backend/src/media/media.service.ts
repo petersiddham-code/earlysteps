@@ -24,6 +24,10 @@ import {
   type ObjectStorageService,
 } from './object-storage/object-storage.js';
 import { MediaEncryptionService } from './media-encryption.service.js';
+import {
+  FRAME_EXTRACTION_SERVICE,
+  type FrameExtractionService,
+} from './frame-extraction.js';
 
 /**
  * Default retention window (product plan §4.7): capturedAt + 90 days, then the daily job
@@ -55,6 +59,34 @@ export interface AnalyzablePhoto {
   data: Buffer;
 }
 
+/**
+ * Phase 3 (issue #139): caps how many stored videos a single Assessment B generation call
+ * ever attempts to extract frames from. Each video already yields up to FRAMES_PER_VIDEO
+ * (3) image blocks, so this bounds total video-derived image blocks the same way
+ * MAX_ANALYZABLE_PHOTOS bounds photos — cost/latency, not an arbitrary content decision.
+ */
+export const MAX_ANALYZABLE_VIDEOS = 2;
+
+/**
+ * Video mime types this backend knows how to feed to ffmpeg for frame extraction.
+ * Matches what the mobile capture screen actually produces (`video/mp4`) plus the other
+ * common container types a caregiver's device might report. Anything else is skipped, not
+ * erred on — same "silently skip, don't fail the whole call" precedent as photo mime types.
+ */
+const SUPPORTED_VIDEO_MIME_TYPES = new Set([
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+]);
+
+export interface AnalyzableVideoFrame {
+  /** Which stored video this frame was sampled from — used only for cache-busting
+   * (hashAnsweredQuestions), never sent to the model. */
+  videoAssetId: string;
+  mimeType: 'image/jpeg';
+  data: Buffer;
+}
+
 export interface UploadMediaInput {
   kind: MediaKind;
   mimeType: string;
@@ -81,6 +113,10 @@ export class MediaService {
     // metadata, so class-typed constructor injection resolves to undefined in tests.
     @Inject(MediaEncryptionService)
     private readonly encryption: MediaEncryptionService,
+    // Same explicit-token reasoning (issue #139): lets tests substitute
+    // FakeFrameExtractionService without invoking real ffmpeg.
+    @Inject(FRAME_EXTRACTION_SERVICE)
+    private readonly frameExtraction: FrameExtractionService,
   ) {}
 
   /**
@@ -193,6 +229,59 @@ export class MediaService {
         // shouldn't take out every other photo's evidence (CLAUDE.md §8).
         this.logger.warn(
           `failed to decrypt media ${asset.id} for analysis — skipping`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Decrypted, frame-extracted video evidence for Assessment B (issue #139, Phase 3 of the
+   * media-assessment plan). Same consent shape as getAnalyzablePhotos — silent-empty on a
+   * missing media_capture consent, not throwing, since this is evidence-gathering consumed
+   * internally by AnalysisService, which already independently gates its whole call on
+   * ai_analysis consent.
+   *
+   * Frame extraction (FrameExtractionService) happens on demand, right here, from bytes
+   * decrypted only for the duration of this call — nothing extracted is ever written back
+   * to storage or cached as a new MediaAsset (the user's "on-demand, discard after the
+   * call" scope decision, confirmed before implementation). A video that fails to probe/
+   * decode contributes zero frames, not an error for the whole call (fail closed per-asset,
+   * same precedent as a corrupt photo).
+   */
+  async getAnalyzableVideoFrames(childId: string): Promise<AnalyzableVideoFrame[]> {
+    const consented = await this.familiesRepository.hasConsent(childId, 'media_capture');
+    if (!consented) return [];
+
+    const assets = await this.repository.listByChild(childId);
+    const videos = assets
+      .filter((a) => a.kind === 'video' && SUPPORTED_VIDEO_MIME_TYPES.has(a.mimeType))
+      .slice(0, MAX_ANALYZABLE_VIDEOS); // listByChild is already newest-capture-first
+
+    if (videos.length === 0) return [];
+
+    const child = await this.familiesRepository.getChild(childId);
+    if (!child) return [];
+    const key = await this.repository.getFamilyMediaKey(child.family_id);
+    if (!key) return [];
+
+    const out: AnalyzableVideoFrame[] = [];
+    for (const asset of videos) {
+      try {
+        const encrypted = await this.storage.get(asset.storageKey);
+        const data = this.encryption.decrypt(key, encrypted, childId);
+        const frames = await this.frameExtraction.extractFrames(data, asset.mimeType);
+        for (const frame of frames) {
+          out.push({
+            videoAssetId: asset.id,
+            mimeType: frame.mimeType,
+            data: frame.data,
+          });
+        }
+      } catch (error) {
+        this.logger.warn(
+          `failed to decrypt/extract frames from media ${asset.id} for analysis — skipping`,
           error instanceof Error ? error.stack : String(error),
         );
       }

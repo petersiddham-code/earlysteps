@@ -15,6 +15,7 @@ import type {
   AiResultsSummaryInput,
   AiSummaryAnsweredQuestion,
   AiSummaryPhotoEvidence,
+  AiSummaryVideoFrameEvidence,
 } from './ai-summary-client.js';
 import {
   buildResultsSummaryUserMessage,
@@ -37,19 +38,23 @@ function isSupportedImageMediaType(
 }
 
 /**
- * Image content blocks for every photo with a mime type the vision API accepts. MediaService
- * already filters to this same set before handing photos to this client — filtered again
- * here so this client stays correct even if that upstream guarantee ever changes.
+ * Image content blocks for every photo/video-frame with a mime type the vision API accepts.
+ * MediaService already filters to this same set before handing evidence to this client —
+ * filtered again here so this client stays correct even if that upstream guarantee ever
+ * changes. Shared between photos and video frames (issue #139) since both reduce to the
+ * same `{mimeType, base64Data}` → image-block shape.
  */
-function toImageBlocks(photos: AiSummaryPhotoEvidence[]): Anthropic.ImageBlockParam[] {
-  return photos
-    .filter((p) => isSupportedImageMediaType(p.mimeType))
-    .map((photo) => ({
+function toImageBlocks(
+  items: (AiSummaryPhotoEvidence | AiSummaryVideoFrameEvidence)[],
+): Anthropic.ImageBlockParam[] {
+  return items
+    .filter((item) => isSupportedImageMediaType(item.mimeType))
+    .map((item) => ({
       type: 'image',
       source: {
         type: 'base64',
-        media_type: photo.mimeType as SupportedImageMediaType,
-        data: photo.base64Data,
+        media_type: item.mimeType as SupportedImageMediaType,
+        data: item.base64Data,
       },
     }));
 }
@@ -78,7 +83,10 @@ export class ClaudeAiResultsSummaryClient implements AiResultsSummaryClient {
 
   async generateSummary(input: AiResultsSummaryInput): Promise<string | null> {
     try {
-      const imageBlocks = toImageBlocks(input.photos);
+      const photoBlocks = toImageBlocks(input.photos);
+      // Video frames are attached AFTER photos — see AiResultsSummaryInput.videoFrames'
+      // doc comment for why the ordering here must match the counts stated in the tag.
+      const videoFrameBlocks = toImageBlocks(input.videoFrames);
       const response = await this.client.messages.create({
         model: AI_RESULTS_SUMMARY_MODEL,
         max_tokens: MAX_OUTPUT_TOKENS,
@@ -93,10 +101,12 @@ export class ClaudeAiResultsSummaryClient implements AiResultsSummaryClient {
                   input.ageBand,
                   input.gender,
                   input.answers.map(capFreeText),
-                  imageBlocks.length,
+                  photoBlocks.length,
+                  videoFrameBlocks.length,
                 ),
               },
-              ...imageBlocks,
+              ...photoBlocks,
+              ...videoFrameBlocks,
             ],
           },
         ],

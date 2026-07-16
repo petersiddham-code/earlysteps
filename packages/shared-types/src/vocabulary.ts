@@ -163,10 +163,16 @@ export const UNCERTAINTY_FACTOR_LABELS: Record<UncertaintyFactor, string> = {
  * migration status: "a schema addition to AiResultsSummary's evidence summary noting which
  * modalities contributed"). Computed deterministically by the caller from what was actually
  * sent to the model — never self-reported by the LLM, so it can't drift from the truth.
- * `photo` is the only media modality wired up so far (issue #135, Phase 2 of the issue #133
- * plan); video/audio are tracked as follow-up work, not silently folded into this value.
+ * `photo` (issue #135, Phase 2) and `video` (issue #139, Phase 3 — sampled still frames, not
+ * continuous footage or audio) are the media modalities wired up so far; audio is tracked as
+ * follow-up work, not silently folded into this value.
  */
-export const EVIDENCE_MODALITIES = ['structured_answers', 'free_text', 'photo'] as const;
+export const EVIDENCE_MODALITIES = [
+  'structured_answers',
+  'free_text',
+  'photo',
+  'video',
+] as const;
 export type EvidenceModality = (typeof EVIDENCE_MODALITIES)[number];
 
 /**

@@ -84,22 +84,24 @@ function formatAnsweredQuestion(answer: AiSummaryAnsweredQuestion): string {
  * belt and suspenders against prompt injection via a typed answer.
  */
 /**
- * `photoCount` (issue #135, Phase 2): always present, even at 0, so the model gets a
- * consistent frame for "no media evidence this time" rather than an absent tag it might
- * otherwise read as ambiguous. The actual image bytes (if any) are attached as separate
- * content blocks by the caller — this tag only tells the model how many to expect.
+ * `photoCount`/`videoFrameCount` (issue #135 Phase 2, issue #139 Phase 3): always present,
+ * even at 0, so the model gets a consistent frame for "no media evidence this time" rather
+ * than an absent tag it might otherwise read as ambiguous. The actual image bytes (if any)
+ * are attached as separate content blocks by the caller, photos first then video frames —
+ * this tag only tells the model how many of each to expect, in that order.
  */
 export function buildResultsSummaryUserMessage(
   ageBand: string,
   gender: string | undefined,
   answers: AiSummaryAnsweredQuestion[],
   photoCount: number,
+  videoFrameCount: number,
 ): string {
   return [
     'Write the independent AI results summary for this raw questionnaire.',
     `<age_band>${ageBand}</age_band>`,
     `<gender>${gender ?? 'not given'}</gender>`,
     `<answers>\n${answers.map(formatAnsweredQuestion).join('\n')}\n</answers>`,
-    `<media_evidence>${photoCount} caregiver-captured photo(s) attached below as image content, if any. Each is an opt-in observational snapshot — weigh it alongside the structured answers and notes above per the media-evidence rules in your instructions.</media_evidence>`,
+    `<media_evidence>${photoCount} caregiver-captured photo(s), then ${videoFrameCount} still frame(s) sampled from caregiver-captured video(s), attached below as image content in that order, if any. Each photo is an opt-in observational snapshot; each video-derived frame is one sampled moment from a recording, not continuous footage. Weigh all of it alongside the structured answers and notes above per the media-evidence rules in your instructions.</media_evidence>`,
   ].join('\n');
 }

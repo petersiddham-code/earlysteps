@@ -34,6 +34,8 @@ import { MEDIA_REPOSITORY } from '../src/media/media.repository.js';
 import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.repository.js';
 import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
 import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
+import { FRAME_EXTRACTION_SERVICE } from '../src/media/frame-extraction.js';
+import { FakeFrameExtractionService } from '../src/media/testing/fake-frame-extraction.service.js';
 
 async function buildApp(): Promise<{
   app: INestApplication;
@@ -71,12 +73,13 @@ async function buildApp(): Promise<{
         provide: AI_RESULTS_SUMMARY_CLIENT,
         useValue: { generateSummary: async () => null },
       },
-      // issue #135: AnalysisService now depends on MediaService for photo evidence; every
-      // case here is rejected by a guard before it's ever reached.
+      // issue #135/#139: AnalysisService now depends on MediaService for photo/video-frame
+      // evidence; every case here is rejected by a guard before it's ever reached.
       MediaService,
       MediaEncryptionService,
       { provide: MEDIA_REPOSITORY, useClass: InMemoryMediaRepository },
       { provide: OBJECT_STORAGE_SERVICE, useClass: InMemoryObjectStorageService },
+      { provide: FRAME_EXTRACTION_SERVICE, useClass: FakeFrameExtractionService },
     ],
   }).compile();
 

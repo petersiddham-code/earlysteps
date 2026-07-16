@@ -38,6 +38,8 @@ import { MEDIA_REPOSITORY } from '../src/media/media.repository.js';
 import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.repository.js';
 import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
 import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
+import { FRAME_EXTRACTION_SERVICE } from '../src/media/frame-extraction.js';
+import { FakeFrameExtractionService } from '../src/media/testing/fake-frame-extraction.service.js';
 
 const AT = '2026-07-02T00:00:00.000Z';
 
@@ -94,12 +96,13 @@ async function buildStack(clientOutputs: (string | null)[]) {
         provide: AI_RESULTS_SUMMARY_CLIENT,
         useValue: new DisabledAiResultsSummaryClient(),
       },
-      // Not under test here (issue #135) — no child ever has media in this file's fixtures,
-      // so MediaService's photo evidence is always [] and never observed.
+      // Not under test here (issue #135/#139) — no child ever has media in this file's
+      // fixtures, so MediaService's photo/video-frame evidence is always [] and never observed.
       MediaService,
       MediaEncryptionService,
       { provide: MEDIA_REPOSITORY, useClass: InMemoryMediaRepository },
       { provide: OBJECT_STORAGE_SERVICE, useClass: InMemoryObjectStorageService },
+      { provide: FRAME_EXTRACTION_SERVICE, useClass: FakeFrameExtractionService },
     ],
   }).compile();
   return {
