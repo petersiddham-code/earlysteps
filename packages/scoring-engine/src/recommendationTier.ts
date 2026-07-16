@@ -5,12 +5,12 @@
  * rules — so it lives here, not in a consuming app, per CLAUDE.md §7 ("the scoring engine
  * is deterministic and rule-based... any LLM call may explain a score, never invent one").
  *
- * PLACEHOLDER HEURISTIC pending clinical review (see docs/clinical-review/content-gaps.md):
- * the product plan specifies red flags must trigger a recommendation and urgent red flags
- * must trigger the "strongly recommended soon" tier, but it does not specify a crosswalk
- * from SupportLevelEstimate alone (no red flag present) to a recommendation tier. The rule
- * below — a "high" support estimate also recommends assessment even with zero red flags —
- * is a reasonable interpretation, not a clinically validated threshold.
+ * The product plan specifies red flags must trigger a recommendation and urgent red flags
+ * must trigger the "strongly recommended soon" tier, but does not itself specify a
+ * crosswalk from SupportLevelEstimate alone (no red flag present) to a recommendation
+ * tier. The rule below — a "high" support estimate also recommends assessment even with
+ * zero red flags — was reviewed and signed off by the clinical advisor 2026-07-16 (issue
+ * #130), see docs/clinical-review/2026-07-16-issue130-recommendation-tier-signoff.md.
  *
  * Minimum-evidence gate (issue #22): with too little evidence overall, the answer is `null`
  * — no tier at all. Even "Support activities can begin now" reads as "we checked and this
@@ -54,11 +54,11 @@ export function deriveRecommendationTier(
  * (already gate-checked) `supportEstimate` used there — so a null tier and a null
  * confidence always travel together and never contradict each other.
  *
- * PLACEHOLDER HEURISTIC pending clinical review (same status as the tier crosswalk
- * above, see docs/clinical-review/2026-07-09-recommendation-confidence.md): a red flag
- * is a hard rule match on one explicit answer, not a weighted average, so the tier it
- * forces is reported at HIGH confidence regardless of how thin the rest of the intake
- * is — the alternative (borrowing the domain estimate's confidence) would let a sparse
+ * Signed off by the clinical advisor 2026-07-09 (see
+ * docs/clinical-review/2026-07-09-recommendation-confidence.md): a red flag is a hard
+ * rule match on one explicit answer, not a weighted average, so the tier it forces is
+ * reported at HIGH confidence regardless of how thin the rest of the intake is — the
+ * alternative (borrowing the domain estimate's confidence) would let a sparse
  * questionnaire understate a serious sign the caregiver stated plainly.
  */
 export function deriveRecommendationConfidence(
