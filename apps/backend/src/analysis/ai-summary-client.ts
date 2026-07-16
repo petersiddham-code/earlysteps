@@ -25,12 +25,33 @@ export interface AiSummaryPhotoEvidence {
   base64Data: string;
 }
 
+/**
+ * One still frame sampled from a stored video (issue #139, Phase 3) — already extracted and
+ * decrypted by the caller. Shape mirrors AiSummaryPhotoEvidence exactly (both become image
+ * content blocks); kept as a separate type so the two evidence sources can't be silently
+ * conflated, and so `<media_evidence>` can state each count separately for the prompt's
+ * still-frame-discipline rules. Same lifetime discipline: never written to disk/logs, exists
+ * only for the duration of one generation call.
+ */
+export interface AiSummaryVideoFrameEvidence {
+  mimeType: string;
+  base64Data: string;
+}
+
 export interface AiResultsSummaryInput {
   ageBand: string;
   gender?: string;
   answers: AiSummaryAnsweredQuestion[];
   /** Caregiver-captured photo evidence, already consent-gated by the caller. May be empty. */
   photos: AiSummaryPhotoEvidence[];
+  /**
+   * Still frames sampled from caregiver-captured videos, already consent-gated and
+   * frame-extracted by the caller. May be empty. Ordering matters: the client attaches
+   * these image blocks after `photos`, and the `<media_evidence>` tag states both counts in
+   * that same order so the model can map "first `photos.length` images are photos, next
+   * `videoFrames.length` are video-derived frames" positionally.
+   */
+  videoFrames: AiSummaryVideoFrameEvidence[];
 }
 
 export interface AiResultsSummaryClient {

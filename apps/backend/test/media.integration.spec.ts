@@ -21,6 +21,8 @@ import { MediaEncryptionService } from '../src/media/media-encryption.service.js
 import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
 import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.repository.js';
 import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
+import { FRAME_EXTRACTION_SERVICE } from '../src/media/frame-extraction.js';
+import { FakeFrameExtractionService } from '../src/media/testing/fake-frame-extraction.service.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PHOTO_BYTES = Buffer.from('pretend-jpeg-bytes-'.repeat(20));
@@ -30,6 +32,7 @@ async function buildStack() {
   const mediaRepository = new InMemoryMediaRepository();
   const storage = new InMemoryObjectStorageService();
   const encryption = new MediaEncryptionService();
+  const frameExtraction = new FakeFrameExtractionService();
   const moduleRef = await Test.createTestingModule({
     providers: [
       MediaService,
@@ -38,6 +41,7 @@ async function buildStack() {
       { provide: FAMILIES_REPOSITORY, useValue: familiesRepository },
       { provide: OBJECT_STORAGE_SERVICE, useValue: storage },
       { provide: MediaEncryptionService, useValue: encryption },
+      { provide: FRAME_EXTRACTION_SERVICE, useValue: frameExtraction },
     ],
   }).compile();
   return {
@@ -47,6 +51,7 @@ async function buildStack() {
     mediaRepository,
     storage,
     encryption,
+    frameExtraction,
   };
 }
 

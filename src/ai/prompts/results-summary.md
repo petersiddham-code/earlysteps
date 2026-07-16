@@ -26,14 +26,21 @@
   The <media_evidence> tag always states how many were attached (0 if none). Photo/video/
   audio consent enforcement and decryption happen entirely before this call — every image
   received here has already cleared media_capture consent (MediaService.getAnalyzablePhotos).
-  Video and audio evidence are explicitly NOT wired up yet (tracked as separate follow-up
-  work) — never assume a photo shows motion, sound, or anything beyond a single still frame.
+
+  Phase 3 (issue #139, CLAUDE.md §15): this call may now also carry a handful of still
+  frames sampled evenly from caregiver-captured videos (3 per video, extracted on demand by
+  MediaService.getAnalyzableVideoFrames — never stored), attached as image content blocks
+  AFTER the photo blocks. <media_evidence> states the photo count, then the video-frame
+  count, in that same attachment order. Each video-derived frame carries the exact same
+  still-frame discipline as a photo (below) — a video is several independent snapshots in
+  time, never continuous footage, motion, or sound. Audio evidence is explicitly NOT wired
+  up yet (tracked as separate follow-up work).
 -->
 
 Task: Read only the material inside the input tags below — the child's age band, gender
 (if given), every question answered this session with the option(s) selected and any note
-the caregiver typed in their own words, and any attached photo(s) described in
-<media_evidence>. You have NOT been given any computed score, level, support estimate, or
+the caregiver typed in their own words, and any attached photo(s)/video frame(s) described
+in <media_evidence>. You have NOT been given any computed score, level, support estimate, or
 recommendation from any other part of this app, and you must not guess at, imply, or
 reference one.
 
@@ -63,24 +70,30 @@ Rules:
   strongly the given evidence aligns with autism-related developmental patterns, and how
   much you can trust that read given the evidence's completeness and consistency.
 - Synthesize, don't restate. The parent already knows the answers they entered (and what
-  their own photos show) — the value of `reasoning`, `developmental_profile`, and
+  their own photos/videos show) — the value of `reasoning`, `developmental_profile`, and
   `evidence_summary` is combining evidence into a meaningful developmental pattern, never
-  listing one raw answer or one photo description back at them.
+  listing one raw answer, one photo description, or one video frame description back at them.
   - Bad: "Child has poor eye contact." / "Child flaps hands." / "The photo shows the child
-    lining up toys."
+    lining up toys." / "The video shows the child spinning in circles."
   - Good: "The overall pattern of reduced reciprocal interaction, limited eye gaze, and
     reduced social initiation increases the likelihood of autism-related social
     communication differences." / "Repetitive motor behaviours together with
     sensory-seeking behaviour strengthen the evidence for restricted and repetitive
     behaviour characteristics." / "The lined-up-toy arrangement visible in the attached
     photo is consistent with the ordering and routine-related behaviours also described in
-    the caregiver's notes, strengthening that same pattern."
-- If any photos are attached, treat each as ONE still frame at ONE moment — never infer
-  motion, sound, duration, frequency, or context beyond what is visibly in the frame, and
-  never assume it is representative of the child's typical behaviour. Fold what you can
-  responsibly see into the same synthesized pattern as the rest of the evidence; if a photo
-  is blurry, ambiguous, or shows nothing developmentally relevant, say so briefly in
-  `uncertainty` rather than speculating about what it might show.
+    the caregiver's notes, strengthening that same pattern." / "The repetitive spinning
+    motion visible across the sampled video frames is consistent with the repetitive-motor
+    behaviours also described in the caregiver's notes, strengthening that same pattern."
+- If any photos or video frames are attached, treat each individually as ONE still frame at
+  ONE moment — never infer motion, sound, duration, frequency, or context beyond what is
+  visibly in the frame, and never assume it is representative of the child's typical
+  behaviour. This applies identically to a video-derived frame: multiple frames sampled from
+  the same video are still separate, independent snapshots in time, not continuous footage —
+  never describe "the video" as if you watched it, and never assume frames from the same
+  clip show a repeated or typical behaviour just because they came from one recording. Fold
+  what you can responsibly see into the same synthesized pattern as the rest of the evidence;
+  if a photo or frame is blurry, ambiguous, or shows nothing developmentally relevant, say so
+  briefly in `uncertainty` rather than speculating about what it might show.
 - Think of strengths first: consider and write `strengths` before writing
   `support_priorities`, and never let the support-priorities section overshadow them.
 - `support_priorities`'s four keys (`immediate`/`short_term`/`medium_term`/`long_term`)
@@ -114,8 +127,9 @@ Rules:
   screen by the deterministic engine and red-flag rules, never by you.
 - Never state, imply, or hint at a diagnosis. You were not given the information to make
   one, and this narrative is not the app's official finding.
-- Base every sentence only on the answers and any attached photos given below. Never invent
-  a milestone, behavior, or detail not present in the input or visible in an attached image.
+- Base every sentence only on the answers and any attached photos/video frames given below.
+  Never invent a milestone, behavior, or detail not present in the input or visible in an
+  attached image.
 - `uncertainty_factors` and the free-text-derived content must be `[]`/absent if the
   caregiver typed no free-text notes and there is nothing evidence-based to say — never
   invent one to fill a field.
@@ -130,4 +144,5 @@ Input:
 <gender>[gender]</gender>
 <answers>[answers]</answers>
 <media_evidence>[media_evidence]</media_evidence>
-Any attached photos follow this text block as image content.
+Any attached photos, then any attached video-derived frames, follow this text block as
+image content in that order.

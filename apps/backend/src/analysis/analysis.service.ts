@@ -52,7 +52,11 @@ import {
 } from '../families/families.repository.js';
 import { ScreeningService } from '../screening/screening.service.js';
 import type { ResultsView } from '../screening/results-view.js';
-import { MediaService, type AnalyzablePhoto } from '../media/media.service.js';
+import {
+  MediaService,
+  type AnalyzablePhoto,
+  type AnalyzableVideoFrame,
+} from '../media/media.service.js';
 import {
   ANALYSIS_REPOSITORY,
   type AnalysisRepository,
@@ -67,6 +71,7 @@ import {
   type AiResultsSummaryClient,
   type AiSummaryAnsweredQuestion,
   type AiSummaryPhotoEvidence,
+  type AiSummaryVideoFrameEvidence,
 } from './ai-summary-client.js';
 import { parseAnalysisOutput } from './signal-schema.js';
 import { isSummaryStillSafe, parseAiSummaryOutput } from './ai-summary-schema.js';
@@ -211,16 +216,19 @@ export class AnalysisService {
     const answers = this.toAnsweredQuestions(responses);
     if (answers.length === 0) return null;
 
-    // Phase 2 (issue #135): consent-gated inside MediaService (media_capture) — returns []
-    // when that consent isn't granted, the same fail-closed shape as "no photos exist yet".
+    // Phase 2 (issue #135) / Phase 3 (issue #139): both consent-gated inside MediaService
+    // (media_capture) — return [] when that consent isn't granted, the same fail-closed
+    // shape as "no photos/videos exist yet".
     const photos = await this.mediaService.getAnalyzablePhotos(childId);
-    const evidenceModalities = this.toEvidenceModalities(answers, photos);
+    const videoFrames = await this.mediaService.getAnalyzableVideoFrames(childId);
+    const evidenceModalities = this.toEvidenceModalities(answers, photos, videoFrames);
 
     const contentHash = this.hashAnsweredQuestions(
       child.age_band,
       child.gender,
       answers,
       photos,
+      videoFrames,
     );
     const cached = await this.repository.getCachedAiSummary(childId);
     // Re-validated on every read, not just at generation time (PR #105 QA): the
@@ -240,6 +248,7 @@ export class AnalysisService {
       child.gender,
       answers,
       photos,
+      videoFrames,
       evidenceModalities,
     );
     if (summary === null) return null;
@@ -264,15 +273,18 @@ export class AnalysisService {
     gender: string | undefined,
     answers: AiSummaryAnsweredQuestion[],
     photos: AnalyzablePhoto[],
+    videoFrames: AnalyzableVideoFrame[],
     evidenceModalities: EvidenceModality[],
   ): Promise<AiResultsSummary | null> {
     const photoEvidence = this.toPhotoEvidence(photos);
+    const videoFrameEvidence = this.toVideoFrameEvidence(videoFrames);
     for (let attempt = 0; attempt < MAX_SUMMARY_GENERATION_ATTEMPTS; attempt++) {
       const rawOutput = await this.aiSummaryClient.generateSummary({
         ageBand,
         gender,
         answers,
         photos: photoEvidence,
+        videoFrames: videoFrameEvidence,
       });
       if (rawOutput === null) return null; // transport failure: retrying won't help
       const summary = parseAiSummaryOutput(rawOutput, evidenceModalities);
@@ -290,16 +302,33 @@ export class AnalysisService {
   }
 
   /**
+   * Raw extracted frame bytes never leave this method as anything but base64 for one LLM
+   * call (issue #139) — `videoAssetId` is dropped here since it's only needed for
+   * cache-busting (hashAnsweredQuestions), never for anything sent to the model.
+   */
+  private toVideoFrameEvidence(
+    videoFrames: AnalyzableVideoFrame[],
+  ): AiSummaryVideoFrameEvidence[] {
+    return videoFrames.map((frame) => ({
+      mimeType: frame.mimeType,
+      base64Data: frame.data.toString('base64'),
+    }));
+  }
+
+  /**
    * Computed from what THIS call actually sends, never from the model's own output (issue
-   * #135) — see EvidenceModality's doc comment in vocabulary.ts for why that matters.
+   * #135, extended for video in issue #139) — see EvidenceModality's doc comment in
+   * vocabulary.ts for why that matters.
    */
   private toEvidenceModalities(
     answers: AiSummaryAnsweredQuestion[],
     photos: AnalyzablePhoto[],
+    videoFrames: AnalyzableVideoFrame[],
   ): EvidenceModality[] {
     const modalities: EvidenceModality[] = ['structured_answers'];
     if (answers.some((answer) => answer.freeText)) modalities.push('free_text');
     if (photos.length > 0) modalities.push('photo');
+    if (videoFrames.length > 0) modalities.push('video');
     return modalities;
   }
 
@@ -366,25 +395,33 @@ export class AnalysisService {
   }
 
   /**
-   * Stable hash of the answered-question set plus the analyzed photo set, sorted so
-   * storage/fetch order never matters. Photo ids only (never raw bytes, issue #135) — enough
-   * to bust the cache when a photo is captured or deleted without re-hashing binary content.
+   * Stable hash of the answered-question set plus the analyzed photo/video-asset sets,
+   * sorted so storage/fetch order never matters. Ids only (never raw bytes, issue #135;
+   * extended to video asset ids in issue #139) — enough to bust the cache when a photo/
+   * video is captured or deleted without re-hashing binary content. Deduped per video asset
+   * id (not per frame) since frame extraction is deterministic for a given stored video —
+   * the same asset always yields the same frames, so hashing the asset id is sufficient.
    */
   private hashAnsweredQuestions(
     ageBand: string,
     gender: string | undefined,
     answers: AiSummaryAnsweredQuestion[],
     photos: AnalyzablePhoto[],
+    videoFrames: AnalyzableVideoFrame[],
   ): string {
     const sortedAnswers = [...answers].sort((a, b) =>
       a.questionText.localeCompare(b.questionText),
     );
     const photoIds = photos.map((photo) => photo.id).sort();
+    const videoAssetIds = [
+      ...new Set(videoFrames.map((frame) => frame.videoAssetId)),
+    ].sort();
     const stable = JSON.stringify({
       ageBand,
       gender: gender ?? null,
       answers: sortedAnswers,
       photoIds,
+      videoAssetIds,
     });
     return createHash('sha256').update(stable).digest('hex');
   }

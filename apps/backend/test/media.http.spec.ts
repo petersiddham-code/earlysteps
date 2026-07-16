@@ -28,6 +28,8 @@ import { MediaEncryptionService } from '../src/media/media-encryption.service.js
 import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
 import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.repository.js';
 import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
+import { FRAME_EXTRACTION_SERVICE } from '../src/media/frame-extraction.js';
+import { FakeFrameExtractionService } from '../src/media/testing/fake-frame-extraction.service.js';
 
 async function buildApp(): Promise<{
   app: INestApplication;
@@ -54,6 +56,7 @@ async function buildApp(): Promise<{
       { provide: MEDIA_REPOSITORY, useValue: new InMemoryMediaRepository() },
       { provide: FAMILIES_REPOSITORY, useValue: familiesRepository },
       { provide: OBJECT_STORAGE_SERVICE, useValue: storage },
+      { provide: FRAME_EXTRACTION_SERVICE, useClass: FakeFrameExtractionService },
     ],
   }).compile();
 
