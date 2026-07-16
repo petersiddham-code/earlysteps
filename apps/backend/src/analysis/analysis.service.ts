@@ -34,6 +34,7 @@ import {
   stripFreeTextPrefix,
   type AiResultsSummary,
   type ComparisonResult,
+  type EvidenceModality,
   type FollowUpAnswer,
   type FollowUpSuggestion,
   type IntakeResponse,
@@ -51,6 +52,7 @@ import {
 } from '../families/families.repository.js';
 import { ScreeningService } from '../screening/screening.service.js';
 import type { ResultsView } from '../screening/results-view.js';
+import { MediaService, type AnalyzablePhoto } from '../media/media.service.js';
 import {
   ANALYSIS_REPOSITORY,
   type AnalysisRepository,
@@ -64,6 +66,7 @@ import {
   AI_RESULTS_SUMMARY_CLIENT,
   type AiResultsSummaryClient,
   type AiSummaryAnsweredQuestion,
+  type AiSummaryPhotoEvidence,
 } from './ai-summary-client.js';
 import { parseAnalysisOutput } from './signal-schema.js';
 import { isSummaryStillSafe, parseAiSummaryOutput } from './ai-summary-schema.js';
@@ -93,6 +96,9 @@ export class AnalysisService {
     // Explicit token: vitest's esbuild transform emits no decorator design:paramtypes
     // metadata, so class-typed constructor injection resolves to undefined in tests.
     @Inject(ScreeningService) private readonly screeningService: ScreeningService,
+    // Same explicit-token reasoning (issue #135): pulls decrypted photo evidence for
+    // Assessment B without duplicating MediaModule's storage/encryption/consent wiring.
+    @Inject(MediaService) private readonly mediaService: MediaService,
   ) {}
 
   /**
@@ -205,7 +211,17 @@ export class AnalysisService {
     const answers = this.toAnsweredQuestions(responses);
     if (answers.length === 0) return null;
 
-    const contentHash = this.hashAnsweredQuestions(child.age_band, child.gender, answers);
+    // Phase 2 (issue #135): consent-gated inside MediaService (media_capture) — returns []
+    // when that consent isn't granted, the same fail-closed shape as "no photos exist yet".
+    const photos = await this.mediaService.getAnalyzablePhotos(childId);
+    const evidenceModalities = this.toEvidenceModalities(answers, photos);
+
+    const contentHash = this.hashAnsweredQuestions(
+      child.age_band,
+      child.gender,
+      answers,
+      photos,
+    );
     const cached = await this.repository.getCachedAiSummary(childId);
     // Re-validated on every read, not just at generation time (PR #105 QA): the
     // content-safety rules can gain new checks over time, so a narrative cached under an
@@ -219,7 +235,13 @@ export class AnalysisService {
       return cached.content;
     }
 
-    const summary = await this.generateSafeSummary(child.age_band, child.gender, answers);
+    const summary = await this.generateSafeSummary(
+      child.age_band,
+      child.gender,
+      answers,
+      photos,
+      evidenceModalities,
+    );
     if (summary === null) return null;
 
     await this.repository.saveAiSummary(childId, contentHash, summary);
@@ -241,18 +263,44 @@ export class AnalysisService {
     ageBand: string,
     gender: string | undefined,
     answers: AiSummaryAnsweredQuestion[],
+    photos: AnalyzablePhoto[],
+    evidenceModalities: EvidenceModality[],
   ): Promise<AiResultsSummary | null> {
+    const photoEvidence = this.toPhotoEvidence(photos);
     for (let attempt = 0; attempt < MAX_SUMMARY_GENERATION_ATTEMPTS; attempt++) {
       const rawOutput = await this.aiSummaryClient.generateSummary({
         ageBand,
         gender,
         answers,
+        photos: photoEvidence,
       });
       if (rawOutput === null) return null; // transport failure: retrying won't help
-      const summary = parseAiSummaryOutput(rawOutput);
+      const summary = parseAiSummaryOutput(rawOutput, evidenceModalities);
       if (summary !== null) return summary;
     }
     return null;
+  }
+
+  /** Raw decrypted bytes never leave this method as anything but base64 for one LLM call. */
+  private toPhotoEvidence(photos: AnalyzablePhoto[]): AiSummaryPhotoEvidence[] {
+    return photos.map((photo) => ({
+      mimeType: photo.mimeType,
+      base64Data: photo.data.toString('base64'),
+    }));
+  }
+
+  /**
+   * Computed from what THIS call actually sends, never from the model's own output (issue
+   * #135) — see EvidenceModality's doc comment in vocabulary.ts for why that matters.
+   */
+  private toEvidenceModalities(
+    answers: AiSummaryAnsweredQuestion[],
+    photos: AnalyzablePhoto[],
+  ): EvidenceModality[] {
+    const modalities: EvidenceModality[] = ['structured_answers'];
+    if (answers.some((answer) => answer.freeText)) modalities.push('free_text');
+    if (photos.length > 0) modalities.push('photo');
+    return modalities;
   }
 
   /**
@@ -317,16 +365,27 @@ export class AnalysisService {
     return answers;
   }
 
-  /** Stable hash of the answered-question set, sorted so storage order never matters. */
+  /**
+   * Stable hash of the answered-question set plus the analyzed photo set, sorted so
+   * storage/fetch order never matters. Photo ids only (never raw bytes, issue #135) — enough
+   * to bust the cache when a photo is captured or deleted without re-hashing binary content.
+   */
   private hashAnsweredQuestions(
     ageBand: string,
     gender: string | undefined,
     answers: AiSummaryAnsweredQuestion[],
+    photos: AnalyzablePhoto[],
   ): string {
-    const sorted = [...answers].sort((a, b) =>
+    const sortedAnswers = [...answers].sort((a, b) =>
       a.questionText.localeCompare(b.questionText),
     );
-    const stable = JSON.stringify({ ageBand, gender: gender ?? null, answers: sorted });
+    const photoIds = photos.map((photo) => photo.id).sort();
+    const stable = JSON.stringify({
+      ageBand,
+      gender: gender ?? null,
+      answers: sortedAnswers,
+      photoIds,
+    });
     return createHash('sha256').update(stable).digest('hex');
   }
 

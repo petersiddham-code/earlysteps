@@ -27,6 +27,27 @@ import { MediaEncryptionService } from './media-encryption.service.js';
  */
 export const MEDIA_RETENTION_DAYS = 90;
 
+/**
+ * Phase 2 (issue #135): caps how many photos a single Assessment B generation call ever
+ * sees. Bounds request cost/latency and matches the existing "cap what we send" precedent
+ * (MAX_FREE_TEXT_CHARS) rather than trying to summarize an unbounded photo library.
+ */
+export const MAX_ANALYZABLE_PHOTOS = 4;
+
+/** Media types the Claude vision API accepts. Anything else is skipped, not erred on. */
+const SUPPORTED_PHOTO_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
+
+export interface AnalyzablePhoto {
+  id: string;
+  mimeType: string;
+  data: Buffer;
+}
+
 export interface UploadMediaInput {
   kind: MediaKind;
   mimeType: string;
@@ -120,6 +141,52 @@ export class MediaService {
 
   list(childId: string): Promise<MediaAsset[]> {
     return this.repository.listByChild(childId);
+  }
+
+  /**
+   * Decrypted photo evidence for Assessment B (issue #135, Phase 2 of the media-assessment
+   * plan). Video/audio are explicitly out of scope for this phase — see
+   * docs/clinical-review/2026-07-16-issue135-media-evidence-phase2.md.
+   *
+   * Consent here is silent-empty, not throwing (§15: "never analyse media without [consent]").
+   * Unlike `upload`'s ensureMediaCaptureConsent, this is evidence-gathering consumed
+   * internally by another service — the caller (AnalysisService) already independently gates
+   * its whole call on ai_analysis consent; a missing media_capture consent should just mean
+   * "no photo evidence available", the same fail-closed shape as every other optional
+   * evidence source in this pipeline, not a hard failure of the narrative generation.
+   */
+  async getAnalyzablePhotos(childId: string): Promise<AnalyzablePhoto[]> {
+    const consented = await this.familiesRepository.hasConsent(childId, 'media_capture');
+    if (!consented) return [];
+
+    const assets = await this.repository.listByChild(childId);
+    const photos = assets
+      .filter((a) => a.kind === 'photo' && SUPPORTED_PHOTO_MIME_TYPES.has(a.mimeType))
+      .slice(0, MAX_ANALYZABLE_PHOTOS); // listByChild is already newest-capture-first
+
+    if (photos.length === 0) return [];
+
+    const child = await this.familiesRepository.getChild(childId);
+    if (!child) return [];
+    const key = await this.repository.getFamilyMediaKey(child.family_id);
+    if (!key) return [];
+
+    const out: AnalyzablePhoto[] = [];
+    for (const asset of photos) {
+      try {
+        const encrypted = await this.storage.get(asset.storageKey);
+        const data = this.encryption.decrypt(key, encrypted, childId);
+        out.push({ id: asset.id, mimeType: asset.mimeType, data });
+      } catch (error) {
+        // Fail closed per-asset, not for the whole call — one corrupt/undecryptable blob
+        // shouldn't take out every other photo's evidence (CLAUDE.md §8).
+        this.logger.warn(
+          `failed to decrypt media ${asset.id} for analysis — skipping`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
+    return out;
   }
 
   /**

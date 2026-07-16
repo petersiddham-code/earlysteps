@@ -597,6 +597,7 @@ describe('ResultsScreen — AI assessment / Assessment B (issue #104, dual-asses
     uncertaintyFactors: ['sparse_structured_answers'],
     evidenceSummary:
       'The answers given lean toward limited spoken vocabulary for their age.',
+    evidenceModalities: ['structured_answers'],
     homeRecommendations: [],
     schoolRecommendations: [],
     professionalAssessmentPriorities: [],

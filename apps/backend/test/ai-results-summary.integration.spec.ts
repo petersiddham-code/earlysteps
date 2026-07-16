@@ -24,6 +24,7 @@ import { Test } from '@nestjs/testing';
 import { ForbiddenException } from '@nestjs/common';
 import type { IntakeResponse } from '@earlysteps/shared-types';
 import { AnalysisService } from '../src/analysis/analysis.service.js';
+import { MAX_ANALYZABLE_PHOTOS } from '../src/media/media.service.js';
 import { ANALYSIS_REPOSITORY } from '../src/analysis/analysis.repository.js';
 import {
   RESPONSE_ANALYSIS_CLIENT,
@@ -40,6 +41,15 @@ import { SCREENING_REPOSITORY } from '../src/screening/screening.repository.js';
 import { InMemoryScreeningRepository } from '../src/screening/testing/in-memory-screening.repository.js';
 import { FAMILIES_REPOSITORY } from '../src/families/families.repository.js';
 import { InMemoryFamiliesRepository } from '../src/families/testing/in-memory-families.repository.js';
+import { MediaService } from '../src/media/media.service.js';
+import { MediaEncryptionService } from '../src/media/media-encryption.service.js';
+import { MEDIA_REPOSITORY } from '../src/media/media.repository.js';
+import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.repository.js';
+import {
+  OBJECT_STORAGE_SERVICE,
+  type ObjectStorageService,
+} from '../src/media/object-storage/object-storage.js';
+import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 
 const AT = '2026-07-11T00:00:00.000Z';
 const LATER = '2026-07-11T00:05:00.000Z';
@@ -118,6 +128,7 @@ async function buildStack(clientOutputs: (string | null)[]) {
   const analysisRepository = new InMemoryAnalysisRepository(screeningRepository);
   const familiesRepository = new InMemoryFamiliesRepository();
   const aiSummaryClient = new StubAiSummaryClient(clientOutputs);
+  const objectStorage = new InMemoryObjectStorageService();
   const moduleRef = await Test.createTestingModule({
     providers: [
       ScreeningService,
@@ -130,6 +141,12 @@ async function buildStack(clientOutputs: (string | null)[]) {
         useValue: new DisabledResponseAnalysisClient(),
       },
       { provide: AI_RESULTS_SUMMARY_CLIENT, useValue: aiSummaryClient },
+      // issue #135: real MediaService (in-memory-backed) so photo-evidence tests below can
+      // seed assets through the same upload path production uses, consent gate included.
+      MediaService,
+      MediaEncryptionService,
+      { provide: MEDIA_REPOSITORY, useClass: InMemoryMediaRepository },
+      { provide: OBJECT_STORAGE_SERVICE, useValue: objectStorage },
     ],
   }).compile();
   return {
@@ -138,6 +155,8 @@ async function buildStack(clientOutputs: (string | null)[]) {
     familiesRepository,
     analysisRepository,
     aiSummaryClient,
+    mediaService: moduleRef.get(MediaService),
+    objectStorage: moduleRef.get<ObjectStorageService>(OBJECT_STORAGE_SERVICE),
   };
 }
 
@@ -740,5 +759,214 @@ describe('Comparison Section (CLAUDE.md §13/§14, dual-assessment update 2026-0
     expect(result?.narrative).toContain(
       'A specific serious-sign answer was given directly by the caregiver.',
     );
+  });
+});
+
+describe('AI results summary — photo evidence (issue #135, Phase 2)', () => {
+  async function seedWithOneAnswer(
+    familiesRepository: InMemoryFamiliesRepository,
+    screeningService: ScreeningService,
+    grantedScopes: Parameters<InMemoryFamiliesRepository['seedChildWithConsent']>[0],
+  ) {
+    const { family, child } =
+      await familiesRepository.seedChildWithConsent(grantedScopes);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+    return { family, child };
+  }
+
+  it('attaches photo evidence and records it in evidenceModalities when both consents are granted', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      data: Buffer.from('fake-photo-bytes'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.evidenceModalities).toEqual(
+      expect.arrayContaining(['structured_answers', 'photo']),
+    );
+    expect(aiSummaryClient.calls).toHaveLength(1);
+    expect(aiSummaryClient.calls[0]!.photos).toEqual([
+      {
+        mimeType: 'image/jpeg',
+        base64Data: Buffer.from('fake-photo-bytes').toString('base64'),
+      },
+    ]);
+  });
+
+  it('sends no photo evidence, and never records "photo", when there is no media at all', async () => {
+    const { analysisService, screeningService, familiesRepository, aiSummaryClient } =
+      await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.photos).toEqual([]);
+  });
+
+  it('omits photo evidence when media_capture consent is withdrawn, even though a photo already exists and ai_analysis is still granted', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { family, child } = await seedWithOneAnswer(
+      familiesRepository,
+      screeningService,
+      ['data_storage', 'ai_analysis', 'media_capture'],
+    );
+    await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      data: Buffer.from('fake-photo-bytes'),
+    });
+    // Consent withdrawn AFTER capture — CLAUDE.md §15: media may never be analysed without
+    // currently-granted consent, even though the asset itself is still stored.
+    await familiesRepository.updateConsent(family.id, 'media_capture', false);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.photos).toEqual([]);
+  });
+
+  it('regenerates when a new photo is captured, even though the answered questions have not changed', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT, VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+
+    await analysisService.getResultsSummary(child.id);
+    await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      data: Buffer.from('fake-photo-bytes'),
+    });
+    await analysisService.getResultsSummary(child.id);
+
+    expect(aiSummaryClient.calls).toHaveLength(2);
+    expect(aiSummaryClient.calls[0]!.photos).toEqual([]);
+    expect(aiSummaryClient.calls[1]!.photos).toHaveLength(1);
+  });
+
+  it('skips an unsupported photo mime type rather than sending it to the vision call', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/heic',
+      data: Buffer.from('unsupported-format-bytes'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.photos).toEqual([]);
+  });
+
+  it('caps photo evidence at MAX_ANALYZABLE_PHOTOS, keeping the most recently captured', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    for (let i = 0; i < MAX_ANALYZABLE_PHOTOS + 2; i++) {
+      await mediaService.upload(child.id, {
+        kind: 'photo',
+        mimeType: 'image/jpeg',
+        data: Buffer.from(`photo-${i}`),
+        capturedAt: new Date(Date.parse(AT) + i * 1000).toISOString(),
+      });
+    }
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(aiSummaryClient.calls[0]!.photos).toHaveLength(MAX_ANALYZABLE_PHOTOS);
+  });
+
+  it('never sends video/audio assets — only photo kind is wired up in this phase', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'video',
+      mimeType: 'video/mp4',
+      data: Buffer.from('fake-video-bytes'),
+    });
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/mp4',
+      data: Buffer.from('fake-audio-bytes'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.photos).toEqual([]);
   });
 });
