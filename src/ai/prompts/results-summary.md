@@ -20,13 +20,22 @@
   CLAUDE.md §13 schema, minus "comparison with Assessment A" (that is computed separately,
   deterministically, by @earlysteps/comparison-engine, AFTER this call returns — never by
   this model, which structurally cannot compare against data it was never given).
+
+  Phase 2 (issue #135, CLAUDE.md §15): this call may now also carry up to a handful of
+  caregiver-captured photos as image content blocks, attached after the text block below.
+  The <media_evidence> tag always states how many were attached (0 if none). Photo/video/
+  audio consent enforcement and decryption happen entirely before this call — every image
+  received here has already cleared media_capture consent (MediaService.getAnalyzablePhotos).
+  Video and audio evidence are explicitly NOT wired up yet (tracked as separate follow-up
+  work) — never assume a photo shows motion, sound, or anything beyond a single still frame.
 -->
 
 Task: Read only the material inside the input tags below — the child's age band, gender
-(if given), and every question answered this session with the option(s) selected and any
-note the caregiver typed in their own words. You have NOT been given any computed score,
-level, support estimate, or recommendation from any other part of this app, and you must
-not guess at, imply, or reference one.
+(if given), every question answered this session with the option(s) selected and any note
+the caregiver typed in their own words, and any attached photo(s) described in
+<media_evidence>. You have NOT been given any computed score, level, support estimate, or
+recommendation from any other part of this app, and you must not guess at, imply, or
+reference one.
 
 Respond with ONLY a JSON object, no other text, exactly this shape:
 
@@ -53,15 +62,25 @@ Rules:
   or borrow the deterministic engine's own vocabulary or scores. They describe only how
   strongly the given evidence aligns with autism-related developmental patterns, and how
   much you can trust that read given the evidence's completeness and consistency.
-- Synthesize, don't restate. The parent already knows the answers they entered — the value
-  of `reasoning`, `developmental_profile`, and `evidence_summary` is combining evidence into
-  a meaningful developmental pattern, never listing one raw answer back at them.
-  - Bad: "Child has poor eye contact." / "Child flaps hands."
+- Synthesize, don't restate. The parent already knows the answers they entered (and what
+  their own photos show) — the value of `reasoning`, `developmental_profile`, and
+  `evidence_summary` is combining evidence into a meaningful developmental pattern, never
+  listing one raw answer or one photo description back at them.
+  - Bad: "Child has poor eye contact." / "Child flaps hands." / "The photo shows the child
+    lining up toys."
   - Good: "The overall pattern of reduced reciprocal interaction, limited eye gaze, and
     reduced social initiation increases the likelihood of autism-related social
     communication differences." / "Repetitive motor behaviours together with
     sensory-seeking behaviour strengthen the evidence for restricted and repetitive
-    behaviour characteristics."
+    behaviour characteristics." / "The lined-up-toy arrangement visible in the attached
+    photo is consistent with the ordering and routine-related behaviours also described in
+    the caregiver's notes, strengthening that same pattern."
+- If any photos are attached, treat each as ONE still frame at ONE moment — never infer
+  motion, sound, duration, frequency, or context beyond what is visibly in the frame, and
+  never assume it is representative of the child's typical behaviour. Fold what you can
+  responsibly see into the same synthesized pattern as the rest of the evidence; if a photo
+  is blurry, ambiguous, or shows nothing developmentally relevant, say so briefly in
+  `uncertainty` rather than speculating about what it might show.
 - Think of strengths first: consider and write `strengths` before writing
   `support_priorities`, and never let the support-priorities section overshadow them.
 - `support_priorities`'s four keys (`immediate`/`short_term`/`medium_term`/`long_term`)
@@ -95,8 +114,8 @@ Rules:
   screen by the deterministic engine and red-flag rules, never by you.
 - Never state, imply, or hint at a diagnosis. You were not given the information to make
   one, and this narrative is not the app's official finding.
-- Base every sentence only on the answers given below. Never invent a milestone, behavior,
-  or detail not present in the input.
+- Base every sentence only on the answers and any attached photos given below. Never invent
+  a milestone, behavior, or detail not present in the input or visible in an attached image.
 - `uncertainty_factors` and the free-text-derived content must be `[]`/absent if the
   caregiver typed no free-text notes and there is nothing evidence-based to say — never
   invent one to fill a field.
@@ -110,3 +129,5 @@ Input:
 <age_band>[age_band]</age_band>
 <gender>[gender]</gender>
 <answers>[answers]</answers>
+<media_evidence>[media_evidence]</media_evidence>
+Any attached photos follow this text block as image content.

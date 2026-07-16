@@ -159,6 +159,17 @@ export const UNCERTAINTY_FACTOR_LABELS: Record<UncertaintyFactor, string> = {
 };
 
 /**
+ * Which evidence sources actually fed a given Assessment B narrative (CLAUDE.md §13/§16
+ * migration status: "a schema addition to AiResultsSummary's evidence summary noting which
+ * modalities contributed"). Computed deterministically by the caller from what was actually
+ * sent to the model — never self-reported by the LLM, so it can't drift from the truth.
+ * `photo` is the only media modality wired up so far (issue #135, Phase 2 of the issue #133
+ * plan); video/audio are tracked as follow-up work, not silently folded into this value.
+ */
+export const EVIDENCE_MODALITIES = ['structured_answers', 'free_text', 'photo'] as const;
+export type EvidenceModality = (typeof EVIDENCE_MODALITIES)[number];
+
+/**
  * Comparison Section vocabulary (CLAUDE.md §13/rule 14 §2) — computed by
  * @earlysteps/comparison-engine AFTER both engines have independently produced their own
  * output; never merged, averaged, or reconciled into one number or label.

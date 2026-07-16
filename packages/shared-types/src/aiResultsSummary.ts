@@ -17,7 +17,12 @@
  * that runs after both engines have independently produced their own output — see
  * `ComparisonResult` in `./comparisonResult.js`.
  */
-import type { AiLikelihoodLabel, Confidence, UncertaintyFactor } from './vocabulary.js';
+import type {
+  AiLikelihoodLabel,
+  Confidence,
+  EvidenceModality,
+  UncertaintyFactor,
+} from './vocabulary.js';
 
 export interface AiSupportPriorityItem {
   /** Short, plain-language priority — never one of the six reserved result labels/terms. */
@@ -60,6 +65,13 @@ export interface AiResultsSummary {
   uncertaintyFactors: UncertaintyFactor[];
   /** Synthesized evidence summary — never a verbatim reflection of caregiver answers (rule 13). */
   evidenceSummary: string;
+  /**
+   * Which evidence sources actually fed THIS narrative (issue #135, §16 migration status).
+   * Stamped by the caller from what was actually sent to the model, not model output — see
+   * EvidenceModality's doc comment in vocabulary.ts. `structured_answers` is always present
+   * once this type exists at all (getResultsSummary returns null with zero answers).
+   */
+  evidenceModalities: EvidenceModality[];
   homeRecommendations: string[];
   schoolRecommendations: string[];
   /**

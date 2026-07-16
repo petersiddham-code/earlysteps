@@ -16,10 +16,21 @@ export interface AiSummaryAnsweredQuestion {
   freeText?: string;
 }
 
+/**
+ * One decrypted photo, ready to attach as image content (issue #135, Phase 2). The client
+ * never writes this to disk or logs — it exists only for the duration of one generation call.
+ */
+export interface AiSummaryPhotoEvidence {
+  mimeType: string;
+  base64Data: string;
+}
+
 export interface AiResultsSummaryInput {
   ageBand: string;
   gender?: string;
   answers: AiSummaryAnsweredQuestion[];
+  /** Caregiver-captured photo evidence, already consent-gated by the caller. May be empty. */
+  photos: AiSummaryPhotoEvidence[];
 }
 
 export interface AiResultsSummaryClient {

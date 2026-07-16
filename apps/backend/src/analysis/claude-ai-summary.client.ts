@@ -14,11 +14,45 @@ import type {
   AiResultsSummaryClient,
   AiResultsSummaryInput,
   AiSummaryAnsweredQuestion,
+  AiSummaryPhotoEvidence,
 } from './ai-summary-client.js';
 import {
   buildResultsSummaryUserMessage,
   getResultsSummarySystemPrompt,
 } from './prompt.js';
+
+/** The only media types the Claude vision API accepts as an image content block. */
+type SupportedImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+const SUPPORTED_IMAGE_MEDIA_TYPES = new Set<string>([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
+
+function isSupportedImageMediaType(
+  mimeType: string,
+): mimeType is SupportedImageMediaType {
+  return SUPPORTED_IMAGE_MEDIA_TYPES.has(mimeType);
+}
+
+/**
+ * Image content blocks for every photo with a mime type the vision API accepts. MediaService
+ * already filters to this same set before handing photos to this client — filtered again
+ * here so this client stays correct even if that upstream guarantee ever changes.
+ */
+function toImageBlocks(photos: AiSummaryPhotoEvidence[]): Anthropic.ImageBlockParam[] {
+  return photos
+    .filter((p) => isSupportedImageMediaType(p.mimeType))
+    .map((photo) => ({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: photo.mimeType as SupportedImageMediaType,
+        data: photo.base64Data,
+      },
+    }));
+}
 
 export const AI_RESULTS_SUMMARY_MODEL = 'claude-sonnet-4-6';
 
@@ -44,6 +78,7 @@ export class ClaudeAiResultsSummaryClient implements AiResultsSummaryClient {
 
   async generateSummary(input: AiResultsSummaryInput): Promise<string | null> {
     try {
+      const imageBlocks = toImageBlocks(input.photos);
       const response = await this.client.messages.create({
         model: AI_RESULTS_SUMMARY_MODEL,
         max_tokens: MAX_OUTPUT_TOKENS,
@@ -51,11 +86,18 @@ export class ClaudeAiResultsSummaryClient implements AiResultsSummaryClient {
         messages: [
           {
             role: 'user',
-            content: buildResultsSummaryUserMessage(
-              input.ageBand,
-              input.gender,
-              input.answers.map(capFreeText),
-            ),
+            content: [
+              {
+                type: 'text',
+                text: buildResultsSummaryUserMessage(
+                  input.ageBand,
+                  input.gender,
+                  input.answers.map(capFreeText),
+                  imageBlocks.length,
+                ),
+              },
+              ...imageBlocks,
+            ],
           },
         ],
       });

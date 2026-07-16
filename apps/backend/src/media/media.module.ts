@@ -15,6 +15,9 @@ import { AuthModule } from '../auth/auth.module.js';
  * use the blob store for right-to-erasure without a module cycle. AuthModule registers
  * the 'jwt' passport strategy MediaController's JwtAuthGuard depends on — imported
  * explicitly, same convention as AnalysisModule.
+ *
+ * Exports MediaService so AnalysisModule can pull decrypted photo evidence into Assessment B
+ * (issue #135, Phase 2) without duplicating the storage/encryption/consent wiring above.
  */
 @Module({
   imports: [FamiliesModule, ObjectStorageModule, AuthModule],
@@ -24,5 +27,6 @@ import { AuthModule } from '../auth/auth.module.js';
     MediaEncryptionService,
     { provide: MEDIA_REPOSITORY, useClass: PrismaMediaRepository },
   ],
+  exports: [MediaService],
 })
 export class MediaModule {}

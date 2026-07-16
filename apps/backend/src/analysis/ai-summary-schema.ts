@@ -28,6 +28,7 @@ import {
   containsBannedOrReservedLanguage,
   containsProfessionalReferralLanguage,
   type AiResultsSummary,
+  type EvidenceModality,
 } from '@earlysteps/shared-types';
 
 // 800 was too tight for real generations (live-verified 2026-07-11: a genuinely synthesized
@@ -129,7 +130,10 @@ function isUnsafe(s: SummaryOutput): boolean {
   return s.professional_assessment_priorities.some(containsBannedOrReservedLanguage);
 }
 
-function toAiResultsSummary(s: SummaryOutput): AiResultsSummary {
+function toAiResultsSummary(
+  s: SummaryOutput,
+  evidenceModalities: EvidenceModality[],
+): AiResultsSummary {
   return {
     likelihood: s.likelihood,
     confidence: s.confidence,
@@ -145,6 +149,7 @@ function toAiResultsSummary(s: SummaryOutput): AiResultsSummary {
     uncertainty: s.uncertainty,
     uncertaintyFactors: s.uncertainty_factors,
     evidenceSummary: s.evidence_summary,
+    evidenceModalities,
     homeRecommendations: s.home_recommendations,
     schoolRecommendations: s.school_recommendations,
     professionalAssessmentPriorities: s.professional_assessment_priorities,
@@ -202,13 +207,19 @@ export function isSummaryStillSafe(summary: AiResultsSummary): boolean {
  * Returns the validated narrative, or null for anything malformed OR carrying a banned
  * word/reserved result label — the whole narrative is discarded on any single violation
  * (not just the offending field), since a partial narrative wasn't reviewed as a whole.
- * `generatedAt` is stamped by the caller, not the model. Never throws.
+ * `generatedAt` is stamped by the caller, not the model, and so is `evidenceModalities`
+ * (issue #135) — it describes what the CALLER actually sent this call, not anything the
+ * model reported about itself, so it can't be spoofed or omitted by a model response. Never
+ * throws.
  */
-export function parseAiSummaryOutput(rawOutput: string): AiResultsSummary | null {
+export function parseAiSummaryOutput(
+  rawOutput: string,
+  evidenceModalities: EvidenceModality[],
+): AiResultsSummary | null {
   const json = extractJsonObject(rawOutput);
   if (json === null) return null;
   const parsed = summaryOutputSchema.safeParse(json);
   if (!parsed.success) return null;
   if (isUnsafe(parsed.data)) return null;
-  return toAiResultsSummary(parsed.data);
+  return toAiResultsSummary(parsed.data, evidenceModalities);
 }
