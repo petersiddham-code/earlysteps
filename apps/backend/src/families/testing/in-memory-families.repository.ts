@@ -54,6 +54,17 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
    */
   onDeleteChildren: ((childIds: string[]) => Promise<void>) | null = null;
 
+  /**
+   * Same cross-double wiring as onDeleteChildren (issue #134): in production the media
+   * rows live in the same database, but the in-memory media data lives in a separate
+   * test double — tests that exercise blob purging on family deletion hook this to it.
+   */
+  onListMediaStorageKeys: ((familyId: string) => Promise<string[]>) | null = null;
+
+  async listMediaStorageKeysByFamily(familyId: string): Promise<string[]> {
+    return this.onListMediaStorageKeys ? this.onListMediaStorageKeys(familyId) : [];
+  }
+
   async deleteFamily(familyId: string): Promise<boolean> {
     if (!this.families.has(familyId)) return false;
     const childIds = [...this.children.values()]

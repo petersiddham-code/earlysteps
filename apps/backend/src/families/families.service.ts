@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -16,11 +17,18 @@ import {
   type CreateFamilyInput,
   type FamiliesRepository,
 } from './families.repository.js';
+import {
+  OBJECT_STORAGE_SERVICE,
+  type ObjectStorageService,
+} from '../media/object-storage/object-storage.js';
 
 @Injectable()
 export class FamiliesService {
+  private readonly logger = new Logger(FamiliesService.name);
+
   constructor(
     @Inject(FAMILIES_REPOSITORY) private readonly repository: FamiliesRepository,
+    @Inject(OBJECT_STORAGE_SERVICE) private readonly storage: ObjectStorageService,
   ) {}
 
   /**
@@ -100,7 +108,27 @@ export class FamiliesService {
    * step before calling.
    */
   async deleteFamily(familyId: string): Promise<void> {
+    // Issue #134: media blobs live in object storage, not the database — collect their
+    // keys BEFORE the purge (which removes the rows pointing at them), then delete the
+    // blobs once the purge has committed. Blob deletion is after (not inside) the DB
+    // transaction so a storage hiccup can't leave the family half-deleted; a blob that
+    // survives a failed delete is unreadable anyway — its family's encryption key was
+    // just destroyed with the Family row (cryptographic erasure as the backstop).
+    const storageKeys = await this.repository.listMediaStorageKeysByFamily(familyId);
     const deleted = await this.repository.deleteFamily(familyId);
     if (!deleted) throw new NotFoundException(`No family found with id ${familyId}`);
+    const results = await Promise.allSettled(
+      storageKeys.map((key) => this.storage.delete(key)),
+    );
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        // Log-and-continue: the parent's data is gone from the DB and the key is gone,
+        // so failing the whole request over a leftover ciphertext blob helps no one.
+        this.logger.error(
+          'Failed to delete a media blob during family erasure',
+          result.reason instanceof Error ? result.reason.stack : String(result.reason),
+        );
+      }
+    }
   }
 }

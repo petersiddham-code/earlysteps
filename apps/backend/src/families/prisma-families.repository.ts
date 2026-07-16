@@ -141,6 +141,14 @@ export class PrismaFamiliesRepository implements FamiliesRepository {
     return flags[scope] === true;
   }
 
+  async listMediaStorageKeysByFamily(familyId: string): Promise<string[]> {
+    const rows = await this.prisma.mediaAssetRecord.findMany({
+      where: { child: { familyId } },
+      select: { storageKey: true },
+    });
+    return rows.map((row) => row.storageKey);
+  }
+
   async deleteFamily(familyId: string): Promise<boolean> {
     const existing = await this.prisma.family.findUnique({ where: { id: familyId } });
     if (!existing) return false;

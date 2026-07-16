@@ -132,6 +132,10 @@ export function ResultsScreen({ navigation, route }: Props) {
   // switched away from — a guest session (or a child saved locally because data_storage
   // consent was declined) has no server-side sibling list to switch between.
   const canSwitchChild = !isGuest && childId !== null && !isGuestChildId(childId);
+  // Issue #134: the Observation Recorder needs a server-persisted child to attach media
+  // to (same reasoning as canSwitchChild) and is a Premium feature, matching the
+  // media_capture consent toggle's tier gate (issue #123) and the backend's guards.
+  const canRecordMedia = canSwitchChild && tier === 'premium';
   const [results, setResults] = useState<ResultsView | null>(null);
   const [strengths, setStrengths] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -288,6 +292,14 @@ export function ResultsScreen({ navigation, route }: Props) {
           </View>
         </View>
         <View style={styles.actions}>
+          {canRecordMedia && (
+            <PrimaryButton
+              label="Add a photo, video, or sound clip"
+              variant="quiet"
+              onPress={() => navigation.navigate('ObservationRecorder')}
+              testID="observation-recorder-button"
+            />
+          )}
           {canSwitchChild && (
             <PrimaryButton
               label="Switch child"
@@ -556,6 +568,17 @@ export function ResultsScreen({ navigation, route }: Props) {
           being viewable on this device once forgotten this way, which the hint says plainly.
           replace, not navigate — no stale Results underneath. */}
       <View style={styles.actions}>
+        {/* Issue #134: capture is additive context for the family's own records — in
+            Phase 1 nothing recorded feeds either assessment above (CLAUDE.md §2 rule 7;
+            Assessment B wiring is issue #135, behind its own review). */}
+        {canRecordMedia && (
+          <PrimaryButton
+            label="Add a photo, video, or sound clip"
+            variant="quiet"
+            onPress={() => navigation.navigate('ObservationRecorder')}
+            testID="observation-recorder-button"
+          />
+        )}
         {canSwitchChild && (
           <PrimaryButton
             label="Switch child"

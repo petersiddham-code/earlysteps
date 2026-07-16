@@ -81,6 +81,12 @@ model Family {
   /// exactly as open as it is today.
   userId           String?  @unique
   user             User?    @relation(fields: [userId], references: [id])
+  /// Per-family AES-256-GCM key (base64 of 32 random bytes) for media-at-rest encryption
+  /// (issue #134, product plan §4.7 "media encrypted with per-family keys"). Generated
+  /// lazily on the family's first media upload, never eagerly — a family that never
+  /// records anything never gets a key. Deleting the family deletes the key with it,
+  /// making any orphaned blob unreadable ciphertext.
+  mediaEncryptionKey String?
 }
 
 model Child {
@@ -243,15 +249,24 @@ model ProgressLogRecord {
 }
 
 /// Opt-in only (CLAUDE.md §2 rule 9) — a row must only be created alongside a fresh,
-/// per-instance consent flag from the app layer. Not enforced at the DB layer here.
+/// per-instance consent flag from the app layer (MediaService verifies media_capture
+/// consent and mints consentId per upload; issue #134). The blob itself lives behind the
+/// object-storage adapter under storageKey, encrypted with the family's key before it is
+/// ever written. Mirrors @earlysteps/shared-types MediaAsset.
 model MediaAssetRecord {
-  id              String   @id @default(cuid())
-  childId         String
-  child           Child    @relation(fields: [childId], references: [id])
-  type            String
-  consentId       String
-  retentionExpiry DateTime
-  encryptedUri    String
+  id                 String    @id @default(cuid())
+  childId            String
+  child              Child     @relation(fields: [childId], references: [id])
+  kind               String
+  mimeType           String
+  consentId          String
+  storageKey         String
+  capturedAt         DateTime
+  retentionExpiresAt DateTime
+  retainedByParent   Boolean   @default(false)
+  /// Deletion-in-progress tombstone: set first, then blob delete, then row delete — a
+  /// half-finished delete stays invisible to lists and is swept by the retention job.
+  deletedAt          DateTime?
 
   @@index([childId])
 }

@@ -51,6 +51,12 @@ export interface FamiliesRepository {
   /** Fail-safe default: a child/family with no recorded grant has NOT consented. */
   hasConsent(childId: string, scope: ConsentScope): Promise<boolean>;
   /**
+   * Storage keys of every media blob stored under this family's children (issue #134) —
+   * read by FamiliesService.deleteFamily BEFORE the purge so the encrypted blobs can be
+   * removed from object storage too, not just their DB rows.
+   */
+  listMediaStorageKeysByFamily(familyId: string): Promise<string[]>;
+  /**
    * Right-to-erasure (issue #55, product plan Screen 13): permanently removes the family,
    * its children, and every record stored under them (answers, computed profiles,
    * estimates, red flags, follow-up suggestions, plans, logs, media refs, reports).
