@@ -77,4 +77,24 @@ export class InMemoryMediaRepository implements MediaRepository {
     if (!asset) throw new Error(`No asset ${mediaId}`);
     this.assets.set(mediaId, { ...asset, ...patch });
   }
+
+  /**
+   * Mirrors PrismaFamiliesRepository.updateMediaRetentionDays' retroactive recompute
+   * (issue #142): tests wire InMemoryFamiliesRepository.onUpdateMediaRetentionForFamily to
+   * this, since the real recompute lives on the media side of the same DB in production.
+   */
+  recomputeRetentionForChildren(childIds: string[], days: number): void {
+    const ids = new Set(childIds);
+    for (const asset of this.assets.values()) {
+      if (!ids.has(asset.childId) || asset.deletedAt !== null || asset.retainedByParent) {
+        continue;
+      }
+      this.assets.set(asset.id, {
+        ...asset,
+        retentionExpiresAt: new Date(
+          new Date(asset.capturedAt).getTime() + days * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+      });
+    }
+  }
 }

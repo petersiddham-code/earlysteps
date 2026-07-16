@@ -8,7 +8,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { MEDIA_KINDS, type MediaAsset, type MediaKind } from '@earlysteps/shared-types';
+import {
+  DEFAULT_MEDIA_RETENTION_DAYS,
+  MEDIA_KINDS,
+  type MediaAsset,
+  type MediaKind,
+} from '@earlysteps/shared-types';
 import {
   FAMILIES_REPOSITORY,
   type FamiliesRepository,
@@ -21,11 +26,13 @@ import {
 import { MediaEncryptionService } from './media-encryption.service.js';
 
 /**
- * Fixed retention window (product plan §4.7): capturedAt + 90 days, then the daily job
- * below hard-deletes unless the parent explicitly retained the capture. A parent-facing
- * setting to change this window is explicitly out of scope for Phase 1 (issue #133 plan).
+ * Default retention window (product plan §4.7): capturedAt + 90 days, then the daily job
+ * below hard-deletes unless the parent explicitly retained the capture. Issue #142 added a
+ * parent-facing setting (Family.media_retention_days, 30/60/90) that overrides this per
+ * family — this constant is now only the fallback/seed value, re-exported from
+ * shared-types so it stays a single source of truth with the Family default.
  */
-export const MEDIA_RETENTION_DAYS = 90;
+export const MEDIA_RETENTION_DAYS = DEFAULT_MEDIA_RETENTION_DAYS;
 
 /**
  * Phase 2 (issue #135): caps how many photos a single Assessment B generation call ever
@@ -112,8 +119,12 @@ export class MediaService {
     const now = new Date();
     const claimed = input.capturedAt ? new Date(input.capturedAt) : now;
     const capturedAt = Number.isNaN(claimed.getTime()) || claimed > now ? now : claimed;
+    // Issue #142: the family's configured window (default 90) rather than the fixed
+    // constant — falls back defensively if the family lookup somehow comes back empty.
+    const family = await this.familiesRepository.getFamily(child.family_id);
+    const retentionDays = family?.media_retention_days ?? DEFAULT_MEDIA_RETENTION_DAYS;
     const retentionExpiresAt = new Date(
-      capturedAt.getTime() + MEDIA_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+      capturedAt.getTime() + retentionDays * 24 * 60 * 60 * 1000,
     );
 
     // Encrypt BEFORE storage ever sees bytes; the key is opaque, not a path or URI.

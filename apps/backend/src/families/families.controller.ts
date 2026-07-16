@@ -15,6 +15,7 @@ import { FamiliesService } from './families.service.js';
 import { CreateFamilyDto } from './dto/create-family.dto.js';
 import { CreateChildDto } from './dto/create-child.dto.js';
 import { UpdateConsentDto } from './dto/update-consent.dto.js';
+import { UpdateMediaRetentionDto } from './dto/update-media-retention.dto.js';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard.js';
 import { OptionalUser } from '../auth/optional-user.decorator.js';
 import { FamilyOwnershipGuard } from './family-ownership.guard.js';
@@ -63,6 +64,15 @@ export class FamiliesController {
     @Body() dto: UpdateConsentDto,
   ): Promise<Family> {
     return this.familiesService.updateConsent(familyId, dto.scope, dto.granted);
+  }
+
+  /** Parent-facing media retention window (issue #142) — 30/60/90 days, retroactive. */
+  @Patch(':familyId/media-retention')
+  updateMediaRetention(
+    @Param('familyId') familyId: string,
+    @Body() dto: UpdateMediaRetentionDto,
+  ): Promise<Family> {
+    return this.familiesService.updateMediaRetentionDays(familyId, dto.days);
   }
 
   @Post(':familyId/children')

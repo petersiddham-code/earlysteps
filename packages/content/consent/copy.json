@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "locale": "en",
   "scopes": {
     "data_storage": {
@@ -18,5 +18,11 @@
       "label": "Share with a professional",
       "explanation": "We only share your results with a doctor or specialist when you specifically choose to send them."
     }
+  },
+  "media_retention": {
+    "heading": "How long we keep recordings",
+    "explanation": "Recordings and photos are automatically deleted after this many days, unless you choose to keep one yourself.",
+    "option_label": "{days} days",
+    "disabled_reason": "Available on Premium"
   }
 }

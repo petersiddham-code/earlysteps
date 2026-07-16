@@ -11,6 +11,18 @@
 export const MEDIA_KINDS = ['photo', 'video', 'audio'] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
 
+/**
+ * Parent-facing retention window options (issue #142, product plan §5 item 13). One
+ * setting per family — shorter-only, so a caregiver can tighten how long a capture is
+ * kept but never stretch it past the original 90-day default. Changing it is retroactive:
+ * it recomputes `retentionExpiresAt` on every already-captured, non-retained asset under
+ * the family, not just future captures — see MediaService.upload and
+ * FamiliesRepository.updateMediaRetentionDays.
+ */
+export const MEDIA_RETENTION_DAY_OPTIONS = [30, 60, 90] as const;
+export type MediaRetentionDays = (typeof MEDIA_RETENTION_DAY_OPTIONS)[number];
+export const DEFAULT_MEDIA_RETENTION_DAYS: MediaRetentionDays = 90;
+
 export interface MediaAsset {
   id: string;
   childId: string;

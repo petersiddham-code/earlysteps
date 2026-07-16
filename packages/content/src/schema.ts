@@ -233,6 +233,18 @@ const consentScopeCopySchema = z.object({
 });
 
 /**
+ * Parent-facing media retention window copy (issue #142, product plan §5 item 13) — rendered
+ * in Consent Center alongside the media_capture scope. `option_label` carries a `{days}`
+ * placeholder the screen fills in for each of MEDIA_RETENTION_DAY_OPTIONS (30/60/90).
+ */
+const mediaRetentionCopySchema = z.object({
+  heading: safeCopyNonEmpty,
+  explanation: safeCopyNonEmpty,
+  option_label: safeCopyNonEmpty,
+  disabled_reason: safeCopyNonEmpty,
+});
+
+/**
  * Layered consent copy (product plan §4.7): a 1-line plain explanation per scope. Built as an
  * explicit object (one required key per scope), not z.record — a record's value type is
  * optional-indexed under TS access, which would force every caller to null-check copy that's
@@ -246,6 +258,7 @@ export const consentCopySchema = z.object({
       CONSENT_SCOPES.map((scope) => [scope, consentScopeCopySchema]),
     ) as Record<(typeof CONSENT_SCOPES)[number], typeof consentScopeCopySchema>,
   ),
+  media_retention: mediaRetentionCopySchema,
 });
 
 /**
