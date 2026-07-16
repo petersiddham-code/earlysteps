@@ -4,12 +4,16 @@
  * so it's tested against a real (synthetically generated, not committed to the repo) video
  * rather than only through FakeFrameExtractionService's stand-in used everywhere else.
  *
- * Generates a tiny throwaway clip with ffmpeg's `lavfi` test-pattern source at test time —
- * no binary fixture checked into the repo, deterministic across machines/CI.
+ * Generates a tiny throwaway clip at test time by piping raw video frames into ffmpeg's
+ * rawvideo demuxer + libx264 encoder — core codec features present in every ffmpeg-static
+ * build, unlike the `lavfi` test-pattern INPUT DEVICE (from libavdevice), which some
+ * platform builds of ffmpeg-static (observed: Linux CI) compile out. No binary fixture
+ * checked into the repo; deterministic across machines/CI.
  */
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Readable } from 'node:stream';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import ffmpegStaticPath from 'ffmpeg-static';
 import ffmpeg from 'fluent-ffmpeg';
@@ -19,12 +23,41 @@ if (ffmpegStaticPath) ffmpeg.setFfmpegPath(ffmpegStaticPath);
 
 const JPEG_MAGIC = Buffer.from([0xff, 0xd8, 0xff]);
 
-/** Generates a 2-second synthetic color-bar clip with a real, probeable duration. */
+const CLIP_WIDTH = 64;
+const CLIP_HEIGHT = 64;
+const CLIP_FPS = 10;
+const CLIP_SECONDS = 2;
+
+/** A readable stream of solid-color raw RGB24 frames, each a different shade. */
+function rawFrameStream(): Readable {
+  const frameBytes = CLIP_WIDTH * CLIP_HEIGHT * 3;
+  const frameCount = CLIP_FPS * CLIP_SECONDS;
+  let i = 0;
+  return new Readable({
+    read() {
+      if (i >= frameCount) {
+        this.push(null);
+        return;
+      }
+      this.push(Buffer.alloc(frameBytes, (i * 25) % 256));
+      i += 1;
+    },
+  });
+}
+
+/** Generates a 2-second synthetic clip with a real, probeable duration. */
 function generateTestClip(outputPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    ffmpeg()
-      .input('testsrc=duration=2:size=64x64:rate=10')
-      .inputFormat('lavfi')
+    ffmpeg(rawFrameStream())
+      .inputFormat('rawvideo')
+      .inputOptions([
+        '-pix_fmt',
+        'rgb24',
+        '-s',
+        `${CLIP_WIDTH}x${CLIP_HEIGHT}`,
+        '-r',
+        String(CLIP_FPS),
+      ])
       .output(outputPath)
       .outputOptions(['-pix_fmt', 'yuv420p'])
       .on('end', () => resolve())
