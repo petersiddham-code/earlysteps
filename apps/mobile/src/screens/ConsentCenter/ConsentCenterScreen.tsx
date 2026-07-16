@@ -9,7 +9,14 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { CONSENT_SCOPES, type ConsentScope, type Family } from '@earlysteps/shared-types';
+import {
+  CONSENT_SCOPES,
+  MEDIA_RETENTION_DAY_OPTIONS,
+  type ConsentScope,
+  type Family,
+  type MediaRetentionDays,
+} from '@earlysteps/shared-types';
+import { CONSENT_COPY } from '@earlysteps/content';
 import { ConsentToggle } from '../../components/ConsentToggle/ConsentToggle.js';
 import { PrimaryButton } from '../../components/PrimaryButton/PrimaryButton.js';
 import {
@@ -18,11 +25,12 @@ import {
   getChild,
   getFamily,
   updateConsent,
+  updateMediaRetention,
   upgradeTier,
 } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
 import type { RootStackParamList } from '../../navigation/types.js';
-import { colors, spacing, type } from '../../theme/index.js';
+import { colors, radius, spacing, type } from '../../theme/index.js';
 
 /** Issue #123: recording and AI-assisted analysis are premium features — shown to every
  * logged-in caregiver so they know they exist, but only switchable once upgraded, never
@@ -55,6 +63,7 @@ export function ConsentCenterScreen({ navigation }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [savingRetention, setSavingRetention] = useState(false);
 
   // Issue #99 hid data_storage/ai_analysis for a guest (nothing to save, no AI analysis
   // available). Issue #123 extends that: a guest also has no account to attach media to or
@@ -153,6 +162,20 @@ export function ConsentCenterScreen({ navigation }: Props) {
     }
   };
 
+  /** Issue #142: shorter-only 30/60/90-day window, applies retroactively server-side. */
+  const handleRetentionChange = async (days: MediaRetentionDays) => {
+    if (!family || savingRetention || premiumScopesLocked) return;
+    setSavingRetention(true);
+    try {
+      const updated = await updateMediaRetention(family.id, days);
+      setFamily(updated);
+    } catch {
+      Alert.alert("Couldn't save that", 'Please check your connection and try again.');
+    } finally {
+      setSavingRetention(false);
+    }
+  };
+
   if (error) {
     return (
       <View style={styles.centered}>
@@ -211,6 +234,59 @@ export function ConsentCenterScreen({ navigation }: Props) {
       ))}
       {pendingScope && (
         <ActivityIndicator style={styles.pendingIndicator} color={colors.primary} />
+      )}
+
+      {/* Issue #142: parent-facing retention window, alongside media_capture consent —
+          same lock/disabled-reason pattern as the premium scopes above, never hidden. */}
+      {!isGuest && (
+        <View style={styles.retentionSection} testID="media-retention-section">
+          <Text style={styles.retentionHeading}>
+            {CONSENT_COPY.media_retention.heading}
+          </Text>
+          <Text style={styles.retentionBody}>
+            {CONSENT_COPY.media_retention.explanation}
+          </Text>
+          <View style={styles.retentionOptions}>
+            {MEDIA_RETENTION_DAY_OPTIONS.map((days) => {
+              const selected = family.media_retention_days === days;
+              return (
+                <Pressable
+                  key={days}
+                  onPress={() => handleRetentionChange(days)}
+                  disabled={premiumScopesLocked || savingRetention}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected, disabled: premiumScopesLocked }}
+                  testID={`media-retention-option-${days}`}
+                  style={[
+                    styles.retentionOption,
+                    selected && styles.retentionOptionSelected,
+                    premiumScopesLocked && styles.retentionOptionDisabled,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.retentionOptionText,
+                      selected && styles.retentionOptionTextSelected,
+                    ]}
+                  >
+                    {CONSENT_COPY.media_retention.option_label.replace(
+                      '{days}',
+                      String(days),
+                    )}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          {premiumScopesLocked && (
+            <Text style={styles.retentionDisabledReason}>
+              {CONSENT_COPY.media_retention.disabled_reason}
+            </Text>
+          )}
+          {savingRetention && (
+            <ActivityIndicator style={styles.pendingIndicator} color={colors.primary} />
+          )}
+        </View>
       )}
 
       {/* Issue #99: self-service, one-directional upgrade — no payment gateway exists yet
@@ -357,6 +433,52 @@ const styles = StyleSheet.create({
     ...type.bodyStrong,
     color: colors.primary,
     marginTop: spacing.sm,
+  },
+  retentionSection: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  retentionHeading: {
+    ...type.bodyStrong,
+    color: colors.ink,
+    marginBottom: spacing.xs,
+  },
+  retentionBody: {
+    ...type.caption,
+    color: colors.inkSoft,
+    marginBottom: spacing.md,
+  },
+  retentionOptions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  retentionOption: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  retentionOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryTint,
+  },
+  retentionOptionDisabled: {
+    opacity: 0.6,
+  },
+  retentionOptionText: {
+    ...type.bodyStrong,
+    color: colors.ink,
+  },
+  retentionOptionTextSelected: {
+    color: colors.primary,
+  },
+  retentionDisabledReason: {
+    marginTop: spacing.sm,
+    ...type.caption,
+    color: colors.accent,
+    fontWeight: '600',
   },
   planSection: {
     marginTop: spacing.xl,

@@ -6,6 +6,7 @@ import {
   getChild,
   getFamily,
   updateConsent,
+  updateMediaRetention,
   upgradeTier,
 } from '../../api/index.js';
 import { useSession } from '../../session/index.js';
@@ -17,6 +18,7 @@ jest.mock('../../api/index.js', () => ({
   getChild: jest.fn(),
   getFamily: jest.fn(),
   updateConsent: jest.fn(),
+  updateMediaRetention: jest.fn(),
   upgradeTier: jest.fn(),
 }));
 jest.mock('../../session/index.js', () => ({ useSession: jest.fn() }));
@@ -31,7 +33,13 @@ function navProp(canGoBack = false) {
   } as unknown as Parameters<typeof ConsentCenterScreen>[0]['navigation'];
 }
 
-const FAMILY = { id: 'f1', locale: 'en', low_bandwidth_mode: false, consent_flags: {} };
+const FAMILY = {
+  id: 'f1',
+  locale: 'en',
+  low_bandwidth_mode: false,
+  consent_flags: {},
+  media_retention_days: 90 as const,
+};
 const CONSENTED_FAMILY = { ...FAMILY, consent_flags: { data_storage: true } };
 const CHILD = {
   id: 'c1',
@@ -299,6 +307,13 @@ describe('ConsentCenterScreen', () => {
       expect(screen.queryByTestId('delete-everything-button')).toBeNull();
     });
 
+    it('hides the media retention section — a guest has no family setting to configure', async () => {
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('consent-guest-banner');
+
+      expect(screen.queryByTestId('media-retention-section')).toBeNull();
+    });
+
     it('hides the plan section — a guest has no account to upgrade', async () => {
       render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
       await screen.findByTestId('consent-guest-banner');
@@ -387,7 +402,9 @@ describe('ConsentCenterScreen', () => {
       render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
       await screen.findByText(CONSENT_COPY.scopes.media_capture.label);
 
-      expect(screen.getAllByText('Available on Premium')).toHaveLength(2);
+      // 2 locked consent scopes (ai_analysis, media_capture) + the retention section
+      // below, which is also premium-gated (issue #142).
+      expect(screen.getAllByText('Available on Premium')).toHaveLength(3);
       const switches = screen.getAllByRole('switch');
       // CONSENT_SCOPES order: data_storage, ai_analysis, media_capture, professional_sharing.
       expect(switches[0]!.props.disabled).toBeFalsy();
@@ -433,6 +450,70 @@ describe('ConsentCenterScreen', () => {
       const switches = screen.getAllByRole('switch');
       expect(switches[1]!.props.disabled).toBeFalsy();
       expect(switches[2]!.props.disabled).toBeFalsy();
+    });
+  });
+
+  describe('media retention window (issue #142)', () => {
+    function premiumSession() {
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        isGuest: false,
+        tier: 'premium',
+        setTier: jest.fn(),
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+    }
+
+    it('renders all three shorter-only options, with the family default selected', async () => {
+      premiumSession();
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('media-retention-section');
+
+      expect(screen.getByTestId('media-retention-option-30')).toBeTruthy();
+      expect(screen.getByTestId('media-retention-option-60')).toBeTruthy();
+      expect(
+        screen.getByTestId('media-retention-option-90').props.accessibilityState.selected,
+      ).toBe(true);
+    });
+
+    it('calls updateMediaRetention with the chosen window and reflects the new selection', async () => {
+      premiumSession();
+      (updateMediaRetention as jest.Mock).mockResolvedValue({
+        ...CONSENTED_FAMILY,
+        media_retention_days: 30,
+      });
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('media-retention-section');
+
+      fireEvent.press(screen.getByTestId('media-retention-option-30'));
+
+      await waitFor(() => expect(updateMediaRetention).toHaveBeenCalledWith('f1', 30));
+      await waitFor(() =>
+        expect(
+          screen.getByTestId('media-retention-option-30').props.accessibilityState
+            .selected,
+        ).toBe(true),
+      );
+    });
+
+    it('disables the options and shows a reason for a free-tier account', async () => {
+      (useSession as jest.Mock).mockReturnValue({
+        familyId: 'f1',
+        childId: 'c1',
+        setFamilyId: jest.fn(),
+        isGuest: false,
+        tier: 'free',
+        setTier: jest.fn(),
+      });
+      (getFamily as jest.Mock).mockResolvedValue(CONSENTED_FAMILY);
+      render(<ConsentCenterScreen navigation={navProp()} route={{} as never} />);
+      await screen.findByTestId('media-retention-section');
+
+      fireEvent.press(screen.getByTestId('media-retention-option-30'));
+
+      expect(updateMediaRetention).not.toHaveBeenCalled();
     });
   });
 });

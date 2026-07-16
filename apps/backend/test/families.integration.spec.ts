@@ -218,6 +218,36 @@ describe('families — layered consent (product plan §4.7)', () => {
   });
 });
 
+describe('families — media retention window (issue #142, product plan §5 item 13)', () => {
+  let service: FamiliesService;
+
+  beforeEach(async () => {
+    ({ service } = await buildService());
+  });
+
+  it('defaults every new family to the 90-day window', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+    expect(family.media_retention_days).toBe(90);
+  });
+
+  it('updates to any of the shorter-only options (30/60/90)', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+
+    const after30 = await service.updateMediaRetentionDays(family.id, 30);
+    expect(after30.media_retention_days).toBe(30);
+
+    const after60 = await service.updateMediaRetentionDays(family.id, 60);
+    expect(after60.media_retention_days).toBe(60);
+  });
+
+  it('404s on an unknown family', async () => {
+    const { service: freshService } = await buildService();
+    await expect(
+      freshService.updateMediaRetentionDays('no-such-family', 30),
+    ).rejects.toThrow();
+  });
+});
+
 describe('families — delete everything (issue #55, right to erasure)', () => {
   let service: FamiliesService;
   let repository: InMemoryFamiliesRepository;

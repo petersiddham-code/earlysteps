@@ -7,9 +7,11 @@ import {
 } from '@nestjs/common';
 import {
   deriveAgeBand,
+  MEDIA_RETENTION_DAY_OPTIONS,
   type Child,
   type ConsentScope,
   type Family,
+  type MediaRetentionDays,
 } from '@earlysteps/shared-types';
 import {
   FAMILIES_REPOSITORY,
@@ -66,6 +68,24 @@ export class FamiliesService {
     granted: boolean,
   ): Promise<Family> {
     return this.repository.updateConsent(familyId, scope, granted);
+  }
+
+  /**
+   * Parent-facing media retention window (issue #142). Retroactive on every non-retained
+   * asset under the family — see FamiliesRepository.updateMediaRetentionDays.
+   */
+  updateMediaRetentionDays(familyId: string, days: MediaRetentionDays): Promise<Family> {
+    // Belt-and-suspenders with UpdateMediaRetentionDto's @IsIn decorator: under vitest's
+    // esbuild transform (unlike production's ts-node), NestJS's ValidationPipe can't read
+    // design:paramtypes metadata for @Body() params, so DTO-level validation is a no-op in
+    // tests (same gap admin.service.ts documents for UpdateAdminAccountDto). Checking here
+    // too means an out-of-range value is rejected in both environments.
+    if (!MEDIA_RETENTION_DAY_OPTIONS.includes(days)) {
+      throw new BadRequestException(
+        `days must be one of: ${MEDIA_RETENTION_DAY_OPTIONS.join(', ')}`,
+      );
+    }
+    return this.repository.updateMediaRetentionDays(familyId, days);
   }
 
   async createChild(familyId: string, input: CreateChildInput): Promise<Child> {

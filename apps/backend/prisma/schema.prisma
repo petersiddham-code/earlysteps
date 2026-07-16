@@ -87,6 +87,12 @@ model Family {
   /// records anything never gets a key. Deleting the family deletes the key with it,
   /// making any orphaned blob unreadable ciphertext.
   mediaEncryptionKey String?
+  /// Parent-facing media retention window in days (issue #142, product plan §5 item 13).
+  /// Shorter-only choice of 30/60/90 (MediaRetentionDays in shared-types), default 90
+  /// matching the original fixed window. Changing it is retroactive — see
+  /// FamiliesRepository.updateMediaRetentionDays, which recomputes retentionExpiresAt on
+  /// every already-captured, non-retained MediaAssetRecord under the family.
+  mediaRetentionDays Int      @default(90)
 }
 
 model Child {

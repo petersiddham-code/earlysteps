@@ -251,3 +251,42 @@ describe('FamiliesController — ownership enforcement once a family is linked (
       .expect(200);
   });
 });
+
+describe('FamiliesController — media retention window (issue #142)', () => {
+  let app: INestApplication;
+
+  beforeEach(async () => {
+    ({ app } = await buildApp());
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it('accepts each of the shorter-only 30/60/90 options', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/families')
+      .send({ locale: 'en' })
+      .expect(201);
+    const familyId = created.body.id as string;
+
+    const res = await request(app.getHttpServer())
+      .patch(`/families/${familyId}/media-retention`)
+      .send({ days: 30 })
+      .expect(200);
+    expect(res.body.media_retention_days).toBe(30);
+  });
+
+  it('rejects a value outside the fixed 30/60/90 set with a 400', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/families')
+      .send({ locale: 'en' })
+      .expect(201);
+    const familyId = created.body.id as string;
+
+    await request(app.getHttpServer())
+      .patch(`/families/${familyId}/media-retention`)
+      .send({ days: 45 })
+      .expect(400);
+  });
+});

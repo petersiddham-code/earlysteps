@@ -192,6 +192,111 @@ describe('media upload — encrypted storage round-trip', () => {
   });
 });
 
+describe('media retention window — parent-facing setting (issue #142)', () => {
+  it('a fresh capture uses the family default of 90 days', async () => {
+    const { mediaService, familiesRepository } = await buildStack();
+    const { child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'media_capture',
+    ]);
+    const capturedAt = '2026-07-01T12:00:00.000Z';
+    const asset = await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      data: PHOTO_BYTES,
+      capturedAt,
+    });
+    expect(new Date(asset.retentionExpiresAt).getTime()).toBe(
+      new Date(capturedAt).getTime() + 90 * DAY_MS,
+    );
+  });
+
+  it('a capture after the family shortens the window uses the new setting', async () => {
+    const { mediaService, familiesRepository } = await buildStack();
+    const { family, child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'media_capture',
+    ]);
+    await familiesRepository.updateMediaRetentionDays(family.id, 30);
+
+    const capturedAt = '2026-07-01T12:00:00.000Z';
+    const asset = await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      data: PHOTO_BYTES,
+      capturedAt,
+    });
+    expect(new Date(asset.retentionExpiresAt).getTime()).toBe(
+      new Date(capturedAt).getTime() + 30 * DAY_MS,
+    );
+  });
+
+  it('shortening the window retroactively recomputes an already-captured, non-retained asset', async () => {
+    const stack = await buildStack();
+    const { familiesRepository, mediaRepository, mediaService } = stack;
+    // Production recomputes retentionExpiresAt on the same DB the media rows live in
+    // (PrismaFamiliesRepository.updateMediaRetentionDays); wire the doubles the same way
+    // family erasure does for storage keys.
+    familiesRepository.onUpdateMediaRetentionForFamily = async (familyId, days) => {
+      const children = await familiesRepository.getChildrenByFamily(familyId);
+      mediaRepository.recomputeRetentionForChildren(
+        children.map((c) => c.id),
+        days,
+      );
+    };
+    const { family, child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'media_capture',
+    ]);
+    const capturedAt = '2026-07-01T12:00:00.000Z';
+    const asset = await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      data: PHOTO_BYTES,
+      capturedAt,
+    });
+    expect(new Date(asset.retentionExpiresAt).getTime()).toBe(
+      new Date(capturedAt).getTime() + 90 * DAY_MS,
+    );
+
+    await familiesRepository.updateMediaRetentionDays(family.id, 30);
+
+    const [updated] = await mediaService.list(child.id);
+    expect(new Date(updated.retentionExpiresAt).getTime()).toBe(
+      new Date(capturedAt).getTime() + 30 * DAY_MS,
+    );
+  });
+
+  it('never shortens an asset the parent chose to retain', async () => {
+    const stack = await buildStack();
+    const { familiesRepository, mediaRepository, mediaService } = stack;
+    familiesRepository.onUpdateMediaRetentionForFamily = async (familyId, days) => {
+      const children = await familiesRepository.getChildrenByFamily(familyId);
+      mediaRepository.recomputeRetentionForChildren(
+        children.map((c) => c.id),
+        days,
+      );
+    };
+    const { family, child } = await familiesRepository.seedChildWithConsent([
+      'data_storage',
+      'media_capture',
+    ]);
+    const asset = await mediaService.upload(child.id, {
+      kind: 'photo',
+      mimeType: 'image/jpeg',
+      data: PHOTO_BYTES,
+      capturedAt: '2026-07-01T12:00:00.000Z',
+    });
+    const originalExpiry = asset.retentionExpiresAt;
+    mediaRepository.patchAsset(asset.id, { retainedByParent: true });
+
+    await familiesRepository.updateMediaRetentionDays(family.id, 30);
+
+    const [unchanged] = await mediaService.list(child.id);
+    expect(unchanged.retentionExpiresAt).toBe(originalExpiry);
+  });
+});
+
 describe('media list + parent delete-now', () => {
   it('lists stored media and hard-deletes (blob + row) on request', async () => {
     const { mediaService, familiesRepository, mediaRepository, storage } =

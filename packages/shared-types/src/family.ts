@@ -3,6 +3,7 @@
  */
 import type { AgeBand } from './domains.js';
 import type { ConsentScope } from './vocabulary.js';
+import type { MediaRetentionDays } from './media.js';
 
 /** Layered consent (product plan §4.7). Absent/false scope = not granted — fail-safe default. */
 export type ConsentFlags = Partial<Record<ConsentScope, boolean>>;
@@ -12,6 +13,9 @@ export interface Family {
   locale: string;
   low_bandwidth_mode: boolean;
   consent_flags: ConsentFlags;
+  /** Parent-facing media retention window (issue #142, product plan §5 item 13) — defaults
+   * to 90 days; changing it is retroactive (see MediaRetentionDays' own doc comment). */
+  media_retention_days: MediaRetentionDays;
 }
 
 /**
