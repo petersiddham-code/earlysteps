@@ -11,11 +11,18 @@ import {
   InMemoryFamiliesRepository,
   bornMonthsAgo,
 } from '../src/families/testing/in-memory-families.repository.js';
+import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
+import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 
 async function buildService() {
   const repository = new InMemoryFamiliesRepository();
   const moduleRef = await Test.createTestingModule({
-    providers: [FamiliesService, { provide: FAMILIES_REPOSITORY, useValue: repository }],
+    providers: [
+      FamiliesService,
+      { provide: FAMILIES_REPOSITORY, useValue: repository },
+      // Issue #134: deleteFamily purges media blobs through this port.
+      { provide: OBJECT_STORAGE_SERVICE, useValue: new InMemoryObjectStorageService() },
+    ],
   }).compile();
   return { service: moduleRef.get(FamiliesService), repository };
 }
@@ -208,6 +215,36 @@ describe('families — layered consent (product plan §4.7)', () => {
       const updated = await service.updateConsent(family.id, scope, true);
       expect(updated.consent_flags[scope]).toBe(true);
     }
+  });
+});
+
+describe('families — media retention window (issue #142, product plan §5 item 13)', () => {
+  let service: FamiliesService;
+
+  beforeEach(async () => {
+    ({ service } = await buildService());
+  });
+
+  it('defaults every new family to the 90-day window', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+    expect(family.media_retention_days).toBe(90);
+  });
+
+  it('updates to any of the shorter-only options (30/60/90)', async () => {
+    const family = await service.createFamily({ locale: 'en' });
+
+    const after30 = await service.updateMediaRetentionDays(family.id, 30);
+    expect(after30.media_retention_days).toBe(30);
+
+    const after60 = await service.updateMediaRetentionDays(family.id, 60);
+    expect(after60.media_retention_days).toBe(60);
+  });
+
+  it('404s on an unknown family', async () => {
+    const { service: freshService } = await buildService();
+    await expect(
+      freshService.updateMediaRetentionDays('no-such-family', 30),
+    ).rejects.toThrow();
   });
 });
 

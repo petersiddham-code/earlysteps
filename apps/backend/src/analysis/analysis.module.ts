@@ -16,12 +16,14 @@ import { ClaudeAiResultsSummaryClient } from './claude-ai-summary.client.js';
 import { FamiliesModule } from '../families/families.module.js';
 import { ScreeningModule } from '../screening/screening.module.js';
 import { AuthModule } from '../auth/auth.module.js';
+import { MediaModule } from '../media/media.module.js';
 
 @Module({
   // AuthModule registers the 'jwt' passport strategy that AnalysisController's
   // JwtAuthGuard (issue #76) depends on — imported explicitly so this module still
-  // resolves correctly if it's ever bootstrapped on its own (e.g. in a test).
-  imports: [FamiliesModule, ScreeningModule, AuthModule],
+  // resolves correctly if it's ever bootstrapped on its own (e.g. in a test). MediaModule
+  // (issue #135) supplies MediaService for Assessment B's photo evidence.
+  imports: [FamiliesModule, ScreeningModule, AuthModule, MediaModule],
   controllers: [AnalysisController],
   providers: [
     AnalysisService,

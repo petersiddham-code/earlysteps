@@ -83,15 +83,23 @@ function formatAnsweredQuestion(answer: AiSummaryAnsweredQuestion): string {
  * The template instructs the model to treat tag contents as data, never instructions —
  * belt and suspenders against prompt injection via a typed answer.
  */
+/**
+ * `photoCount` (issue #135, Phase 2): always present, even at 0, so the model gets a
+ * consistent frame for "no media evidence this time" rather than an absent tag it might
+ * otherwise read as ambiguous. The actual image bytes (if any) are attached as separate
+ * content blocks by the caller — this tag only tells the model how many to expect.
+ */
 export function buildResultsSummaryUserMessage(
   ageBand: string,
   gender: string | undefined,
   answers: AiSummaryAnsweredQuestion[],
+  photoCount: number,
 ): string {
   return [
     'Write the independent AI results summary for this raw questionnaire.',
     `<age_band>${ageBand}</age_band>`,
     `<gender>${gender ?? 'not given'}</gender>`,
     `<answers>\n${answers.map(formatAnsweredQuestion).join('\n')}\n</answers>`,
+    `<media_evidence>${photoCount} caregiver-captured photo(s) attached below as image content, if any. Each is an opt-in observational snapshot — weigh it alongside the structured answers and notes above per the media-evidence rules in your instructions.</media_evidence>`,
   ].join('\n');
 }

@@ -25,6 +25,7 @@ const SUMMARY: AiResultsSummary = {
   uncertaintyFactors: ['sparse_structured_answers'],
   evidenceSummary:
     'The answers given lean toward limited spoken vocabulary for their age.',
+  evidenceModalities: ['structured_answers'],
   homeRecommendations: ['Narrate daily routines out loud together'],
   schoolRecommendations: [],
   professionalAssessmentPriorities: [],

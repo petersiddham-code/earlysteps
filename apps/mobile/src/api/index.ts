@@ -5,3 +5,4 @@ export * from './families.js';
 export * from './screening.js';
 export * from './analysis.js';
 export * from './admin.js';
+export * from './media.js';

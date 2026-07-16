@@ -7,6 +7,7 @@ import {
   type ConsentScope,
   type Family,
   type GenderOption,
+  type MediaRetentionDays,
 } from '@earlysteps/shared-types';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type {
@@ -20,12 +21,14 @@ function toFamily(row: {
   locale: string;
   lowBandwidthMode: boolean;
   consentFlags: Prisma.JsonValue;
+  mediaRetentionDays: number;
 }): Family {
   return {
     id: row.id,
     locale: row.locale,
     low_bandwidth_mode: row.lowBandwidthMode,
     consent_flags: row.consentFlags as unknown as ConsentFlags,
+    media_retention_days: row.mediaRetentionDays as MediaRetentionDays,
   };
 }
 
@@ -106,6 +109,39 @@ export class PrismaFamiliesRepository implements FamiliesRepository {
     return toFamily(row);
   }
 
+  async updateMediaRetentionDays(
+    familyId: string,
+    days: MediaRetentionDays,
+  ): Promise<Family> {
+    const existing = await this.prisma.family.findUnique({ where: { id: familyId } });
+    if (!existing) {
+      throw new NotFoundException(`No family found with id ${familyId}`);
+    }
+    const row = await this.prisma.family.update({
+      where: { id: familyId },
+      data: { mediaRetentionDays: days },
+    });
+    // Retroactive: recompute retentionExpiresAt on every already-captured, non-retained
+    // asset under this family so a tightened window takes effect immediately.
+    const assets = await this.prisma.mediaAssetRecord.findMany({
+      where: { child: { familyId }, deletedAt: null, retainedByParent: false },
+      select: { id: true, capturedAt: true },
+    });
+    await Promise.all(
+      assets.map((asset) =>
+        this.prisma.mediaAssetRecord.update({
+          where: { id: asset.id },
+          data: {
+            retentionExpiresAt: new Date(
+              asset.capturedAt.getTime() + days * 24 * 60 * 60 * 1000,
+            ),
+          },
+        }),
+      ),
+    );
+    return toFamily(row);
+  }
+
   async createChild(familyId: string, input: CreateChildInput): Promise<Child> {
     const row = await this.prisma.child.create({
       data: {
@@ -139,6 +175,14 @@ export class PrismaFamiliesRepository implements FamiliesRepository {
     if (!child) return false; // fail-safe: unknown child has no consent
     const flags = child.family.consentFlags as ConsentFlags;
     return flags[scope] === true;
+  }
+
+  async listMediaStorageKeysByFamily(familyId: string): Promise<string[]> {
+    const rows = await this.prisma.mediaAssetRecord.findMany({
+      where: { child: { familyId } },
+      select: { storageKey: true },
+    });
+    return rows.map((row) => row.storageKey);
   }
 
   async deleteFamily(familyId: string): Promise<boolean> {

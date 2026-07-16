@@ -38,6 +38,14 @@ export type RootStackParamList = {
    */
   Results: { emptySubmit?: boolean } | undefined;
   /**
+   * Issue #134 (product plan Screen 6, "Observation Recorder"): opt-in photo/video/audio
+   * capture with per-capture consent enforcement server-side. Reached from Results, only
+   * for a logged-in Premium session with a server-persisted child — a guest child has no
+   * server record to attach media to. Storage only in Phase 1: nothing recorded here is
+   * analysed by either assessment engine (that's issue #135, Phase 2).
+   */
+  ObservationRecorder: undefined;
+  /**
    * Issue #125: shown on every app launch/resume where Splash resolves an admin session,
    * right after the login gate and before the normal family/child routing below — an
    * admin picks "Continue to app" (replaces back to Splash with skipAdminChoice) or

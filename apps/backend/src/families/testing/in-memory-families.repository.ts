@@ -7,9 +7,11 @@
 import {
   ageInMonths,
   deriveAgeBandOrNearest,
+  DEFAULT_MEDIA_RETENTION_DAYS,
   type Child,
   type ConsentScope,
   type Family,
+  type MediaRetentionDays,
 } from '@earlysteps/shared-types';
 import type {
   CreateChildInput,
@@ -54,6 +56,25 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
    */
   onDeleteChildren: ((childIds: string[]) => Promise<void>) | null = null;
 
+  /**
+   * Same cross-double wiring as onDeleteChildren (issue #134): in production the media
+   * rows live in the same database, but the in-memory media data lives in a separate
+   * test double — tests that exercise blob purging on family deletion hook this to it.
+   */
+  onListMediaStorageKeys: ((familyId: string) => Promise<string[]>) | null = null;
+
+  /**
+   * Same cross-double wiring as onListMediaStorageKeys (issue #142): the in-memory media
+   * repository owns the actual asset rows, so a retention-window change here has nothing
+   * to retroactively recompute on its own — tests hook this to the media double.
+   */
+  onUpdateMediaRetentionForFamily:
+    ((familyId: string, days: MediaRetentionDays) => Promise<void>) | null = null;
+
+  async listMediaStorageKeysByFamily(familyId: string): Promise<string[]> {
+    return this.onListMediaStorageKeys ? this.onListMediaStorageKeys(familyId) : [];
+  }
+
   async deleteFamily(familyId: string): Promise<boolean> {
     if (!this.families.has(familyId)) return false;
     const childIds = [...this.children.values()]
@@ -72,6 +93,7 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
       locale: input.locale,
       low_bandwidth_mode: input.lowBandwidthMode ?? false,
       consent_flags: {},
+      media_retention_days: DEFAULT_MEDIA_RETENTION_DAYS,
     };
     this.families.set(family.id, family);
     this.familyOwners.set(family.id, input.userId ?? null);
@@ -106,6 +128,20 @@ export class InMemoryFamiliesRepository implements FamiliesRepository {
       consent_flags: { ...existing.consent_flags, [scope]: granted },
     };
     this.families.set(familyId, updated);
+    return updated;
+  }
+
+  async updateMediaRetentionDays(
+    familyId: string,
+    days: MediaRetentionDays,
+  ): Promise<Family> {
+    const existing = this.families.get(familyId);
+    if (!existing) throw new Error(`No family found with id ${familyId}`);
+    const updated: Family = { ...existing, media_retention_days: days };
+    this.families.set(familyId, updated);
+    if (this.onUpdateMediaRetentionForFamily) {
+      await this.onUpdateMediaRetentionForFamily(familyId, days);
+    }
     return updated;
   }
 

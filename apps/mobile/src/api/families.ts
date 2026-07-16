@@ -1,4 +1,10 @@
-import type { Child, ConsentScope, Family, GenderOption } from '@earlysteps/shared-types';
+import type {
+  Child,
+  ConsentScope,
+  Family,
+  GenderOption,
+  MediaRetentionDays,
+} from '@earlysteps/shared-types';
 import { apiClient } from './client.js';
 import { getGuestChild, isGuestChildId } from '../guest/guestStore.js';
 
@@ -37,6 +43,14 @@ export function updateConsent(
   granted: boolean,
 ): Promise<Family> {
   return apiClient.patch<Family>(`/families/${familyId}/consent`, { scope, granted });
+}
+
+/** Parent-facing media retention window (issue #142) — 30/60/90 days, retroactive. */
+export function updateMediaRetention(
+  familyId: string,
+  days: MediaRetentionDays,
+): Promise<Family> {
+  return apiClient.patch<Family>(`/families/${familyId}/media-retention`, { days });
 }
 
 export function createChild(familyId: string, input: CreateChildInput): Promise<Child> {

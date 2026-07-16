@@ -32,6 +32,12 @@ import { SCREENING_REPOSITORY } from '../src/screening/screening.repository.js';
 import { InMemoryScreeningRepository } from '../src/screening/testing/in-memory-screening.repository.js';
 import { FAMILIES_REPOSITORY } from '../src/families/families.repository.js';
 import { InMemoryFamiliesRepository } from '../src/families/testing/in-memory-families.repository.js';
+import { MediaService } from '../src/media/media.service.js';
+import { MediaEncryptionService } from '../src/media/media-encryption.service.js';
+import { MEDIA_REPOSITORY } from '../src/media/media.repository.js';
+import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.repository.js';
+import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
+import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 
 const AT = '2026-07-02T00:00:00.000Z';
 
@@ -88,6 +94,12 @@ async function buildStack(clientOutputs: (string | null)[]) {
         provide: AI_RESULTS_SUMMARY_CLIENT,
         useValue: new DisabledAiResultsSummaryClient(),
       },
+      // Not under test here (issue #135) — no child ever has media in this file's fixtures,
+      // so MediaService's photo evidence is always [] and never observed.
+      MediaService,
+      MediaEncryptionService,
+      { provide: MEDIA_REPOSITORY, useClass: InMemoryMediaRepository },
+      { provide: OBJECT_STORAGE_SERVICE, useClass: InMemoryObjectStorageService },
     ],
   }).compile();
   return {

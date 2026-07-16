@@ -28,6 +28,12 @@ import { SCREENING_REPOSITORY } from '../src/screening/screening.repository.js';
 import { InMemoryScreeningRepository } from '../src/screening/testing/in-memory-screening.repository.js';
 import { FAMILIES_REPOSITORY } from '../src/families/families.repository.js';
 import { InMemoryFamiliesRepository } from '../src/families/testing/in-memory-families.repository.js';
+import { MediaService } from '../src/media/media.service.js';
+import { MediaEncryptionService } from '../src/media/media-encryption.service.js';
+import { MEDIA_REPOSITORY } from '../src/media/media.repository.js';
+import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.repository.js';
+import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
+import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 
 async function buildApp(): Promise<{
   app: INestApplication;
@@ -65,6 +71,12 @@ async function buildApp(): Promise<{
         provide: AI_RESULTS_SUMMARY_CLIENT,
         useValue: { generateSummary: async () => null },
       },
+      // issue #135: AnalysisService now depends on MediaService for photo evidence; every
+      // case here is rejected by a guard before it's ever reached.
+      MediaService,
+      MediaEncryptionService,
+      { provide: MEDIA_REPOSITORY, useClass: InMemoryMediaRepository },
+      { provide: OBJECT_STORAGE_SERVICE, useClass: InMemoryObjectStorageService },
     ],
   }).compile();
 
