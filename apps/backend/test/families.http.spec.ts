@@ -23,6 +23,8 @@ import { FamiliesService } from '../src/families/families.service.js';
 import { FAMILIES_REPOSITORY } from '../src/families/families.repository.js';
 import { FamilyOwnershipGuard } from '../src/families/family-ownership.guard.js';
 import { InMemoryFamiliesRepository } from '../src/families/testing/in-memory-families.repository.js';
+import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
+import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 
 async function buildApp(): Promise<{
   app: INestApplication;
@@ -45,6 +47,8 @@ async function buildApp(): Promise<{
       FamiliesService,
       { provide: FAMILIES_REPOSITORY, useValue: familiesRepository },
       FamilyOwnershipGuard,
+      // Issue #134: deleteFamily purges media blobs through this port.
+      { provide: OBJECT_STORAGE_SERVICE, useValue: new InMemoryObjectStorageService() },
     ],
   }).compile();
 

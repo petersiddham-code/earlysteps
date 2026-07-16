@@ -14,3 +14,4 @@ export * from './auth.js';
 export * from './aiResultsSummary.js';
 export * from './comparisonResult.js';
 export * from './admin.js';
+export * from './media.js';

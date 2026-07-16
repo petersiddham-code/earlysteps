@@ -30,6 +30,15 @@ export function setAuthToken(token: string | null): void {
   currentAccessToken = token;
 }
 
+/**
+ * Issue #134: media uploads go through expo-file-system's uploadAsync (see api/media.ts)
+ * rather than this fetch client, so they need the current token to build their own
+ * Authorization header.
+ */
+export function getAuthToken(): string | null {
+  return currentAccessToken;
+}
+
 async function request<T>(
   method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,

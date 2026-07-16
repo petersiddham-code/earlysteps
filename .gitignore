@@ -11,3 +11,6 @@ coverage/
 
 # Playwright-MCP session artifacts
 .playwright-mcp/
+
+# Local media object storage (issue #134) — per-family-encrypted blobs, never committed
+apps/backend/data/

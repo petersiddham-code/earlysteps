@@ -11,11 +11,18 @@ import {
   InMemoryFamiliesRepository,
   bornMonthsAgo,
 } from '../src/families/testing/in-memory-families.repository.js';
+import { OBJECT_STORAGE_SERVICE } from '../src/media/object-storage/object-storage.js';
+import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 
 async function buildService() {
   const repository = new InMemoryFamiliesRepository();
   const moduleRef = await Test.createTestingModule({
-    providers: [FamiliesService, { provide: FAMILIES_REPOSITORY, useValue: repository }],
+    providers: [
+      FamiliesService,
+      { provide: FAMILIES_REPOSITORY, useValue: repository },
+      // Issue #134: deleteFamily purges media blobs through this port.
+      { provide: OBJECT_STORAGE_SERVICE, useValue: new InMemoryObjectStorageService() },
+    ],
   }).compile();
   return { service: moduleRef.get(FamiliesService), repository };
 }
