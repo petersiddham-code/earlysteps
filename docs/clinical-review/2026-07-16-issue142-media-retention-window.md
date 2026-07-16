@@ -71,6 +71,7 @@ to double-check before it ships to a caregiver.
 
 ## Sign-off status
 
-_Pending_ advisor/maintainer sign-off — the newly authored heading/explanation/option-label
-copy above, and whether shorter-only 30/60/90 (vs. also allowing longer windows, or an
-explicit "keep until I delete it" choice) is the right range to offer.
+✅ Signed off 2026-07-16 by Peter Siddham — the heading/explanation/option-label copy above
+approved as-is, and shorter-only 30/60/90 confirmed as the right range (no longer-than-90
+option, no separate "keep until I delete it" choice beyond the existing per-capture
+`retainedByParent` override).
