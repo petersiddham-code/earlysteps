@@ -149,6 +149,15 @@ describe('admin routes', () => {
     expect(Array.isArray(res.body.question_banks)).toBe(true);
     expect(res.body.question_banks.length).toBeGreaterThan(0);
     expect(typeof res.body.red_flag_copy_version).toBe('string');
+    // Issue #129: comprehensive sign-off status, including weights/evidence-floors which
+    // aren't admin-draftable and previously had no visibility anywhere in this response.
+    expect(Array.isArray(res.body.clinical_signoff)).toBe(true);
+    expect(res.body.clinical_signoff).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'weights', needs_signoff: true }),
+        expect.objectContaining({ key: 'evidence-floors', needs_signoff: true }),
+      ]),
+    );
   });
 
   it('GET /admin/clinical-review-log returns parsed sign-off rows', async () => {

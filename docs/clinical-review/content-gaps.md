@@ -13,6 +13,15 @@ They must be reviewed and replaced. The bucket thresholds (0–33 / 34–66 / 67
 §8.2) are hard-coded constants in `scoring-engine/src/buckets.ts` and likewise must not change
 without sign-off.
 
+**Engineering-only partial mitigation, 2026-07-16 (issue #129):** the app can no longer boot in
+production while this (or any of the other seven `needs_clinical_signoff: true` files) is still
+true — `assertClinicalContentSafeToBoot` refuses to start; see
+`2026-07-16-issue129-clinical-signoff-boot-gate.md`. The Admin Console also now shows this
+file's sign-off status directly, alongside every other flagged file. This closes the "could
+accidentally ship to a real family unreviewed" risk, **not** the underlying blocker — the
+weight values themselves are unchanged, still placeholders, and still need a developmental
+advisor. The `buckets.ts` threshold advisor pass named above is also still open.
+
 ## 2. ~~Red-flag triggers with no source question~~ — CLOSED (pending sign-off) 2026-07-02
 
 The four missing questions (regression, self-injury, sudden behaviour change, safety) are now
