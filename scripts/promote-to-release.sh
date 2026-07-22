@@ -27,13 +27,15 @@ fail() { echo "[promote-to-release] ERROR: $*" >&2; exit 1; }
 [ -d "$RELEASE_DIR" ] || fail "release worktree not found at $RELEASE_DIR — see docs/clinical-review or ask Claude to recreate it."
 
 # --- 1. Safety: both checkouts must be clean before touching anything ---
+# --untracked-files=no: ignores stray local tooling files (.claude/, .codegraph/, etc.)
+# that were never meant to be tracked — only tracked-file modifications count as "dirty".
 cd "$DEV_DIR"
-[ -z "$(git status --porcelain)" ] || fail "dev directory ($DEV_DIR) has uncommitted changes — commit or stash first."
+[ -z "$(git status --porcelain --untracked-files=no)" ] || fail "dev directory ($DEV_DIR) has uncommitted changes to tracked files — commit or stash first."
 CURRENT_BRANCH=$(git branch --show-current)
 [ "$CURRENT_BRANCH" = "master" ] || log "warning: dev directory is on '$CURRENT_BRANCH', not 'master' — promoting from master's tip regardless."
 
 cd "$RELEASE_DIR"
-[ -z "$(git status --porcelain)" ] || fail "release worktree ($RELEASE_DIR) has uncommitted changes — investigate before promoting; nothing should be edited there directly."
+[ -z "$(git status --porcelain --untracked-files=no)" ] || fail "release worktree ($RELEASE_DIR) has uncommitted changes to tracked files — investigate before promoting; nothing should be edited there directly."
 
 BEFORE_SHA=$(git rev-parse HEAD)
 
