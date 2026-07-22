@@ -1,9 +1,27 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { unsignedOffClinicalContent } from '@earlysteps/content';
 import { AppModule } from './app.module.js';
 import { assertClinicalContentSafeToBoot } from './startup/clinical-content-gate.js';
+
+/**
+ * Temporary traffic-visibility logging (dev-only, requested ad hoc while sharing this
+ * backend through a public tunnel) — not request-scoped tracing, not for production.
+ * `cf-connecting-ip` is the real client IP Cloudflare's edge attaches to every request,
+ * even for an account-less quick tunnel; `x-forwarded-for` is the fallback for any other
+ * proxy in front (or direct LAN access), and req.ip covers a same-machine request.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function logTraffic(req: any, res: any, next: () => void) {
+  const logger = new Logger('Traffic');
+  const clientIp = req.headers['cf-connecting-ip'] ?? req.headers['x-forwarded-for'] ?? req.ip;
+  const start = Date.now();
+  res.on('finish', () => {
+    logger.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms — ${clientIp}`);
+  });
+  next();
+}
 
 async function bootstrap() {
   // Must run before anything else touches content — a production boot with unreviewed
@@ -16,6 +34,7 @@ async function bootstrap() {
   // Reflecting the request origin is acceptable while the API is pre-auth and local-only;
   // tighten to an explicit allowlist when real deployment/auth lands.
   app.enableCors();
+  app.use(logTraffic);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
   await app.listen(port);
