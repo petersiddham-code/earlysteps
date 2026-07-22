@@ -65,7 +65,9 @@ log "Regenerating Prisma client..."
 (cd "$RELEASE_DIR/apps/backend" && npx prisma generate) >/dev/null
 
 # --- 4. Confirm the named tunnel is actually up before bouncing anything ---
-ps aux | grep -q "[c]loudflared tunnel run earlysteps" || fail "named tunnel process not running — start it with: cloudflared tunnel run earlysteps"
+# pgrep (not `ps | grep -q`): under `pipefail`, grep -q closing its stdin early on a
+# match sends the upstream command SIGPIPE, which pipefail can misreport as failure.
+pgrep -f "cloudflared tunnel run earlysteps" >/dev/null || fail "named tunnel process not running — start it with: cloudflared tunnel run earlysteps"
 log "Backend URL: $BACKEND_TUNNEL_URL"
 log "Web URL: $WEB_TUNNEL_URL"
 
