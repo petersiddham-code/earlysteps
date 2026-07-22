@@ -8,16 +8,19 @@
 # sanctioned way data/code should flow from one to the other — never edit inside the
 # release worktree directly.
 #
-# Tunnel URLs are read from the running cloudflared logs each time, not hardcoded, since
-# a free/account-less quick tunnel gets a new URL every time it's restarted.
+# Served via a named Cloudflare tunnel ("earlysteps", earlypathlabs.com) rather than a
+# free/account-less quick tunnel — the hostnames below are permanent and don't change
+# across restarts, unlike the old trycloudflare.com URLs. The tunnel process itself
+# (cloudflared tunnel run earlysteps, config at ~/.cloudflared/config.yml) is independent
+# of this script and doesn't need restarting on every promotion — only backend/Metro do.
 set -euo pipefail
 
 DEV_DIR="/Users/mamta/dev/earlysteps"
 RELEASE_DIR="/Users/mamta/dev/earlysteps-release"
 BACKEND_PORT=3000
 METRO_PORT=8081
-BACKEND_TUNNEL_LOG="/tmp/cf-backend.log"
-WEB_TUNNEL_LOG="/tmp/cf-web.log"
+BACKEND_TUNNEL_URL="https://earlysteps-api.earlypathlabs.com"
+WEB_TUNNEL_URL="https://earlysteps.earlypathlabs.com"
 BACKEND_LOG="/tmp/backend-release.log"
 METRO_LOG="/tmp/metro-release.log"
 
@@ -61,12 +64,10 @@ log "Applying any pending migrations to the release database..."
 log "Regenerating Prisma client..."
 (cd "$RELEASE_DIR/apps/backend" && npx prisma generate) >/dev/null
 
-# --- 4. Read the current tunnel URLs (may differ from last time if tunnels restarted) ---
-BACKEND_TUNNEL_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$BACKEND_TUNNEL_LOG" 2>/dev/null | head -1 || true)
-WEB_TUNNEL_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$WEB_TUNNEL_LOG" 2>/dev/null | head -1 || true)
-[ -n "$BACKEND_TUNNEL_URL" ] || fail "couldn't find the backend tunnel URL in $BACKEND_TUNNEL_LOG — is cloudflared still running?"
-log "Backend tunnel: $BACKEND_TUNNEL_URL"
-[ -n "$WEB_TUNNEL_URL" ] && log "Web tunnel: $WEB_TUNNEL_URL"
+# --- 4. Confirm the named tunnel is actually up before bouncing anything ---
+ps aux | grep -q "[c]loudflared tunnel run earlysteps" || fail "named tunnel process not running — start it with: cloudflared tunnel run earlysteps"
+log "Backend URL: $BACKEND_TUNNEL_URL"
+log "Web URL: $WEB_TUNNEL_URL"
 
 # --- 5. Restart backend + Metro from the release worktree, same ports as before ---
 BACKEND_PID=$(lsof -ti:"$BACKEND_PORT" || true)
