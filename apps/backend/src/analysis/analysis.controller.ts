@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Inject, Param, Post, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type {
   AiResultsSummary,
   ComparisonResult,
@@ -38,7 +39,10 @@ export class AnalysisController {
    * consent) and returns all pending confirmation follow-ups. Clients call this
    * best-effort after showing results — a failure here never blocks results.
    */
+  /** Tighter than the app-wide default (app.module.ts) — this triggers a real Claude API
+   * call per free-text answer, so an internet-facing backend needs a cost ceiling here. */
   @Post('response-analysis')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   runAnalysis(@Param('childId') childId: string): Promise<FollowUpSuggestion[]> {
     return this.analysisService.runAnalysis(childId);
   }
@@ -71,7 +75,10 @@ export class AnalysisController {
    * unchanged if the answered questions haven't changed since it was last generated;
    * null (403 aside) means "no section" — a caregiver-visible failure never happens.
    */
+  /** Same cost reasoning as response-analysis — cached by content hash, but an attacker
+   * varying answers slightly each call can still force repeated real generations. */
   @Post('results-summary')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   getResultsSummary(@Param('childId') childId: string): Promise<AiResultsSummary | null> {
     return this.analysisService.getResultsSummary(childId);
   }

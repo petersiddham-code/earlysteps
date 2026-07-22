@@ -31,9 +31,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // Browser clients (Expo web in dev, and any future web build) are same-machine but
   // cross-origin (:8081 -> :3000), so without CORS every fetch is blocked at preflight.
-  // Reflecting the request origin is acceptable while the API is pre-auth and local-only;
-  // tighten to an explicit allowlist when real deployment/auth lands.
-  app.enableCors();
+  // CORS_ALLOWED_ORIGINS (comma-separated) restricts this to known origins once the
+  // backend is actually reachable from the internet (set in the release/exposed
+  // environment's .env — see the named-tunnel setup). Left unset, this still falls back
+  // to wildcard-open, which is fine for a local-only dev backend nothing else can reach.
+  const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors(allowedOrigins ? { origin: allowedOrigins } : {});
   app.use(logTraffic);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
