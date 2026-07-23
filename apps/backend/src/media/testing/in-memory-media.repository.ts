@@ -24,6 +24,8 @@ export class InMemoryMediaRepository implements MediaRepository {
       retainedByParent: false,
       consentId: input.consentId,
       deletedAt: null,
+      transcript: null,
+      transcribedAt: null,
     };
     this.assets.set(asset.id, asset);
     return asset;
@@ -64,6 +66,21 @@ export class InMemoryMediaRepository implements MediaRepository {
 
   async setFamilyMediaKey(familyId: string, keyBase64: string): Promise<void> {
     this.familyKeys.set(familyId, keyBase64);
+  }
+
+  async setTranscript(
+    mediaId: string,
+    transcript: string,
+    transcribedAt: Date,
+  ): Promise<void> {
+    const asset = this.assets.get(mediaId);
+    if (asset) {
+      this.assets.set(mediaId, {
+        ...asset,
+        transcript,
+        transcribedAt: transcribedAt.toISOString(),
+      });
+    }
   }
 
   /** Test-only helpers. */

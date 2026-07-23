@@ -38,6 +38,18 @@ export interface AiSummaryVideoFrameEvidence {
   base64Data: string;
 }
 
+/**
+ * One speech-to-text transcript of a caregiver-captured audio clip (issue #140, Phase 4).
+ * Unlike photos/video frames this is plain text, not an image content block — attached as
+ * part of the text message, tagged separately as `<audio_evidence>` so the model treats it
+ * as a machine transcript of recorded speech, never as something the caregiver typed
+ * (never folded into `answers`' freeText) and never as more reliable than a transcript
+ * actually is.
+ */
+export interface AiSummaryAudioTranscriptEvidence {
+  transcript: string;
+}
+
 export interface AiResultsSummaryInput {
   ageBand: string;
   gender?: string;
@@ -52,6 +64,11 @@ export interface AiResultsSummaryInput {
    * `videoFrames.length` are video-derived frames" positionally.
    */
   videoFrames: AiSummaryVideoFrameEvidence[];
+  /**
+   * Speech-to-text transcripts of caregiver-captured audio clips, already consent-gated
+   * and transcribed by the caller. May be empty.
+   */
+  audioTranscripts: AiSummaryAudioTranscriptEvidence[];
 }
 
 export interface AiResultsSummaryClient {

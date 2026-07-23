@@ -14,6 +14,8 @@ function toMediaAsset(row: {
   retentionExpiresAt: Date;
   retainedByParent: boolean;
   deletedAt: Date | null;
+  transcript: string | null;
+  transcribedAt: Date | null;
 }): MediaAsset {
   return {
     id: row.id,
@@ -26,6 +28,8 @@ function toMediaAsset(row: {
     retentionExpiresAt: row.retentionExpiresAt.toISOString(),
     retainedByParent: row.retainedByParent,
     deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
+    transcript: row.transcript,
+    transcribedAt: row.transcribedAt ? row.transcribedAt.toISOString() : null,
   };
 }
 
@@ -99,6 +103,17 @@ export class PrismaMediaRepository implements MediaRepository {
     await this.prisma.family.update({
       where: { id: familyId },
       data: { mediaEncryptionKey: keyBase64 },
+    });
+  }
+
+  async setTranscript(
+    mediaId: string,
+    transcript: string,
+    transcribedAt: Date,
+  ): Promise<void> {
+    await this.prisma.mediaAssetRecord.update({
+      where: { id: mediaId },
+      data: { transcript, transcribedAt },
     });
   }
 }

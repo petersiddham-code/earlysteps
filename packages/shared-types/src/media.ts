@@ -56,12 +56,27 @@ export interface MediaAsset {
    * didn't complete in one pass. Deletion is always real: blob and row both go.
    */
   deletedAt: string | null;
+  /**
+   * Speech-to-text transcript for an `audio` asset (issue #140, Phase 4 of the
+   * media-assessment plan) — always null for `photo`/`video` kinds. Computed once, lazily,
+   * the first time this asset is analyzed as Assessment B evidence, then persisted here so
+   * a comparatively expensive transcription call is never repeated for the same stored
+   * audio (unlike frame extraction, cheap enough to redo on demand every time).
+   */
+  transcript: string | null;
+  /** When `transcript` was generated, or null if it hasn't been yet. */
+  transcribedAt: string | null;
 }
 
 /**
  * What the API actually returns to a caregiver's device. `storageKey` (an internal
  * object-storage pointer) and `consentId` (an internal correlation id, not consent proof —
  * see MediaAsset's own doc comment) are server-internal detail with no reason to leave the
- * backend (data minimization, security review, issue #134).
+ * backend (data minimization, security review, issue #134). `transcript`/`transcribedAt`
+ * are the same kind of server-internal evidence detail (issue #140) — the mobile app has no
+ * use for a machine transcript of its own recording.
  */
-export type MediaAssetView = Omit<MediaAsset, 'storageKey' | 'consentId'>;
+export type MediaAssetView = Omit<
+  MediaAsset,
+  'storageKey' | 'consentId' | 'transcript' | 'transcribedAt'
+>;

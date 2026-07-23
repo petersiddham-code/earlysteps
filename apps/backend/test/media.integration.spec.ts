@@ -23,6 +23,8 @@ import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.re
 import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 import { FRAME_EXTRACTION_SERVICE } from '../src/media/frame-extraction.js';
 import { FakeFrameExtractionService } from '../src/media/testing/fake-frame-extraction.service.js';
+import { AUDIO_TRANSCRIPTION_SERVICE } from '../src/media/audio-transcription.js';
+import { FakeAudioTranscriptionService } from '../src/media/testing/fake-audio-transcription.service.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PHOTO_BYTES = Buffer.from('pretend-jpeg-bytes-'.repeat(20));
@@ -42,6 +44,10 @@ async function buildStack() {
       { provide: OBJECT_STORAGE_SERVICE, useValue: storage },
       { provide: MediaEncryptionService, useValue: encryption },
       { provide: FRAME_EXTRACTION_SERVICE, useValue: frameExtraction },
+      {
+        provide: AUDIO_TRANSCRIPTION_SERVICE,
+        useValue: new FakeAudioTranscriptionService(),
+      },
     ],
   }).compile();
   return {

@@ -30,6 +30,8 @@ import { InMemoryMediaRepository } from '../src/media/testing/in-memory-media.re
 import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 import { FRAME_EXTRACTION_SERVICE } from '../src/media/frame-extraction.js';
 import { FakeFrameExtractionService } from '../src/media/testing/fake-frame-extraction.service.js';
+import { AUDIO_TRANSCRIPTION_SERVICE } from '../src/media/audio-transcription.js';
+import { FakeAudioTranscriptionService } from '../src/media/testing/fake-audio-transcription.service.js';
 
 async function buildApp(): Promise<{
   app: INestApplication;
@@ -57,6 +59,7 @@ async function buildApp(): Promise<{
       { provide: FAMILIES_REPOSITORY, useValue: familiesRepository },
       { provide: OBJECT_STORAGE_SERVICE, useValue: storage },
       { provide: FRAME_EXTRACTION_SERVICE, useClass: FakeFrameExtractionService },
+      { provide: AUDIO_TRANSCRIPTION_SERVICE, useClass: FakeAudioTranscriptionService },
     ],
   }).compile();
 

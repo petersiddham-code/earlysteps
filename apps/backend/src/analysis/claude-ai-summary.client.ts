@@ -103,6 +103,7 @@ export class ClaudeAiResultsSummaryClient implements AiResultsSummaryClient {
                   input.answers.map(capFreeText),
                   photoBlocks.length,
                   videoFrameBlocks.length,
+                  input.audioTranscripts.map((t) => t.transcript),
                 ),
               },
               ...photoBlocks,
