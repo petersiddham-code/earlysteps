@@ -160,20 +160,25 @@ Pure engineering changes (refactors, infra, non-content bug fixes) don't need th
 
 ---
 
-## 11. Commands (fill in once scaffolded)
+## 11. Commands
 
 ```bash
-# Mobile
-cd apps/mobile && npm install && npx expo start
+# Install everything (pnpm workspace — not npm)
+pnpm install
 
-# Backend
-cd apps/backend && npm install && npm run start:dev
+# Mobile (Expo)
+cd apps/mobile && pnpm exec expo start
+# Web build, CI mode (no hot reload — needed after adding content JSON modules):
+CI=1 pnpm exec expo start --port 8081 --clear
 
-# Scoring engine tests
-cd packages/scoring-engine && npm test
+# Backend (needs local Postgres — apps/backend/.env)
+cd apps/backend && pnpm start:dev
 
-# Full content-safety lint (banned words, disclaimer presence)
-npm run lint:content
+# Full gate (run before any PR)
+pnpm typecheck && pnpm lint && pnpm lint:content && pnpm test && pnpm test:mobile
+
+# Push current master to the publicly-exposed demo environment (see §17)
+./scripts/promote-to-release.sh
 ```
 
 ---
@@ -256,3 +261,45 @@ This file documents the target dual-assessment architecture (§13/§14). As of 2
 - **Components — built.** `<AIAssessmentCard />`, `<ComparisonCard />`, `<ConfidenceBadge />`, `<SupportPrioritiesCard />` (§6) all exist under `apps/mobile/src/components/`.
 - **Still pending, unrelated to the architecture itself:** every piece of this migration is logged in `docs/clinical-review/README.md`'s sign-off log as `_pending_` advisor sign-off (the comparison-reason heuristic, the professional-referral carve-out, and all newly authored section headings/framing copy especially) — clinical content, not engineering, per §9. Don't treat "implemented" above as "clinically approved."
 - Any further change to likelihood/confidence output, comparison logic, or which engine owns which field is still an architecture change per rule 16 (§2) — same review discipline as clinical content (§9).
+
+---
+
+## 17. Local demo/hosting setup (dev/release split, added 2026-07-22)
+
+Not a product feature — this documents how the app gets shared with an external tester (currently a colleague, "sajeeva") from a local machine, without a real cloud deployment. Read this before touching anything under `/Users/mamta/dev/earlysteps-release` or `~/.cloudflared/`.
+
+**Two separate environments, same repo:**
+
+| | Dev (this checkout) | Release (exposed) |
+|---|---|---|
+| Directory | `/Users/mamta/dev/earlysteps` | `/Users/mamta/dev/earlysteps-release` (a `git worktree`) |
+| Branch | `master` | `release` |
+| Database | `earlysteps` | `earlysteps_release` (fully separate — migrations/resets in dev never touch it) |
+| Backend port | 3000 | 3000 (only one runs at a time — dev's isn't normally left running) |
+| Metro port | 8081 | 8081 (same) |
+
+**Never edit inside `earlysteps-release` directly.** The only sanctioned path from dev to release is:
+
+```bash
+./scripts/promote-to-release.sh
+```
+
+This fast-forwards `release` to `master`'s tip (refuses on uncommitted changes or diverged history), runs `pnpm install` + `prisma migrate deploy` + `prisma generate` against the release database, and restarts the release backend/Metro processes. It does **not** restart the tunnel itself (see below) — that's independent and long-lived.
+
+**Public access — named Cloudflare tunnel, not a throwaway quick-tunnel:**
+
+- Domain `earlypathlabs.com` (Cloudflare-managed DNS) — chosen as a general-purpose umbrella domain, not tied to just this one app
+- `https://earlysteps.earlypathlabs.com` → web app (Metro, port 8081)
+- `https://earlysteps-api.earlypathlabs.com` → backend API (port 3000) — **must stay a single label** (e.g. `earlysteps-api`, not `api.earlysteps`), since Cloudflare's default Universal SSL only covers one level of subdomain wildcard (`*.earlypathlabs.com`), not two (`*.*.earlypathlabs.com`) — a nested hostname will resolve but fail TLS
+- Named tunnel `earlysteps` (id in `~/.cloudflared/config.yml`, credentials in `~/.cloudflared/*.json` — never commit these) runs as a macOS user launch agent (`com.cloudflare.cloudflared`, `~/Library/LaunchAgents/com.cloudflare.cloudflared.plist`) — auto-starts on login, auto-restarts on crash
+- `caffeinate -d -i -m -s` (no timeout) keeps the Mac from sleeping, since sleep kills all networking regardless of launch-agent supervision. This only prevents *idle* sleep — closing the lid while unplugged (or with no external display) forces sleep anyway; keep it plugged in and open.
+
+**Security posture, specifically because this is now reachable from the public internet** (see the 2026-07-22 hardening pass — `apps/backend/src/main.ts`, `app.module.ts`, `auth.controller.ts`, `analysis.controller.ts`):
+
+- `JWT_SECRET` in the release `.env` is a real random secret, not the shared dev placeholder (`"local-dev-secret-do-not-use-in-production"`) — dev's weak value is fine precisely because dev is never exposed
+- `CORS_ALLOWED_ORIGINS` (release `.env` only) locks CORS to `https://earlysteps.earlypathlabs.com`; unset (dev's default) still falls back to wildcard-open, which is fine for a local-only backend
+- `@nestjs/throttler` rate-limits: 60 req/min global default, 10 req/min on `/auth/login` + `/auth/register` (brute-force) and on `response-analysis` + `results-summary` (each is a real, billed Claude API call)
+- `pnpm-workspace.yaml`'s `overrides` force patched versions of several transitive dependency CVEs (multer, file-type, uuid, qs, body-parser, brace-expansion). One advisory remains open by decision: `@nestjs/core`'s moderate-severity issue has no patch on the 10.x line — fixing it means a major NestJS 10→11 upgrade, decided 2026-07-23 to defer rather than do as a side effect of this hardening pass
+- Postgres and the release database are confirmed localhost-only, never forwarded by the tunnel
+
+**If any of this breaks:** check `pgrep -f "cloudflared tunnel run earlysteps"` (tunnel process), `launchctl list | grep cloudflare` (launch agent registered), `pmset -g` (sleep actually prevented), and the release backend/Metro logs (`/tmp/backend-release.log`, `/tmp/metro-release.log`) before assuming the app itself regressed.
