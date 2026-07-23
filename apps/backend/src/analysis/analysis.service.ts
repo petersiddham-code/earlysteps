@@ -248,7 +248,10 @@ export class AnalysisService {
     if (
       cached &&
       cached.contentHash === contentHash &&
-      isSummaryStillSafe(cached.content)
+      isSummaryStillSafe(
+        cached.content,
+        audioTranscripts.map((clip) => clip.transcript),
+      )
     ) {
       return cached.content;
     }
@@ -301,7 +304,11 @@ export class AnalysisService {
         audioTranscripts: audioTranscriptEvidence,
       });
       if (rawOutput === null) return null; // transport failure: retrying won't help
-      const summary = parseAiSummaryOutput(rawOutput, evidenceModalities);
+      const summary = parseAiSummaryOutput(
+        rawOutput,
+        evidenceModalities,
+        audioTranscripts.map((clip) => clip.transcript),
+      );
       if (summary !== null) return summary;
     }
     return null;

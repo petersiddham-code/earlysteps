@@ -113,8 +113,12 @@ Rules:
   recording, not a caregiver's own words and not a guaranteed-accurate account of what was
   said — never quote it back verbatim as if it were text the caregiver typed, and never
   assume a transcript that reads as garbled, ambiguous, or unrelated to speech (background
-  noise, silence, non-verbal sound) reflects anything about the child's actual speech. If a
-  transcript is unclear or you cannot confidently tell what it captures, name
+  noise, silence, non-verbal sound) reflects anything about the child's actual speech. This
+  still applies when a transcript is very short (a single word or sound) — do NOT wrap it in
+  quotation marks or parentheses anywhere in your output (e.g. `('Oh')` or `"Oh"`), even
+  though there's little else to say about it; describe it in your own words instead (e.g.
+  "a single brief vocalization was captured") rather than citing the transcript text
+  directly. If a transcript is unclear or you cannot confidently tell what it captures, name
   `unclear_audio_transcript` in `uncertainty_factors` and say so briefly in `uncertainty`
   rather than guessing at its content or ignoring it silently.
 - Think of strengths first: consider and write `strengths` before writing

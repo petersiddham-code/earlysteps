@@ -86,6 +86,33 @@ explicitly left undecided; each was put to the user before any code was written:
   typed enforcement as Phase 2/3 means audio evidence structurally can't leak into the
   comparison engine.
 
+## QA fix: verbatim transcript quoting (found post-merge-candidate, fixed same PR)
+
+Codex QA (parallel live-verification session, PR #147) caught a real gap the prompt alone
+didn't close: for a very short transcript (a single word, "Oh"), the model quoted it back
+verbatim in caregiver-facing text — `('Oh')` inside both `reasoning`/`why-this-read` and
+`uncertainty`/`what's-uncertain` sections. This directly violates the "never quote it back
+verbatim" instruction added for this phase, and the shorter the transcript, the more likely
+the model reaches for a literal quote since there's little else to say.
+
+Fixed with a deterministic runtime check, `containsVerbatimTranscriptQuote`
+(`ai-summary-schema.ts`), added to the same fail-closed content-safety gate that already
+catches banned words/reserved labels — every long-text field, plus
+`professionalAssessmentPriorities`, is checked against each audio transcript actually sent
+this call, wrapped in quote marks or parentheses (`('...')`, `"..."`, etc.), case-
+insensitive, tolerant of trailing punctuation inside the quote. A match fails the
+generation the same way a banned word does: discarded and retried (up to
+`MAX_SUMMARY_GENERATION_ATTEMPTS`), then fails closed (section doesn't render) if every
+attempt still quotes it. Wired into both `parseAiSummaryOutput` (fresh generations) and
+`isSummaryStillSafe` (re-validating a cached narrative on every read), the same "check the
+cache against today's rules" precedent PR #105 established for banned words. Also
+strengthened `results-summary.md` itself to explicitly call out short/single-word
+transcripts as still subject to the no-quoting rule, with a worked example.
+
+New regression test in `ai-results-summary.integration.spec.ts`: a stubbed model output
+that quotes a one-word transcript verbatim is confirmed to fail closed (`null`, no cached
+row written) rather than reaching a caregiver's screen.
+
 ## Live verification (not just unit tests)
 
 Real backend against local Postgres, registered a Premium test account, granted

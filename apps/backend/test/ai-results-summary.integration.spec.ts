@@ -1204,6 +1204,29 @@ describe('AI results summary — audio evidence (issue #140, Phase 4)', () => {
       { transcript: 'transcript-of:fake-audio-bytes' },
     ]);
   });
+
+  it('returns null when the model quotes a short audio transcript back verbatim (QA regression, issue #140/PR #147)', async () => {
+    const quotedOutput = buildOutput({
+      developmental_profile:
+        "The one-word audio transcript ('transcript-of:Oh') is too brief to draw a conclusion from.",
+    });
+    const { analysisService, screeningService, familiesRepository, mediaService } =
+      await buildStack([quotedOutput, quotedOutput, quotedOutput]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/m4a',
+      data: Buffer.from('Oh'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).toBeNull();
+  });
 });
 
 describe('AI results summary — video evidence (issue #139, Phase 3)', () => {
