@@ -15,10 +15,13 @@ import { assertClinicalContentSafeToBoot } from './startup/clinical-content-gate
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function logTraffic(req: any, res: any, next: () => void) {
   const logger = new Logger('Traffic');
-  const clientIp = req.headers['cf-connecting-ip'] ?? req.headers['x-forwarded-for'] ?? req.ip;
+  const clientIp =
+    req.headers['cf-connecting-ip'] ?? req.headers['x-forwarded-for'] ?? req.ip;
   const start = Date.now();
   res.on('finish', () => {
-    logger.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms — ${clientIp}`);
+    logger.log(
+      `${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms — ${clientIp}`,
+    );
   });
   next();
 }
