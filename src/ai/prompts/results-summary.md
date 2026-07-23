@@ -33,16 +33,26 @@
   AFTER the photo blocks. <media_evidence> states the photo count, then the video-frame
   count, in that same attachment order. Each video-derived frame carries the exact same
   still-frame discipline as a photo (below) — a video is several independent snapshots in
-  time, never continuous footage, motion, or sound. Audio evidence is explicitly NOT wired
-  up yet (tracked as separate follow-up work).
+  time, never continuous footage, motion, or sound.
+
+  Phase 4 (issue #140, CLAUDE.md §15): this call may now also carry a handful of
+  speech-to-text transcripts of caregiver-captured audio clips (transcribed on demand by
+  MediaService.getAnalyzableAudioTranscripts, cached per-asset after the first
+  transcription — never re-transcribed for the same stored clip), rendered as text inside
+  <audio_evidence> rather than as image content. A transcript is a MACHINE transcription of
+  recorded speech — treat it as its own evidence type, never fold it into, or treat it the
+  same as, a caregiver's own typed free-text note, and never treat it as more reliable than
+  a transcript actually is: name transcription uncertainty (garbled, ambiguous, or
+  non-speech audio) explicitly via the new `unclear_audio_transcript` uncertainty factor
+  rather than silently best-guessing at what was said.
 -->
 
 Task: Read only the material inside the input tags below — the child's age band, gender
 (if given), every question answered this session with the option(s) selected and any note
-the caregiver typed in their own words, and any attached photo(s)/video frame(s) described
-in <media_evidence>. You have NOT been given any computed score, level, support estimate, or
-recommendation from any other part of this app, and you must not guess at, imply, or
-reference one.
+the caregiver typed in their own words, any attached photo(s)/video frame(s) described in
+<media_evidence>, and any audio transcript(s) described in <audio_evidence>. You have NOT
+been given any computed score, level, support estimate, or recommendation from any other
+part of this app, and you must not guess at, imply, or reference one.
 
 Respond with ONLY a JSON object, no other text, exactly this shape:
 
@@ -58,7 +68,7 @@ Respond with ONLY a JSON object, no other text, exactly this shape:
   "long_term": [{"priority": "...", "reason": "..."}]
 },
 "uncertainty": "<1-3 sentences naming what's uncertain in this evidence and why>",
-"uncertainty_factors": ["<0-4 of: contradictory_responses, conflicting_developmental_history, limited_free_text_evidence, sparse_structured_answers>"],
+"uncertainty_factors": ["<0-5 of: contradictory_responses, conflicting_developmental_history, limited_free_text_evidence, sparse_structured_answers, unclear_audio_transcript>"],
 "evidence_summary": "<2-4 sentences: what evidence supports this reading, synthesized — never a verbatim reflection of the answers>",
 "home_recommendations": ["<2-5 short items>"],
 "school_recommendations": ["<0-5 short items>"],
@@ -70,11 +80,13 @@ Rules:
   strongly the given evidence aligns with autism-related developmental patterns, and how
   much you can trust that read given the evidence's completeness and consistency.
 - Synthesize, don't restate. The parent already knows the answers they entered (and what
-  their own photos/videos show) — the value of `reasoning`, `developmental_profile`, and
-  `evidence_summary` is combining evidence into a meaningful developmental pattern, never
-  listing one raw answer, one photo description, or one video frame description back at them.
+  their own photos/videos/recordings show) — the value of `reasoning`, `developmental_profile`,
+  and `evidence_summary` is combining evidence into a meaningful developmental pattern, never
+  listing one raw answer, one photo description, one video frame description, or one
+  transcript quote back at them.
   - Bad: "Child has poor eye contact." / "Child flaps hands." / "The photo shows the child
-    lining up toys." / "The video shows the child spinning in circles."
+    lining up toys." / "The video shows the child spinning in circles." / "The recording
+    shows the child saying 'ball' twice."
   - Good: "The overall pattern of reduced reciprocal interaction, limited eye gaze, and
     reduced social initiation increases the likelihood of autism-related social
     communication differences." / "Repetitive motor behaviours together with
@@ -83,7 +95,10 @@ Rules:
     photo is consistent with the ordering and routine-related behaviours also described in
     the caregiver's notes, strengthening that same pattern." / "The repetitive spinning
     motion visible across the sampled video frames is consistent with the repetitive-motor
-    behaviours also described in the caregiver's notes, strengthening that same pattern."
+    behaviours also described in the caregiver's notes, strengthening that same pattern." /
+    "The limited spontaneous verbalization captured in the transcribed recording is
+    consistent with the reduced expressive vocabulary also described in the caregiver's
+    notes, though background noise in the clip limits how much can be drawn from it alone."
 - If any photos or video frames are attached, treat each individually as ONE still frame at
   ONE moment — never infer motion, sound, duration, frequency, or context beyond what is
   visibly in the frame, and never assume it is representative of the child's typical
@@ -94,6 +109,18 @@ Rules:
   what you can responsibly see into the same synthesized pattern as the rest of the evidence;
   if a photo or frame is blurry, ambiguous, or shows nothing developmentally relevant, say so
   briefly in `uncertainty` rather than speculating about what it might show.
+- If any audio transcripts are attached, remember each is a MACHINE transcript of one
+  recording, not a caregiver's own words and not a guaranteed-accurate account of what was
+  said — never quote it back verbatim as if it were text the caregiver typed, and never
+  assume a transcript that reads as garbled, ambiguous, or unrelated to speech (background
+  noise, silence, non-verbal sound) reflects anything about the child's actual speech. This
+  still applies when a transcript is very short (a single word or sound) — do NOT wrap it in
+  quotation marks or parentheses anywhere in your output (e.g. `('Oh')` or `"Oh"`), even
+  though there's little else to say about it; describe it in your own words instead (e.g.
+  "a single brief vocalization was captured") rather than citing the transcript text
+  directly. If a transcript is unclear or you cannot confidently tell what it captures, name
+  `unclear_audio_transcript` in `uncertainty_factors` and say so briefly in `uncertainty`
+  rather than guessing at its content or ignoring it silently.
 - Think of strengths first: consider and write `strengths` before writing
   `support_priorities`, and never let the support-priorities section overshadow them.
 - `support_priorities`'s four keys (`immediate`/`short_term`/`medium_term`/`long_term`)
@@ -127,9 +154,9 @@ Rules:
   screen by the deterministic engine and red-flag rules, never by you.
 - Never state, imply, or hint at a diagnosis. You were not given the information to make
   one, and this narrative is not the app's official finding.
-- Base every sentence only on the answers and any attached photos/video frames given below.
-  Never invent a milestone, behavior, or detail not present in the input or visible in an
-  attached image.
+- Base every sentence only on the answers and any attached photos/video frames/audio
+  transcripts given below. Never invent a milestone, behavior, or detail not present in the
+  input, visible in an attached image, or stated in a transcript.
 - `uncertainty_factors` and the free-text-derived content must be `[]`/absent if the
   caregiver typed no free-text notes and there is nothing evidence-based to say — never
   invent one to fill a field.
@@ -144,5 +171,6 @@ Input:
 <gender>[gender]</gender>
 <answers>[answers]</answers>
 <media_evidence>[media_evidence]</media_evidence>
+<audio_evidence>[audio_evidence]</audio_evidence>
 Any attached photos, then any attached video-derived frames, follow this text block as
 image content in that order.

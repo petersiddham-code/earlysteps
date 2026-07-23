@@ -54,6 +54,7 @@ import { ScreeningService } from '../screening/screening.service.js';
 import type { ResultsView } from '../screening/results-view.js';
 import {
   MediaService,
+  type AnalyzableAudioTranscript,
   type AnalyzablePhoto,
   type AnalyzableVideoFrame,
 } from '../media/media.service.js';
@@ -70,6 +71,7 @@ import {
   AI_RESULTS_SUMMARY_CLIENT,
   type AiResultsSummaryClient,
   type AiSummaryAnsweredQuestion,
+  type AiSummaryAudioTranscriptEvidence,
   type AiSummaryPhotoEvidence,
   type AiSummaryVideoFrameEvidence,
 } from './ai-summary-client.js';
@@ -216,12 +218,19 @@ export class AnalysisService {
     const answers = this.toAnsweredQuestions(responses);
     if (answers.length === 0) return null;
 
-    // Phase 2 (issue #135) / Phase 3 (issue #139): both consent-gated inside MediaService
-    // (media_capture) — return [] when that consent isn't granted, the same fail-closed
-    // shape as "no photos/videos exist yet".
+    // Phase 2 (issue #135) / Phase 3 (issue #139) / Phase 4 (issue #140): all consent-gated
+    // inside MediaService (media_capture) — return [] when that consent isn't granted, the
+    // same fail-closed shape as "no photos/videos/audio exist yet".
     const photos = await this.mediaService.getAnalyzablePhotos(childId);
     const videoFrames = await this.mediaService.getAnalyzableVideoFrames(childId);
-    const evidenceModalities = this.toEvidenceModalities(answers, photos, videoFrames);
+    const audioTranscripts =
+      await this.mediaService.getAnalyzableAudioTranscripts(childId);
+    const evidenceModalities = this.toEvidenceModalities(
+      answers,
+      photos,
+      videoFrames,
+      audioTranscripts,
+    );
 
     const contentHash = this.hashAnsweredQuestions(
       child.age_band,
@@ -229,6 +238,7 @@ export class AnalysisService {
       answers,
       photos,
       videoFrames,
+      audioTranscripts,
     );
     const cached = await this.repository.getCachedAiSummary(childId);
     // Re-validated on every read, not just at generation time (PR #105 QA): the
@@ -238,7 +248,10 @@ export class AnalysisService {
     if (
       cached &&
       cached.contentHash === contentHash &&
-      isSummaryStillSafe(cached.content)
+      isSummaryStillSafe(
+        cached.content,
+        audioTranscripts.map((clip) => clip.transcript),
+      )
     ) {
       return cached.content;
     }
@@ -249,6 +262,7 @@ export class AnalysisService {
       answers,
       photos,
       videoFrames,
+      audioTranscripts,
       evidenceModalities,
     );
     if (summary === null) return null;
@@ -274,10 +288,12 @@ export class AnalysisService {
     answers: AiSummaryAnsweredQuestion[],
     photos: AnalyzablePhoto[],
     videoFrames: AnalyzableVideoFrame[],
+    audioTranscripts: AnalyzableAudioTranscript[],
     evidenceModalities: EvidenceModality[],
   ): Promise<AiResultsSummary | null> {
     const photoEvidence = this.toPhotoEvidence(photos);
     const videoFrameEvidence = this.toVideoFrameEvidence(videoFrames);
+    const audioTranscriptEvidence = this.toAudioTranscriptEvidence(audioTranscripts);
     for (let attempt = 0; attempt < MAX_SUMMARY_GENERATION_ATTEMPTS; attempt++) {
       const rawOutput = await this.aiSummaryClient.generateSummary({
         ageBand,
@@ -285,9 +301,14 @@ export class AnalysisService {
         answers,
         photos: photoEvidence,
         videoFrames: videoFrameEvidence,
+        audioTranscripts: audioTranscriptEvidence,
       });
       if (rawOutput === null) return null; // transport failure: retrying won't help
-      const summary = parseAiSummaryOutput(rawOutput, evidenceModalities);
+      const summary = parseAiSummaryOutput(
+        rawOutput,
+        evidenceModalities,
+        audioTranscripts.map((clip) => clip.transcript),
+      );
       if (summary !== null) return summary;
     }
     return null;
@@ -315,20 +336,30 @@ export class AnalysisService {
     }));
   }
 
+  /** Transcript text only — `audioAssetId` is dropped here since it's only needed for
+   * cache-busting (hashAnsweredQuestions), never for anything sent to the model. */
+  private toAudioTranscriptEvidence(
+    audioTranscripts: AnalyzableAudioTranscript[],
+  ): AiSummaryAudioTranscriptEvidence[] {
+    return audioTranscripts.map((clip) => ({ transcript: clip.transcript }));
+  }
+
   /**
    * Computed from what THIS call actually sends, never from the model's own output (issue
-   * #135, extended for video in issue #139) — see EvidenceModality's doc comment in
-   * vocabulary.ts for why that matters.
+   * #135, extended for video in issue #139 and audio in issue #140) — see EvidenceModality's
+   * doc comment in vocabulary.ts for why that matters.
    */
   private toEvidenceModalities(
     answers: AiSummaryAnsweredQuestion[],
     photos: AnalyzablePhoto[],
     videoFrames: AnalyzableVideoFrame[],
+    audioTranscripts: AnalyzableAudioTranscript[],
   ): EvidenceModality[] {
     const modalities: EvidenceModality[] = ['structured_answers'];
     if (answers.some((answer) => answer.freeText)) modalities.push('free_text');
     if (photos.length > 0) modalities.push('photo');
     if (videoFrames.length > 0) modalities.push('video');
+    if (audioTranscripts.length > 0) modalities.push('audio');
     return modalities;
   }
 
@@ -395,12 +426,15 @@ export class AnalysisService {
   }
 
   /**
-   * Stable hash of the answered-question set plus the analyzed photo/video-asset sets,
-   * sorted so storage/fetch order never matters. Ids only (never raw bytes, issue #135;
-   * extended to video asset ids in issue #139) — enough to bust the cache when a photo/
-   * video is captured or deleted without re-hashing binary content. Deduped per video asset
-   * id (not per frame) since frame extraction is deterministic for a given stored video —
-   * the same asset always yields the same frames, so hashing the asset id is sufficient.
+   * Stable hash of the answered-question set plus the analyzed photo/video/audio-asset
+   * sets, sorted so storage/fetch order never matters. Ids only (never raw bytes/text,
+   * issue #135; extended to video asset ids in issue #139 and audio asset ids in issue
+   * #140) — enough to bust the cache when a photo/video/audio clip is captured or deleted
+   * without re-hashing binary content or transcript text. Deduped per video asset id (not
+   * per frame) since frame extraction is deterministic for a given stored video — the same
+   * asset always yields the same frames, so hashing the asset id is sufficient. Audio asset
+   * ids need no dedup (one transcript per clip) but are hashed the same way for the same
+   * reason: a cached transcript is stable for a given stored asset.
    */
   private hashAnsweredQuestions(
     ageBand: string,
@@ -408,6 +442,7 @@ export class AnalysisService {
     answers: AiSummaryAnsweredQuestion[],
     photos: AnalyzablePhoto[],
     videoFrames: AnalyzableVideoFrame[],
+    audioTranscripts: AnalyzableAudioTranscript[],
   ): string {
     const sortedAnswers = [...answers].sort((a, b) =>
       a.questionText.localeCompare(b.questionText),
@@ -416,12 +451,14 @@ export class AnalysisService {
     const videoAssetIds = [
       ...new Set(videoFrames.map((frame) => frame.videoAssetId)),
     ].sort();
+    const audioAssetIds = audioTranscripts.map((clip) => clip.audioAssetId).sort();
     const stable = JSON.stringify({
       ageBand,
       gender: gender ?? null,
       answers: sortedAnswers,
       photoIds,
       videoAssetIds,
+      audioAssetIds,
     });
     return createHash('sha256').update(stable).digest('hex');
   }

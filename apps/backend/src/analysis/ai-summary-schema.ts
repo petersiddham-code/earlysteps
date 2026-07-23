@@ -19,6 +19,15 @@
  * it is checked only against `containsBannedOrReservedLanguage`, never against the
  * professional-referral-term ban, so it still can't reuse the deterministic engine's own
  * tier wording.
+ *
+ * Verbatim-transcript-quote check (issue #140 QA, PR #147): the results-summary prompt
+ * instructs the model to synthesize audio-transcript evidence, never quote it back
+ * verbatim — but live QA found a short (one-word) transcript quoted directly, e.g.
+ * `('Oh')`, which the prompt alone didn't prevent. Every field is also checked against
+ * `containsVerbatimTranscriptQuote` for the audio transcripts this call actually sent —
+ * a deterministic, caller-supplied check, the same "computed from what THIS call actually
+ * sent" precedent as `evidenceModalities`, not something the model can spoof or bypass by
+ * rewording around it.
  */
 import { z } from 'zod';
 import {
@@ -99,6 +108,35 @@ function flattenPriorities(priorities: SummaryOutput['support_priorities']): str
   ].flatMap((item) => [item.priority, item.reason]);
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * True when `text` wraps one of `audioTranscripts` in quote marks or parentheses — the
+ * "quoting it back verbatim" failure mode the prompt bans (issue #140 QA). Deliberately
+ * narrow: it requires a quote/paren character directly around the transcript (optionally
+ * with trailing punctuation inside), not just the transcript's words appearing naturally
+ * in a synthesized sentence — mentioning "ball" while describing a topic is fine; writing
+ * `('ball')` or `"ball"` as a citation of the recording is not.
+ */
+function containsVerbatimTranscriptQuote(
+  text: string,
+  audioTranscripts: string[],
+): boolean {
+  const OPEN = `["'“‘(]`;
+  const CLOSE = `["'”’)]`;
+  return audioTranscripts.some((transcript) => {
+    const trimmed = transcript.trim().replace(/[.,!?]+$/, '');
+    if (trimmed.length === 0) return false;
+    const pattern = new RegExp(
+      `${OPEN}\\s*${escapeRegExp(trimmed)}\\s*[.,!?]?\\s*${CLOSE}`,
+      'i',
+    );
+    return pattern.test(text);
+  });
+}
+
 /**
  * Every free-text field EXCEPT `professional_assessment_priorities` (see the carve-out
  * note above). `likelihood`/`confidence` are excluded here too — they're validated by
@@ -117,17 +155,22 @@ function generalStrings(s: SummaryOutput): string[] {
   ];
 }
 
-function isUnsafe(s: SummaryOutput): boolean {
+function isUnsafe(s: SummaryOutput, audioTranscripts: string[]): boolean {
   if (
     generalStrings(s).some(
       (text) =>
         containsBannedOrReservedLanguage(text) ||
-        containsProfessionalReferralLanguage(text),
+        containsProfessionalReferralLanguage(text) ||
+        containsVerbatimTranscriptQuote(text, audioTranscripts),
     )
   ) {
     return true;
   }
-  return s.professional_assessment_priorities.some(containsBannedOrReservedLanguage);
+  return s.professional_assessment_priorities.some(
+    (text) =>
+      containsBannedOrReservedLanguage(text) ||
+      containsVerbatimTranscriptQuote(text, audioTranscripts),
+  );
 }
 
 function toAiResultsSummary(
@@ -194,10 +237,18 @@ function toSummaryOutput(summary: AiResultsSummary): SummaryOutput {
  * miss, regenerate fresh) rather than a 500 — consistent with this whole module's fail-closed
  * design (CLAUDE.md §8), just extended to cover a corrupt/outdated CACHE read, not only a
  * fresh LLM response.
+ *
+ * `audioTranscripts` (issue #140): the transcripts THIS read actually has available, so a
+ * narrative cached before the verbatim-quote check existed (or before an asset was
+ * deleted) is re-validated against today's evidence, not whatever was true at generation
+ * time.
  */
-export function isSummaryStillSafe(summary: AiResultsSummary): boolean {
+export function isSummaryStillSafe(
+  summary: AiResultsSummary,
+  audioTranscripts: string[],
+): boolean {
   try {
-    return !isUnsafe(toSummaryOutput(summary));
+    return !isUnsafe(toSummaryOutput(summary), audioTranscripts);
   } catch {
     return false;
   }
@@ -209,17 +260,20 @@ export function isSummaryStillSafe(summary: AiResultsSummary): boolean {
  * (not just the offending field), since a partial narrative wasn't reviewed as a whole.
  * `generatedAt` is stamped by the caller, not the model, and so is `evidenceModalities`
  * (issue #135) — it describes what the CALLER actually sent this call, not anything the
- * model reported about itself, so it can't be spoofed or omitted by a model response. Never
- * throws.
+ * model reported about itself, so it can't be spoofed or omitted by a model response.
+ * `audioTranscripts` (issue #140) is the same kind of caller-supplied ground truth, used
+ * only to detect a verbatim-quote violation — never written into the returned summary
+ * itself. Never throws.
  */
 export function parseAiSummaryOutput(
   rawOutput: string,
   evidenceModalities: EvidenceModality[],
+  audioTranscripts: string[],
 ): AiResultsSummary | null {
   const json = extractJsonObject(rawOutput);
   if (json === null) return null;
   const parsed = summaryOutputSchema.safeParse(json);
   if (!parsed.success) return null;
-  if (isUnsafe(parsed.data)) return null;
+  if (isUnsafe(parsed.data, audioTranscripts)) return null;
   return toAiResultsSummary(parsed.data, evidenceModalities);
 }

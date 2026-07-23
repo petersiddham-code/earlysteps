@@ -273,6 +273,11 @@ model MediaAssetRecord {
   /// Deletion-in-progress tombstone: set first, then blob delete, then row delete — a
   /// half-finished delete stays invisible to lists and is swept by the retention job.
   deletedAt          DateTime?
+  /// Speech-to-text transcript, `audio` kind only (issue #140). Generated lazily on first
+  /// use as Assessment B evidence and cached here permanently — never regenerated once set,
+  /// since the underlying audio bytes for a given asset never change.
+  transcript         String?
+  transcribedAt      DateTime?
 
   @@index([childId])
 }

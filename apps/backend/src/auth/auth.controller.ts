@@ -8,6 +8,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { User } from '@earlysteps/shared-types';
 import { AuthService, type AuthResult } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -23,12 +24,17 @@ export class AuthController {
     @Inject(AuthService) private readonly authService: AuthService,
   ) {}
 
+  /** Tighter than the app-wide default (app.module.ts) — an open internet-facing backend
+   * shouldn't allow unlimited account-creation attempts from one source. */
   @Post('register')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   register(@Body() dto: RegisterDto): Promise<AuthResult> {
     return this.authService.register(dto.username, dto.password);
   }
 
+  /** Same reasoning as register — this is the actual brute-force target. */
   @Post('login')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   // Nest defaults POST handlers to 201 Created; login isn't creating anything, so it's 200.
   @HttpCode(200)
   login(@Body() dto: LoginDto): Promise<AuthResult> {

@@ -40,4 +40,9 @@ export interface MediaRepository {
   listDueForDeletion(now: Date): Promise<MediaAsset[]>;
   getFamilyMediaKey(familyId: string): Promise<string | null>;
   setFamilyMediaKey(familyId: string, keyBase64: string): Promise<void>;
+  /**
+   * Persists a lazily-generated transcript for an `audio` asset (issue #140) — set once,
+   * never overwritten for the same asset, since the underlying audio bytes never change.
+   */
+  setTranscript(mediaId: string, transcript: string, transcribedAt: Date): Promise<void>;
 }

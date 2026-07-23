@@ -28,6 +28,10 @@ import {
   FRAME_EXTRACTION_SERVICE,
   type FrameExtractionService,
 } from './frame-extraction.js';
+import {
+  AUDIO_TRANSCRIPTION_SERVICE,
+  type AudioTranscriptionService,
+} from './audio-transcription.js';
 
 /**
  * Default retention window (product plan §4.7): capturedAt + 90 days, then the daily job
@@ -87,6 +91,33 @@ export interface AnalyzableVideoFrame {
   data: Buffer;
 }
 
+/**
+ * Phase 4 (issue #140): caps how many stored audio clips a single Assessment B generation
+ * call ever transcribes/attaches. Same "cap what we send" precedent as photos/videos —
+ * cost/latency bounding, not a content decision.
+ */
+export const MAX_ANALYZABLE_AUDIO_CLIPS = 2;
+
+/**
+ * Audio mime types this backend will attempt to transcribe. `audio/m4a` is what the mobile
+ * capture screen actually produces; the rest cover other common device-reported container
+ * types, same "skip what we can't handle, don't error" precedent as photo/video mime types.
+ */
+const SUPPORTED_AUDIO_MIME_TYPES = new Set([
+  'audio/m4a',
+  'audio/mp4',
+  'audio/wav',
+  'audio/webm',
+  'audio/mpeg',
+]);
+
+export interface AnalyzableAudioTranscript {
+  /** Which stored audio asset this transcript belongs to — used only for cache-busting
+   * (hashAnsweredQuestions), never sent to the model. */
+  audioAssetId: string;
+  transcript: string;
+}
+
 export interface UploadMediaInput {
   kind: MediaKind;
   mimeType: string;
@@ -117,6 +148,10 @@ export class MediaService {
     // FakeFrameExtractionService without invoking real ffmpeg.
     @Inject(FRAME_EXTRACTION_SERVICE)
     private readonly frameExtraction: FrameExtractionService,
+    // Same explicit-token reasoning (issue #140): lets tests substitute
+    // FakeAudioTranscriptionService without calling a real STT API.
+    @Inject(AUDIO_TRANSCRIPTION_SERVICE)
+    private readonly audioTranscription: AudioTranscriptionService,
   ) {}
 
   /**
@@ -282,6 +317,65 @@ export class MediaService {
       } catch (error) {
         this.logger.warn(
           `failed to decrypt/extract frames from media ${asset.id} for analysis — skipping`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Decrypted, transcribed audio evidence for Assessment B (issue #140, Phase 4 of the
+   * media-assessment plan). Same consent shape as getAnalyzablePhotos/
+   * getAnalyzableVideoFrames — silent-empty on a missing media_capture consent, not
+   * throwing, since this is evidence-gathering consumed internally by AnalysisService,
+   * which already independently gates its whole call on ai_analysis consent.
+   *
+   * Unlike frame extraction, transcription is comparatively expensive to redo, so a
+   * transcript is generated at most once per asset and persisted on the MediaAsset row
+   * (the user's "cache it" scope decision, confirmed before implementation) — a later call
+   * for the same asset reuses the stored transcript without invoking the transcription
+   * service again. A clip that fails to transcribe (or whose transcription is unavailable —
+   * no API key, transport failure) contributes zero evidence, not an error for the whole
+   * call (fail closed per-asset, same precedent as a corrupt photo/video).
+   */
+  async getAnalyzableAudioTranscripts(
+    childId: string,
+  ): Promise<AnalyzableAudioTranscript[]> {
+    const consented = await this.familiesRepository.hasConsent(childId, 'media_capture');
+    if (!consented) return [];
+
+    const assets = await this.repository.listByChild(childId);
+    const clips = assets
+      .filter((a) => a.kind === 'audio' && SUPPORTED_AUDIO_MIME_TYPES.has(a.mimeType))
+      .slice(0, MAX_ANALYZABLE_AUDIO_CLIPS); // listByChild is already newest-capture-first
+
+    if (clips.length === 0) return [];
+
+    const out: AnalyzableAudioTranscript[] = [];
+    const uncached = clips.filter((asset) => !asset.transcript);
+    for (const asset of clips) {
+      if (asset.transcript)
+        out.push({ audioAssetId: asset.id, transcript: asset.transcript });
+    }
+    if (uncached.length === 0) return out;
+
+    const child = await this.familiesRepository.getChild(childId);
+    if (!child) return out;
+    const key = await this.repository.getFamilyMediaKey(child.family_id);
+    if (!key) return out;
+
+    for (const asset of uncached) {
+      try {
+        const encrypted = await this.storage.get(asset.storageKey);
+        const data = this.encryption.decrypt(key, encrypted, childId);
+        const transcript = await this.audioTranscription.transcribe(data, asset.mimeType);
+        if (!transcript) continue;
+        await this.repository.setTranscript(asset.id, transcript, new Date());
+        out.push({ audioAssetId: asset.id, transcript });
+      } catch (error) {
+        this.logger.warn(
+          `failed to decrypt/transcribe media ${asset.id} for analysis — skipping`,
           error instanceof Error ? error.stack : String(error),
         );
       }

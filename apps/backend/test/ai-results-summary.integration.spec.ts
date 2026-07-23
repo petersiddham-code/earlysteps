@@ -25,6 +25,7 @@ import { ForbiddenException } from '@nestjs/common';
 import type { IntakeResponse } from '@earlysteps/shared-types';
 import { AnalysisService } from '../src/analysis/analysis.service.js';
 import {
+  MAX_ANALYZABLE_AUDIO_CLIPS,
   MAX_ANALYZABLE_PHOTOS,
   MAX_ANALYZABLE_VIDEOS,
 } from '../src/media/media.service.js';
@@ -55,6 +56,8 @@ import {
 import { InMemoryObjectStorageService } from '../src/media/testing/in-memory-object-storage.service.js';
 import { FRAME_EXTRACTION_SERVICE } from '../src/media/frame-extraction.js';
 import { FakeFrameExtractionService } from '../src/media/testing/fake-frame-extraction.service.js';
+import { AUDIO_TRANSCRIPTION_SERVICE } from '../src/media/audio-transcription.js';
+import { FakeAudioTranscriptionService } from '../src/media/testing/fake-audio-transcription.service.js';
 
 const AT = '2026-07-11T00:00:00.000Z';
 const LATER = '2026-07-11T00:05:00.000Z';
@@ -135,6 +138,7 @@ async function buildStack(clientOutputs: (string | null)[]) {
   const aiSummaryClient = new StubAiSummaryClient(clientOutputs);
   const objectStorage = new InMemoryObjectStorageService();
   const frameExtraction = new FakeFrameExtractionService();
+  const audioTranscription = new FakeAudioTranscriptionService();
   const moduleRef = await Test.createTestingModule({
     providers: [
       ScreeningService,
@@ -147,15 +151,17 @@ async function buildStack(clientOutputs: (string | null)[]) {
         useValue: new DisabledResponseAnalysisClient(),
       },
       { provide: AI_RESULTS_SUMMARY_CLIENT, useValue: aiSummaryClient },
-      // issue #135/#139: real MediaService (in-memory-backed) so photo/video-evidence tests
-      // below can seed assets through the same upload path production uses, consent gate
-      // included. FakeFrameExtractionService stands in for real ffmpeg so these tests never
-      // need to decode an actual video file.
+      // issue #135/#139/#140: real MediaService (in-memory-backed) so photo/video/audio
+      // evidence tests below can seed assets through the same upload path production uses,
+      // consent gate included. FakeFrameExtractionService/FakeAudioTranscriptionService
+      // stand in for real ffmpeg/OpenAI so these tests never decode a real video file or
+      // call a real STT API.
       MediaService,
       MediaEncryptionService,
       { provide: MEDIA_REPOSITORY, useClass: InMemoryMediaRepository },
       { provide: OBJECT_STORAGE_SERVICE, useValue: objectStorage },
       { provide: FRAME_EXTRACTION_SERVICE, useValue: frameExtraction },
+      { provide: AUDIO_TRANSCRIPTION_SERVICE, useValue: audioTranscription },
     ],
   }).compile();
   return {
@@ -167,6 +173,7 @@ async function buildStack(clientOutputs: (string | null)[]) {
     mediaService: moduleRef.get(MediaService),
     objectStorage: moduleRef.get<ObjectStorageService>(OBJECT_STORAGE_SERVICE),
     frameExtraction,
+    audioTranscription,
   };
 }
 
@@ -950,7 +957,7 @@ describe('AI results summary — photo evidence (issue #135, Phase 2)', () => {
     expect(aiSummaryClient.calls[0]!.photos).toHaveLength(MAX_ANALYZABLE_PHOTOS);
   });
 
-  it('never sends audio assets — only photo and video kinds are wired up (issue #139 extends this to video)', async () => {
+  it('never sends an audio asset as photo or video-frame evidence (issue #140 wires it into its own audioTranscripts field instead)', async () => {
     const {
       analysisService,
       screeningService,
@@ -971,9 +978,254 @@ describe('AI results summary — photo evidence (issue #135, Phase 2)', () => {
 
     const result = await analysisService.getResultsSummary(child.id);
 
-    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(result?.evidenceModalities).toEqual(
+      expect.arrayContaining(['structured_answers', 'audio']),
+    );
     expect(aiSummaryClient.calls[0]!.photos).toEqual([]);
     expect(aiSummaryClient.calls[0]!.videoFrames).toEqual([]);
+    expect(aiSummaryClient.calls[0]!.audioTranscripts).toHaveLength(1);
+  });
+});
+
+describe('AI results summary — audio evidence (issue #140, Phase 4)', () => {
+  async function seedWithOneAnswer(
+    familiesRepository: InMemoryFamiliesRepository,
+    screeningService: ScreeningService,
+    grantedScopes: Parameters<InMemoryFamiliesRepository['seedChildWithConsent']>[0],
+  ) {
+    const { family, child } =
+      await familiesRepository.seedChildWithConsent(grantedScopes);
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T2',
+        domain: 'communication',
+        answer: 'few_1_5',
+        timestamp: AT,
+      },
+    ]);
+    return { family, child };
+  }
+
+  it('transcribes and attaches audio evidence, records it in evidenceModalities, when both consents are granted', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/m4a',
+      data: Buffer.from('fake-audio-bytes'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.evidenceModalities).toEqual(
+      expect.arrayContaining(['structured_answers', 'audio']),
+    );
+    expect(aiSummaryClient.calls).toHaveLength(1);
+    expect(aiSummaryClient.calls[0]!.audioTranscripts).toEqual([
+      { transcript: 'transcript-of:fake-audio-bytes' },
+    ]);
+  });
+
+  it('sends no audio evidence, and never records "audio", when there is no media at all', async () => {
+    const { analysisService, screeningService, familiesRepository, aiSummaryClient } =
+      await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.audioTranscripts).toEqual([]);
+  });
+
+  it('omits audio evidence when media_capture consent is withdrawn, even though a clip already exists and ai_analysis is still granted', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { family, child } = await seedWithOneAnswer(
+      familiesRepository,
+      screeningService,
+      ['data_storage', 'ai_analysis', 'media_capture'],
+    );
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/m4a',
+      data: Buffer.from('fake-audio-bytes'),
+    });
+    await familiesRepository.updateConsent(family.id, 'media_capture', false);
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.audioTranscripts).toEqual([]);
+  });
+
+  it('regenerates when a new clip is captured, even though the answered questions have not changed', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT, VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+
+    await analysisService.getResultsSummary(child.id);
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/m4a',
+      data: Buffer.from('fake-audio-bytes'),
+    });
+    await analysisService.getResultsSummary(child.id);
+
+    expect(aiSummaryClient.calls).toHaveLength(2);
+    expect(aiSummaryClient.calls[0]!.audioTranscripts).toEqual([]);
+    expect(aiSummaryClient.calls[1]!.audioTranscripts).toHaveLength(1);
+  });
+
+  it('skips an unsupported audio mime type rather than attempting transcription on it', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/x-unsupported',
+      data: Buffer.from('unsupported-format-bytes'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result?.evidenceModalities).toEqual(['structured_answers']);
+    expect(aiSummaryClient.calls[0]!.audioTranscripts).toEqual([]);
+  });
+
+  it('caps audio evidence at MAX_ANALYZABLE_AUDIO_CLIPS, keeping the most recently captured', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+    } = await buildStack([VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    for (let i = 0; i < MAX_ANALYZABLE_AUDIO_CLIPS + 2; i++) {
+      await mediaService.upload(child.id, {
+        kind: 'audio',
+        mimeType: 'audio/m4a',
+        data: Buffer.from(`audio-${i}`),
+        capturedAt: new Date(Date.parse(AT) + i * 1000).toISOString(),
+      });
+    }
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).not.toBeNull();
+    expect(aiSummaryClient.calls[0]!.audioTranscripts).toHaveLength(
+      MAX_ANALYZABLE_AUDIO_CLIPS,
+    );
+  });
+
+  it('transcribes a clip at most once — a second results-summary call reuses the cached transcript without calling the STT service again', async () => {
+    const {
+      analysisService,
+      screeningService,
+      familiesRepository,
+      mediaService,
+      aiSummaryClient,
+      audioTranscription,
+    } = await buildStack([VALID_OUTPUT, VALID_OUTPUT]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/m4a',
+      data: Buffer.from('fake-audio-bytes'),
+    });
+
+    await analysisService.getResultsSummary(child.id);
+    // Force regeneration on the next call without the audio asset set changing, so any
+    // repeated STT call would be visible even though the cached AI summary itself is reused
+    // for an unchanged answer/media set — bust the summary cache the same way the "new
+    // photo/video" tests do: by adding a new answer.
+    await screeningService.submitIntakeResponses(child.id, [
+      {
+        child_id: child.id,
+        question_id: 'T3',
+        domain: 'communication',
+        answer: 'yes_often',
+        timestamp: LATER,
+      },
+    ]);
+    await analysisService.getResultsSummary(child.id);
+
+    expect(aiSummaryClient.calls).toHaveLength(2);
+    expect(audioTranscription.calls).toHaveLength(1);
+    expect(aiSummaryClient.calls[1]!.audioTranscripts).toEqual([
+      { transcript: 'transcript-of:fake-audio-bytes' },
+    ]);
+  });
+
+  it('returns null when the model quotes a short audio transcript back verbatim (QA regression, issue #140/PR #147)', async () => {
+    const quotedOutput = buildOutput({
+      developmental_profile:
+        "The one-word audio transcript ('transcript-of:Oh') is too brief to draw a conclusion from.",
+    });
+    const { analysisService, screeningService, familiesRepository, mediaService } =
+      await buildStack([quotedOutput, quotedOutput, quotedOutput]);
+    const { child } = await seedWithOneAnswer(familiesRepository, screeningService, [
+      'data_storage',
+      'ai_analysis',
+      'media_capture',
+    ]);
+    await mediaService.upload(child.id, {
+      kind: 'audio',
+      mimeType: 'audio/m4a',
+      data: Buffer.from('Oh'),
+    });
+
+    const result = await analysisService.getResultsSummary(child.id);
+
+    expect(result).toBeNull();
   });
 });
 

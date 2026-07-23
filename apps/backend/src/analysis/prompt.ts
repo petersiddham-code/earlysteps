@@ -90,18 +90,34 @@ function formatAnsweredQuestion(answer: AiSummaryAnsweredQuestion): string {
  * are attached as separate content blocks by the caller, photos first then video frames —
  * this tag only tells the model how many of each to expect, in that order.
  */
+/**
+ * `audioTranscripts` (issue #140, Phase 4): rendered as its own `<audio_evidence>` tag,
+ * always present (even when empty), so the model gets a consistent frame the same way
+ * `<media_evidence>` always states a photo/video-frame count even at 0.
+ */
 export function buildResultsSummaryUserMessage(
   ageBand: string,
   gender: string | undefined,
   answers: AiSummaryAnsweredQuestion[],
   photoCount: number,
   videoFrameCount: number,
+  audioTranscripts: string[],
 ): string {
+  const audioEvidenceBody =
+    audioTranscripts.length === 0
+      ? `${audioTranscripts.length} audio recording(s) transcribed this time.`
+      : [
+          `${audioTranscripts.length} audio recording(s), each automatically transcribed by speech-to-text from a caregiver-captured recording — NOT text the caregiver typed. Transcription may be imprecise (garbled words, mishearing, background noise, non-speech sound); weigh accordingly and name that uncertainty explicitly where relevant.`,
+          ...audioTranscripts.map(
+            (transcript, i) => `Transcript ${i + 1}: "${transcript}"`,
+          ),
+        ].join('\n');
   return [
     'Write the independent AI results summary for this raw questionnaire.',
     `<age_band>${ageBand}</age_band>`,
     `<gender>${gender ?? 'not given'}</gender>`,
     `<answers>\n${answers.map(formatAnsweredQuestion).join('\n')}\n</answers>`,
     `<media_evidence>${photoCount} caregiver-captured photo(s), then ${videoFrameCount} still frame(s) sampled from caregiver-captured video(s), attached below as image content in that order, if any. Each photo is an opt-in observational snapshot; each video-derived frame is one sampled moment from a recording, not continuous footage. Weigh all of it alongside the structured answers and notes above per the media-evidence rules in your instructions.</media_evidence>`,
+    `<audio_evidence>${audioEvidenceBody}</audio_evidence>`,
   ].join('\n');
 }

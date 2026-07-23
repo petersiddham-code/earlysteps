@@ -142,12 +142,18 @@ export const AI_LIKELIHOOD_TO_LABEL: Record<AiLikelihoodLevel, AiLikelihoodLabel
  * Assessment B's self-reported evidence-uncertainty taxonomy (CLAUDE.md §13's "uncertainty"
  * field). Describes uncertainty ONLY in the evidence Assessment B itself was given — it must
  * never reference or imply anything about Assessment A's output (isolation, rule 7 §2).
+ *
+ * `unclear_audio_transcript` (issue #140, Phase 4): a caregiver-captured audio clip's
+ * speech-to-text transcript may be garbled, ambiguous, or capture non-speech sound — this
+ * names that uncertainty explicitly rather than letting a mistranscription be silently
+ * treated as reliable evidence.
  */
 export const UNCERTAINTY_FACTORS = [
   'contradictory_responses',
   'conflicting_developmental_history',
   'limited_free_text_evidence',
   'sparse_structured_answers',
+  'unclear_audio_transcript',
 ] as const;
 export type UncertaintyFactor = (typeof UNCERTAINTY_FACTORS)[number];
 
@@ -156,6 +162,7 @@ export const UNCERTAINTY_FACTOR_LABELS: Record<UncertaintyFactor, string> = {
   conflicting_developmental_history: 'Conflicting developmental history',
   limited_free_text_evidence: 'Limited free-text evidence',
   sparse_structured_answers: 'Sparse structured answers',
+  unclear_audio_transcript: 'Unclear audio transcript',
 };
 
 /**
@@ -163,15 +170,17 @@ export const UNCERTAINTY_FACTOR_LABELS: Record<UncertaintyFactor, string> = {
  * migration status: "a schema addition to AiResultsSummary's evidence summary noting which
  * modalities contributed"). Computed deterministically by the caller from what was actually
  * sent to the model — never self-reported by the LLM, so it can't drift from the truth.
- * `photo` (issue #135, Phase 2) and `video` (issue #139, Phase 3 — sampled still frames, not
- * continuous footage or audio) are the media modalities wired up so far; audio is tracked as
- * follow-up work, not silently folded into this value.
+ * `photo` (issue #135, Phase 2), `video` (issue #139, Phase 3 — sampled still frames, not
+ * continuous footage or audio), and `audio` (issue #140, Phase 4 — a speech-to-text
+ * transcript of a recording, never the raw audio itself and never folded into `free_text`
+ * since it wasn't typed by the caregiver) are the media modalities wired up so far.
  */
 export const EVIDENCE_MODALITIES = [
   'structured_answers',
   'free_text',
   'photo',
   'video',
+  'audio',
 ] as const;
 export type EvidenceModality = (typeof EVIDENCE_MODALITIES)[number];
 
